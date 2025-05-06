@@ -2,9 +2,13 @@ import React from "react"
 
 const Main = (props) => {
   return (
-    <div>
-      <h1>You opened the main page!</h1>
-    </div>
+    <section className="hero">
+      <div className="container">
+        <div className="content">
+          <h1>Find your perfect spot – fast, simple, reliable.</h1>
+        </div>
+      </div>
+    </section>
   )
 };
 

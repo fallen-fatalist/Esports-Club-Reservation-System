@@ -13,15 +13,25 @@ const Login = (props) => {
         navigate("/")
     }
   return (
-    <div>
-      <h1>Login page</h1>
-      <form onSubmit={login}>
-        <MyInput type="text" placeholder="Enter login"/>
-        <MyInput type="password" placeholder="Enter password"/>
-        <MyButton>Login</MyButton>
-      </form>
-    </div>
+    <section className="authorization">
+      <header className="login__header">
+        <h1>Login page</h1>
+      </header>
+      <div className="auth__container">
+        <div className="login__email">
+          <form onSubmit={login}>
+            <MyInput type="text" placeholder="Enter login"/>
+            <MyInput type="password" placeholder="Enter password"/>
+            <MyButton>Login</MyButton>
+          </form>
+        </div>
+        <div className="login__telegram">
+          dfsfdy
+        </div>
+      </div>
+    </section>
   )
 };
 
 export default Login;
+
