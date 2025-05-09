@@ -1,0 +1,12 @@
+.dropdown {
+    width: 100px;
+    text-align: left;
+    color: teal;
+    background: transparent;
+    border: 1px solid teal;
+    border-radius: 4px;
+    padding: 5px;
+    margin: 0;
+    cursor: pointer;
+    font-family: 'Open Sans', sans-serif;
+}
