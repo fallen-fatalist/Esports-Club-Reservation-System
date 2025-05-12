@@ -284,6 +284,25 @@
   justify-content: center; 
 }
 
+.booking-success-banner {
+  background-color: #ddffdd;
+  color: #270;
+  border: 1px solid #270;
+  padding: 6px;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.booking-succes-banner p {
+  font-family: 'Open Sans', sans-serif;
+  font-style: normal;
+  font-size: 12px;
+  display: flex;
+  align-items: center; 
+  justify-content: center;
+}
+
 .btn-txt {
   font-family: 'Open Sans', sans-serif;
   font-style: normal;
@@ -580,3 +599,8 @@
   font-weight: 400;
   font-size: 16px;
 }
+
+.booking-time {
+  color: #333;
+}
+

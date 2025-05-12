@@ -1,18 +1,12 @@
 import React, { useState, useEffect } from "react";
 import useComputers from "../hooks/useComputers";
 import useBookings from "../hooks/useBookings";
-import Timedate from "../components/UI/date/Timedate/Timedate";
-import MyTime from "../components/UI/date/MyTime/MyTime";
-import MyButton from "../components/UI/button/MyButton/MyButton";
-import MyDropdown from "../components/UI/dropdown/MyDropdown/MyDropdown";
 import ComputerList from "../components/BookingSystem/ComputerList";
 import bookingService from "../services/bookingService";
 import isComputerAvailable from "../components/utils/isComputerAvailable";
 import dateUtils from "../components/utils/dateUtils";
-import Legend from "../components/UI/legend/Legend";
-import BookingSummary from "../components/UI/bookingSummary/BookingSummary";
-import ComputerDetails from "../components/BookingSystem/ComputerDetails";
-import MyModal from "../components/UI/modal/MyModal";
+import ComputerDetailsModal from "../components/BookingSystem/ComputerDetailsModal";
+import BookingForm from "../components/BookingSystem/BookingForm";
 
 const Booking = () => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -27,7 +21,7 @@ const Booking = () => {
   const [modalVisible, setModalVisible] = useState(false);
 
   const { computers: fetchedComputers = [], loading, error } = useComputers();
-  const { bookings, loading: bookingsLoading, bookingerror, refetchBookings } = useBookings();
+  const { bookings, refetchBookings } = useBookings();
   const [computers, setComputers] = useState([]);
 
   useEffect(() => {
@@ -173,40 +167,19 @@ const Booking = () => {
 
   return (
     <section className="booking__section">
-      <div className="booking__container three-columns">
-        <div className="reservation__container">
-          <h3>PC Reservation</h3>
-          <p>Select date and time</p>
-          <div className="reservation__date">
-            <Timedate value={date} onChange={(e) => setDate(e.target.value)} />
-          </div>
-          <div className="time__duration">
-            <div className="reservation__time">
-              <MyTime value={time} onChange={(e) => setTime(e.target.value)} />
-            </div>
-            <div className="reservation__duration">
-              <MyDropdown value={duration} onChange={(e) => setDuration(Number(e.target.value))}>
-                <option value="60">1 hour</option>
-                <option value="120">2 hours</option>
-                <option value="180">3 hours</option>
-              </MyDropdown>
-            </div>
-          </div>
-
-          <MyButton onClick={handleAvailabilityCheck}>
-            Check Availability
-          </MyButton>
-
-          {errorMessage && <div className="error-message" aria-live="assertive">{errorMessage}</div>}
-          {infoMessage && <div className="info-message" aria-live="polite">{infoMessage}</div>}
-          {bookingSuccess && (
-            <div className="booking-success-banner">
-              🎉 Your computer has been booked successfully!
-            </div>
-          )}
-
-          <Legend />
-        </div>
+      <div className="booking__container">
+        <BookingForm
+          date={date}
+          setDate={setDate}
+          time={time}
+          setTime={setTime}
+          duration={duration}
+          setDuration={setDuration}
+          onCheckAvailability={handleAvailabilityCheck}
+          errorMessage={errorMessage}
+          infoMessage={infoMessage}
+          bookingSuccess={bookingSuccess}
+        />
 
         <div className="computers__container">
           <ComputerList 
@@ -220,30 +193,17 @@ const Booking = () => {
           )}
         </div>
 
-        <MyModal visible={modalVisible} setVisible={setModalVisible}>
-          {selectedComputer && (
-            <div className="booking-steps">
-              <h3>Computer Details</h3>
-              <BookingSummary 
-                computerId={selectedComputer}
-                date={date}
-                time={time}
-                duration={duration}
-              />
-              <ComputerDetails
-                computer={computersToDisplay.find(c => c.id === selectedComputer)}
-                bookings={bookings}
-                date={date}
-              />
-              {computersToDisplay.find(c => c.id === selectedComputer)?.status === 'available' && (
-                <MyButton className="confirm-booking-btn" onClick={handleBookComputer}>
-                  <span>Confirm Booking</span>
-                </MyButton>
-              )}
-            </div>
-          )}
-        </MyModal>
-
+        <ComputerDetailsModal
+          visible={modalVisible}
+          setVisible={setModalVisible}
+          selectedComputer={selectedComputer}
+          computers={computersToDisplay}
+          date={date}
+          time={time}
+          duration={duration}
+          onBookComputer={handleBookComputer}
+          bookings={bookings}
+        />
       </div>
     </section>
   );
