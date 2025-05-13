@@ -37,6 +37,16 @@ const useComputers = () => {
           status: mapComputerStatus(comp.status),
           originalStatus: comp.status,
           name: comp.name || `Computer #${comp.id}`,
+          cpu: comp.cpu,
+          gpu: comp.gpu,
+          ram: comp.ram,
+          ssd: comp.ssd,
+          hdd: comp.hdd,
+          monitor: comp.monitor,
+          mouse: comp.mouse,
+          keyboard: comp.keyboard,
+          headset: comp.headset,
+          mousepad: comp.mousepad
         }));
 
         setComputers(formatted);

@@ -82,40 +82,6 @@ const ComputerDetails = ({ computer, bookings, date }) => {
     <div className="computer-details">
       <h3>Computer Info</h3>
 
-      {timeLeft !== null ? (
-        <div className="time-left">
-          <h4>Time Left in Current Session</h4>
-          <p>{timeLeft} minutes remaining</p>
-          {activeBooking && bookingDuration && (
-            <div className="active-booking-info">
-              <p>
-                {new Date(activeBooking.start_time).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}{" "}
-                -{" "}
-                {new Date(activeBooking.end_time).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </p>
-              <p>Total booking duration: {bookingDuration} minutes</p>
-              <p>
-                Progress:{" "}
-                {Math.round(
-                  ((bookingDuration - timeLeft) / bookingDuration) * 100
-                )}
-                %
-              </p>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="no-active-session">
-          <p>No active session</p>
-        </div>
-      )}
-
       <div className="computer-specs">
         <h4>Specifications</h4>
         <ul className="specs-list">
@@ -191,6 +157,34 @@ const ComputerDetails = ({ computer, bookings, date }) => {
             </ul>
           ) : (
             <p className="no-bookings">No bookings for this date</p>
+          )}
+          
+          {timeLeft !== null ? (
+            <div className="time-left">
+              <h4>Time Left in Current Session</h4>
+              <p>{timeLeft} minutes remaining</p>
+              {activeBooking && bookingDuration && (
+                <div className="active-booking-info">
+                  <p>
+                    {new Date(activeBooking.start_time).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}{" "}
+                    -{" "}
+                    {new Date(activeBooking.end_time).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                  <p>Total booking duration: {bookingDuration} minutes</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="no-active-session">
+              <h3>Time left:</h3>
+              <p>No active session</p>
+            </div>
           )}
         </div>
       </div>

@@ -24,6 +24,9 @@ const ComputerList = ({ computers, onComputerClick, selectedComputers = [] }) =>
             <div className="spec-item">
               <span>GPU:</span> {comp.gpu || 'N/A'}
             </div>
+            <div className="spec-item">
+              <span>RAM:</span> {comp.ram || 'N/A'}
+            </div>
           </div>
           <div className="computer-status">
             {comp.status === 'busy' ? (
