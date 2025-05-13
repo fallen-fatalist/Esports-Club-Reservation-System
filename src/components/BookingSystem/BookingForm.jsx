@@ -6,7 +6,7 @@ import MyButton from "../UI/button/MyButton/MyButton";
 import Legend from "../UI/legend/Legend";
 import Message from "./Message";
 
-const BookingForm = ({ date, setDate, time, setTime, duration, setDuration, onCheckAvailability, errorMessage,  infoMessage, bookingSuccess }) => (
+const BookingForm = ({ date, setDate, time, setTime, duration, setDuration, onCheckAvailability, errorMessage,  infoMessage, bookingSuccess, selectedComputers, handleBookMultipleComputers, setSelectedComputers }) => (
   <div className="reservation__container">
     <h3>PC Reservation</h3>
     <p>Select date and time</p>
@@ -25,7 +25,9 @@ const BookingForm = ({ date, setDate, time, setTime, duration, setDuration, onCh
         </MyDropdown>
       </div>
     </div>
-    <MyButton onClick={onCheckAvailability}>Check Availability</MyButton>
+    <MyButton onClick={onCheckAvailability}>
+      <span className="btn-txt">Check Availability</span>
+      </MyButton>
     {errorMessage && <Message message={errorMessage} type="error" />}
     {infoMessage && <Message message={infoMessage} type="info" />}
     {bookingSuccess && (
@@ -33,6 +35,20 @@ const BookingForm = ({ date, setDate, time, setTime, duration, setDuration, onCh
         <p>Your computer has been booked successfully!</p>
       </div>
     )}
+    {selectedComputers.length > 0 && (
+      <div className="computers__selection-actions">
+        <span className="computers__selection-count">
+          Selected computers: {selectedComputers.length}
+        </span>
+        <MyButton className="book-multiple-button" onClick={handleBookMultipleComputers}>
+          <span className="btn-txt">Book Selected</span>
+        </MyButton>
+        <MyButton className="clear-selection-button" onClick={() => setSelectedComputers([])}>
+          <span className="btn-txt">Clear Selected</span>
+        </MyButton>
+      </div>
+    )}
+
     <Legend />
   </div>
 );

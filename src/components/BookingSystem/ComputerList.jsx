@@ -1,7 +1,14 @@
 import React from "react";
 import { ReactComponent as ComputerIcon } from '../../images/computer.svg';
+import MyButton from "../UI/button/MyButton/MyButton";
 
-const ComputerList = ({ computers, onComputerClick, selectedComputers = [] }) => (
+const ComputerList = ({ 
+  computers, 
+  onComputerClick, 
+  onViewDetails, 
+  selectedComputers = [], 
+  onBook 
+}) => (
   <div className="icon__container">
     <h3>Select computer(s) to book</h3>
     <div className="computer-grid">
@@ -17,6 +24,7 @@ const ComputerList = ({ computers, onComputerClick, selectedComputers = [] }) =>
             <ComputerIcon className={`computer-icon ${comp.status === 'busy' ? 'busy' : ''}`} />
             <span className="computer-number">#{comp.id}</span>
           </div>
+          
           <div className="computer-specs">
             <div className="spec-item">
               <span>CPU:</span> {comp.cpu || 'N/A'}
@@ -28,6 +36,17 @@ const ComputerList = ({ computers, onComputerClick, selectedComputers = [] }) =>
               <span>RAM:</span> {comp.ram || 'N/A'}
             </div>
           </div>
+          <div className="computer-actions">
+            <MyButton className="details-button" onClick={(e) => {e.stopPropagation(); onViewDetails(comp.id);}}>
+              <span className="btn-txt">Details</span>
+            </MyButton>
+            
+            {comp.status === 'available' && onBook && (
+              <MyButton className="book-button" onClick={(e) => {e.stopPropagation(); onBook(comp.id);}}>
+                <span className="btn-txt">Book</span>
+              </MyButton>
+            )}
+          </div>
           <div className="computer-status">
             {comp.status === 'busy' ? (
               <span className="busy-status">Busy</span>
@@ -35,6 +54,7 @@ const ComputerList = ({ computers, onComputerClick, selectedComputers = [] }) =>
               <span className="available-status">Available</span>
             )}
           </div>
+          
         </div>
       ))}
     </div>

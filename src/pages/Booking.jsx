@@ -12,13 +12,14 @@ const Booking = () => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [time, setTime] = useState('12:00');
   const [duration, setDuration] = useState(60);
-  const [selectedComputer, setSelectedComputer] = useState(null);
+  const [selectedComputers, setSelectedComputers] = useState([]);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [filteredComputers, setFilteredComputers] = useState([]);
   const [isFiltered, setIsFiltered] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
   const [infoMessage, setInfoMessage] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [modalComputerId, setModalComputerId] = useState(null);
 
   const { computers: fetchedComputers = [], loading, error } = useComputers();
   const { bookings, refetchBookings } = useBookings();
@@ -66,30 +67,75 @@ const Booking = () => {
 
     setFilteredComputers(updatedList);
     setIsFiltered(true);
-    setSelectedComputer(null);
+    setSelectedComputers([]);
     setErrorMessage(null);
   };
 
+  // Changed: Separated selection logic from modal opening
   const handleComputerClick = (computerId) => {
-    const list = isFiltered ? filteredComputers : computers;
-    const computer = list.find(c => c.id === computerId);
-    if (!computer) return;
-
-    setSelectedComputer(computerId === selectedComputer ? null : computerId);
+    // Check if computer is available for booking
+    const computer = computersToDisplay.find(c => c.id === computerId);
+    if (computer && computer.status === 'busy') {
+      return; // Don't allow selection of busy computers
+    }
+    
+    setSelectedComputers((prev) => {
+      // If computer is already selected - remove it, otherwise - add it
+      if (prev.includes(computerId)) {
+        return prev.filter((id) => id !== computerId);
+      } else {
+        return [...prev, computerId];
+      }
+    });
     setErrorMessage(null);
+  };
+
+  // New method: Open modal window to view computer details
+  const handleViewComputerDetails = (computerId) => {
+    setModalComputerId(computerId);
     setModalVisible(true);
   };
 
-  const handleBookComputer = async () => {
-    if (!selectedComputer) {
-      setErrorMessage("Please select a computer first");
+  const handleBookMultipleComputers = async () => {
+    if (selectedComputers.length === 0) {
+      setErrorMessage("Please select at least one computer.");
       return;
     }
 
     if (!validateDateTime()) return;
 
-    const currentUser = JSON.parse(localStorage.getItem('user'));
-    const userId = currentUser?.id || 1;
+    try {
+      setInfoMessage(`Processing booking for ${selectedComputers.length} computer(s)...`);
+
+      const startTime = dateUtils.parseDate(date, time);
+      const endTime = new Date(startTime.getTime() + duration * 60000);
+
+      const formattedStartTime = dateUtils.formatWithLocalTimezone(startTime);
+      const formattedEndTime = dateUtils.formatWithLocalTimezone(endTime);
+
+      const currentUser = JSON.parse(localStorage.getItem('user'));
+      const userId = currentUser?.id || 1;
+
+      const bookingPromises = selectedComputers.map(computerId =>
+        bookingService.createBooking({
+          user_id: userId,
+          computer_id: computerId,
+          start_time: formattedStartTime,
+          end_time: formattedEndTime,
+          package_id: 1,
+          status: "pending"
+        })
+      );
+
+      await Promise.all(bookingPromises);
+      handleBookingSuccess();
+    } catch (error) {
+      handleBookingError(error);
+    }
+  };
+
+  const handleBookComputer = async (computerId) => {
+    if (!validateDateTime()) return;
 
     try {
       setInfoMessage("Processing your booking...");
@@ -100,17 +146,32 @@ const Booking = () => {
       const formattedStartTime = dateUtils.formatWithLocalTimezone(startTime);
       const formattedEndTime = dateUtils.formatWithLocalTimezone(endTime);
 
-      const bookingData = {
+      const currentUser = JSON.parse(localStorage.getItem('user'));
+      const userId = currentUser?.id || 1;
+
+      await bookingService.createBooking({
         user_id: userId,
-        computer_id: selectedComputer,
+        computer_id: computerId,
         start_time: formattedStartTime,
         end_time: formattedEndTime,
         package_id: 1,
         status: "pending"
-      };
+      });
 
-      await bookingService.createBooking(bookingData);
-      handleBookingSuccess();
+      setFilteredComputers((prev) =>
+        prev.map((c) => (c.id === computerId ? { ...c, status: 'busy' } : c))
+      );
+      setComputers((prev) =>
+        prev.map((c) => (c.id === computerId ? { ...c, status: 'busy' } : c))
+      );
+
+      await refetchBookings();
+
+      setSelectedComputers((prev) => prev.filter((id) => id !== computerId));
+      setInfoMessage(null);
+      setErrorMessage(null);
+      setBookingSuccess(true);
+      setTimeout(() => setBookingSuccess(false), 3000);
     } catch (error) {
       handleBookingError(error);
     }
@@ -120,30 +181,29 @@ const Booking = () => {
     setBookingSuccess(true);
     setErrorMessage(null);
     setInfoMessage(null);
-  
-    setFilteredComputers(prev =>
-      prev.map(c =>
-        c.id === selectedComputer ? { ...c, status: 'busy' } : c
+
+    setFilteredComputers((prev) =>
+      prev.map((c) =>
+        selectedComputers.includes(c.id) ? { ...c, status: 'busy' } : c
       )
     );
-  
-    setComputers(prev =>
-      prev.map(c =>
-        c.id === selectedComputer ? { ...c, status: 'busy' } : c
+
+    setComputers((prev) =>
+      prev.map((c) =>
+        selectedComputers.includes(c.id) ? { ...c, status: 'busy' } : c
       )
     );
-  
-    await refetchBookings(); 
-  
-    setSelectedComputer(null);
+
+    await refetchBookings();
+
+    setSelectedComputers([]);
     setIsFiltered(false);
     setModalVisible(false);
-  
+
     setTimeout(() => {
       setBookingSuccess(false);
     }, 3000);
   };
-  
 
   const handleBookingError = (error) => {
     let errorMsg = "Error creating booking. Please try again.";
@@ -179,13 +239,19 @@ const Booking = () => {
           errorMessage={errorMessage}
           infoMessage={infoMessage}
           bookingSuccess={bookingSuccess}
+          selectedComputers={selectedComputers}
+          handleBookMultipleComputers={handleBookMultipleComputers}
+          setSelectedComputers={setSelectedComputers}
         />
 
         <div className="computers__container">
-          <ComputerList 
-            computers={computersToDisplay} 
+
+          <ComputerList
+            computers={computersToDisplay}
             onComputerClick={handleComputerClick}
-            selectedComputers={selectedComputer ? [selectedComputer] : []}
+            onViewDetails={handleViewComputerDetails}
+            selectedComputers={selectedComputers}
+            onBook={handleBookComputer}
           />
 
           {isFiltered && computersToDisplay.length === 0 && (
@@ -196,7 +262,7 @@ const Booking = () => {
         <ComputerDetailsModal
           visible={modalVisible}
           setVisible={setModalVisible}
-          selectedComputer={selectedComputer}
+          selectedComputer={modalComputerId}
           computers={computersToDisplay}
           date={date}
           time={time}

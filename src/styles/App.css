@@ -104,12 +104,6 @@
   white-space: nowrap;
 }
 
-.error {
-  gap: 1rem;
-  padding: 1rem;
-  color: red;
-}
-
 .hero {
   width: 100%;
   max-width: 1440px;
@@ -219,6 +213,7 @@
   border: 1px solid #d8000c;
   padding: 10px;
   margin-top: 10px;
+  margin-bottom: 10px;
   border-radius: 4px;
   text-align: center;
   font-weight: bold;
@@ -237,7 +232,7 @@
   justify-content: space-between; 
   align-items: flex-start;
   width: 100%;
-  max-width: 1400px;
+  max-width: 1420px;
   gap: 2rem;
   margin: 0;
   box-sizing: border-box;
@@ -255,26 +250,22 @@
 }
 
 .reservation__container h3 {
-  display: flex;
-  justify-content: center;
-  align-items: center;
   font-family: 'Open Sans', sans-serif;
   font-style: normal;
   font-weight: 400;
   font-size: 28px;
   color: #555;
-  margin: 0 auto;
-  box-sizing: border-box;
+  margin: 0;
 }
 
-.reservation__container p {
+.reservation__container p,
+.computers__selection-count {
   font-family: 'Open Sans', sans-serif;
   font-style: normal;
   font-weight: 400;
   font-size: 16px;
   color: #555;
-  margin: 0 auto;
-  box-sizing: border-box;
+  margin: 0;
 }
 
 .time__duration {
@@ -307,8 +298,21 @@
   font-family: 'Open Sans', sans-serif;
   font-style: normal;
   font-size: 15px;
-  padding-left: 62px;
-  padding-right: 62px;
+}
+
+.computers__selection-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  align-items: center;
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.book-multiple-button,
+.clear-selection-button {
+  width: 100%;
+  max-width: 200px;
 }
 
 .computers__container {
@@ -410,6 +414,14 @@
 .spec-item {
   margin-bottom: 0.3rem;
   color: #555;
+}
+
+.computer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 1rem;
+  gap: 10px;
 }
 
 .computer-status {
@@ -622,7 +634,7 @@
 .time-left p {
   margin: 0.25rem 0;
   font-size: 0.875rem;
-    padding: 0.5rem 0;
+  padding: 0.5rem 0;
   border-bottom: 1px solid #e0e0e0;
 }
 
