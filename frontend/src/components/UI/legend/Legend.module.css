@@ -1,0 +1,33 @@
+.legend {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+  
+  }
+  
+  .legendItem {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: 'Open Sans', sans-serif;
+    color: #555;
+  }
+  
+  .circle {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+  }
+  
+  .circle.available {
+    background-color: #d4fcd6;
+  }
+  
+  .circle.booked {
+    background-color: #e0e0e0;
+  }
+  
+  .circle.unknown {
+    background-color: #fcd6d6;
+  }
