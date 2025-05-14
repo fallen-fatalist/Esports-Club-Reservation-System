@@ -6,7 +6,17 @@ import MyButton from "../UI/button/MyButton/MyButton";
 import Legend from "../UI/legend/Legend";
 import Message from "./Message";
 
-const BookingForm = ({ date, setDate, time, setTime, duration, setDuration, onCheckAvailability, errorMessage,  infoMessage, bookingSuccess, selectedComputers, handleBookMultipleComputers, setSelectedComputers }) => (
+const BookingForm = ({
+  date, setDate, 
+  time, setTime, 
+  duration, setDuration, 
+  onCheckAvailability, errorMessage,  
+  infoMessage, bookingSuccess, 
+  selectedComputers, handleBookMultipleComputers, 
+  setSelectedComputers, handleAutoSelectComputers, 
+  autoSelectCount, setAutoSelectCount,
+  autoSelectCountInput, setAutoSelectCountInput }) => (
+
   <div className="reservation__container">
     <h3>PC Reservation</h3>
     <p>Select date and time</p>
@@ -27,7 +37,30 @@ const BookingForm = ({ date, setDate, time, setTime, duration, setDuration, onCh
     </div>
     <MyButton onClick={onCheckAvailability}>
       <span className="btn-txt">Check Availability</span>
+    </MyButton>
+    <div className="auto-selection">
+      <label htmlFor="autoSelectCount">Auto-select computers:</label>
+      <input
+        id="autoSelectCount"
+        type="number"
+        min="1"
+        value={autoSelectCountInput}
+        onChange={(e) => setAutoSelectCountInput(e.target.value)}
+        onBlur={() => {
+          const parsed = parseInt(autoSelectCountInput);
+          if (isNaN(parsed) || parsed < 1) {
+            setAutoSelectCount(1);
+            setAutoSelectCountInput("1");
+          } else {
+            setAutoSelectCount(parsed);
+          }
+        }}
+        className="auto-select-input"
+      />
+      <MyButton onClick={() => handleAutoSelectComputers(autoSelectCount)}>
+        Auto Select
       </MyButton>
+    </div>
     {errorMessage && <Message message={errorMessage} type="error" />}
     {infoMessage && <Message message={infoMessage} type="info" />}
     {bookingSuccess && (

@@ -20,6 +20,10 @@ const Booking = () => {
   const [infoMessage, setInfoMessage] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalComputerId, setModalComputerId] = useState(null);
+  const [autoSelectCount, setAutoSelectCount] = useState(1);
+  const [autoSelectCountInput, setAutoSelectCountInput] = useState("1");
+
+
 
   const { computers: fetchedComputers = [], loading, error } = useComputers();
   const { bookings, refetchBookings } = useBookings();
@@ -177,6 +181,12 @@ const Booking = () => {
     }
   };
 
+  const handleAutoSelectComputers = (count = 1) => {
+    const available = computers.filter((comp) => comp.status !== 'busy');
+    const autoSelected = available.slice(0, count).map((comp) => comp.id);
+    setSelectedComputers(autoSelected);
+  };
+
   const handleBookingSuccess = async () => {
     setBookingSuccess(true);
     setErrorMessage(null);
@@ -242,6 +252,11 @@ const Booking = () => {
           selectedComputers={selectedComputers}
           handleBookMultipleComputers={handleBookMultipleComputers}
           setSelectedComputers={setSelectedComputers}
+          autoSelectCount={autoSelectCount}
+          setAutoSelectCount={setAutoSelectCount}
+          handleAutoSelectComputers={handleAutoSelectComputers}
+          autoSelectCountInput={autoSelectCountInput}
+          setAutoSelectCountInput={setAutoSelectCountInput}
         />
 
         <div className="computers__container">
