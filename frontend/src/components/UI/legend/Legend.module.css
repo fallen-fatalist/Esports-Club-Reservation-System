@@ -25,9 +25,9 @@
   }
   
   .circle.booked {
-    background-color: #e0e0e0;
+    background-color: #fcd6d6;
   }
   
   .circle.unknown {
-    background-color: #fcd6d6;
+    background-color: #fff3cd;
   }

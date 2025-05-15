@@ -85,7 +85,7 @@ const ComputerDetails = ({ computer, bookings, date }) => {
       <div className="computer-specs">
         <h4>Specifications</h4>
         <ul className="specs-list">
-          {["cpu", "gpu", "ram", "ssd", "hdd", "monitor", "mouse", "keyboard", "headset", "mousepad"].map((spec) => (
+          {["cpu", "gpu", "ram", "monitor", "mouse", "keyboard", "headset", "mousepad"].map((spec) => (
             <li key={spec}>
               <strong>{spec.toUpperCase()}:</strong> {detailedComputer?.[spec] || "N/A"}
             </li>
