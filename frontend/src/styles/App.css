@@ -9,9 +9,16 @@
     justify-content: center;
 }
 
-.App {
-    width: 1440px;
+body {
+  font-family: 'Open Sans', sans-serif;
 }
+
+.App {
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+}
+
 
 .header {
   position: sticky;
@@ -22,7 +29,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  box-sizing: border-box;
   flex-direction: column;
   padding: 0 16px;
   background-color: #fafafa;
@@ -41,7 +47,6 @@
 }
 
 .navbar__logo {
-  font-family: 'Open Sans', sans-serif;
   font-weight: 400;
   font-size: 20px;
   line-height: 20px;
@@ -58,8 +63,6 @@
 }
 
 .navbar__links a {
-  font-family: 'Open Sans', sans-serif;
-  font-weight: 400;
   font-size: 20px;
   line-height: 20px;
   text-decoration: none;
@@ -115,7 +118,6 @@
   align-items: center;
   padding: 64px 0px 96px;
   gap: 64px;
-  box-sizing: border-box;
   isolation: isolate;
 }
 
@@ -130,7 +132,6 @@
   padding: 0px 32px;
   gap: 32px;
   isolation: isolate;
-  box-sizing: border-box;
 }
 
 .content {
@@ -148,7 +149,6 @@
   width: 768px;
   min-width: 768px;
   height: 144px;
-  font-family: 'Open Sans', sans-serif;
   font-style: normal;
   font-weight: 400;
   font-size: 50px;
@@ -164,7 +164,6 @@
   max-width: 1440px;
   height: 600px;
   margin: 0 auto;
-  box-sizing: border-box;
   isolation: isolate;
 }
 
@@ -175,13 +174,11 @@
   width: 768px;
   min-width: 768px;
   height: 144px;
-  font-family: 'Open Sans', sans-serif;
   font-style: normal;
   font-weight: 400;
   font-size: 50px;
   color: #555;
   margin: 0 auto;
-  box-sizing: border-box;
 }
 
 .auth__container {
@@ -194,7 +191,6 @@
   height: 300px;
   padding: 0px 32px;
   gap: 40px;
-  box-sizing: border-box;
 }
 
 
@@ -224,7 +220,6 @@
   max-width: 1440px;
   height: auto;
   margin: 0 auto;
-  box-sizing: border-box;
 }
 
 .booking__container {
@@ -235,7 +230,6 @@
   max-width: 1420px;
   gap: 2rem;
   margin: 0;
-  box-sizing: border-box;
   padding: 2rem;
 }
 
@@ -250,11 +244,9 @@
   background-color: #f9f9f9;
   border-right: 1px solid #ddd;
   min-height: 100vh;
-  box-sizing: border-box;
 }
 
 .reservation__container h3 {
-  font-family: 'Open Sans', sans-serif;
   font-style: normal;
   font-weight: 400;
   font-size: 28px;
@@ -264,7 +256,6 @@
 
 .reservation__container p,
 .computers__selection-count {
-  font-family: 'Open Sans', sans-serif;
   font-style: normal;
   font-weight: 400;
   font-size: 16px;
@@ -297,7 +288,6 @@
 .auto-selection label {
   font-size: 16px;
   color: #444;
-  font-family: 'Open Sans', sans-serif;
   text-align: center;
   padding: 10px;
 }
@@ -318,7 +308,6 @@
 }
 
 .btn-txt {
-  font-family: 'Open Sans', sans-serif;
   font-style: normal;
   font-size: 15px;
 }
@@ -349,7 +338,6 @@
 }
 
 .booking-success-banner p {
-  font-family: 'Open Sans', sans-serif;
   font-style: normal;
   font-size: 12px;
   display: flex;
@@ -361,19 +349,17 @@
 .computers__container {
   width: 75%;
   margin: 0 auto;
-  box-sizing: border-box;
   padding: 1rem;
-  border-left: 1px solid #ccc;
+  background-color: #f9f9f9;
+  border-left: 1px solid #ddd;
 }
 
 .icon__container {
   width: 100%;
   margin: 0 auto;
-  box-sizing: border-box;
 }
 
 .icon__container h3 {
-  font-family: 'Open Sans', sans-serif;
   font-weight: 400;
   font-size: 28px;
   color: #555;
@@ -399,7 +385,6 @@
   cursor: pointer;
   width: 100%;
   max-width: 250px;
-  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -487,11 +472,9 @@
   gap: 1rem;
   padding: 1rem;
   width: 100%;
-  box-sizing: border-box;
 }
 
 .booking-steps h3 {
-  font-family: 'Open Sans', sans-serif;
   font-style: normal;
   font-weight: 400;
   font-size: 28px;
@@ -502,12 +485,10 @@
 .computer-details {
   width: 100%;
   max-width: none;
-  box-sizing: border-box;
   overflow: hidden;
 }
 
 .computer-details h3 {
-  font-family: 'Open Sans', sans-serif;
   font-style: normal;
   font-weight: 400;
   font-size: 28px;
@@ -528,17 +509,14 @@
   font-size: 20px;
   margin-bottom: 10px;
   color: #555;
-  font-family: 'Open Sans', sans-serif;
   font-style: normal;
   text-align: left;
-  box-sizing: border-box;
 }
 
 .specs-list {
   list-style: none;
   font-size: 1rem;
   color: #555;
-  font-family: 'Open Sans', sans-serif;
   font-style: normal;
   text-align: left;
 }
@@ -549,116 +527,6 @@
 
 .specs-list li strong {
   color: #333;
-}
-
-.computer-schedule {
-  margin-top: 2rem;
-  border: 1px solid teal;
-  border-radius: 6px;
-  padding: 2rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  background-color: #fff;
-}
-
-.computer-schedule h4 {
-  font-size: 20px;
-  margin-bottom: 1rem;
-  color: #555;
-  font-family: 'Open Sans', sans-serif;
-  font-weight: 400;
-  text-align: left;
-}
-
-.schedule-timeline {
-  margin-bottom: 2rem;
-  position: relative;
-  overflow-x: auto;
-  overflow-y: hidden;
-  white-space: nowrap;
-  padding-bottom: 1rem;
-}
-
-.timeline-hours {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.875rem;
-  color: #777;
-  margin-bottom: 0.5rem;
-}
-
-.timeline-hour {
-  flex: 0 0 80px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-.timeline-hour span {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  font-size: 0.75rem;
-  color: #555;
-  display: block;
-  text-align: center;
-  padding: 0 2px;
-  background-color: #fff;
-  z-index: 1;
-}
-
-.timeline-hour::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  height: 100%;
-  width: 1px;
-  background-color: #ccc;
-  opacity: 0.5;
-}
-
-.timeline-hour.current-hour::after {
-  background-color: teal;
-  width: 2px;
-  opacity: 1;
-}
-
-.timeline-hour.current-hour span {
-  background-color: teal;
-  color: white;
-  font-weight: bold;
-  border-radius: 4px;
-  padding: 2px;
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0% { background-color: teal; }
-  50% { background-color: #00bfbf; }
-  100% { background-color: teal; }
-}
-
-.timeline-bookings {
-  position: relative;
-  height: 30px;
-  background-color: #f1f1f1;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.timeline-booking {
-  position: absolute;
-  top: 0;
-  height: 100%;
-  background: linear-gradient(90deg, #008080, #20b2aa);
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  padding-left: 5px;
-  color: #555;
-  font-size: 0.75rem;
-  white-space: nowrap;
 }
 
 
@@ -677,7 +545,6 @@
   justify-content: space-between;
   padding: 0.5rem 0;
   border-bottom: 1px solid #e0e0e0;
-  font-family: 'Open Sans', sans-serif;
   font-size: 0.875rem;
 }
 
@@ -701,14 +568,12 @@
 }
 
 .confirmation__container h3 {
-  font-family: 'Open Sans', sans-serif;
   font-style: normal;
   font-weight: 400;
   font-size: 26px;
 }
 
 .confirmation__container p {
-  font-family: 'Open Sans', sans-serif;
   font-style: normal;
   font-weight: 400;
   font-size: 16px;
@@ -724,7 +589,6 @@
   align-items: flex-start;
   margin-top: 1rem;
   border-radius: 6px;
-  font-family: 'Open Sans', sans-serif;
   color: #555;
 }
 
@@ -754,7 +618,6 @@
 }
 
 .no-active-session h3 {
-  font-family: 'Open Sans', sans-serif;
   text-align: left; 
   margin: 0;
   padding: 0;
@@ -767,7 +630,6 @@
   display: flex;
   justify-content: space-between;
   padding: 0.5rem 0;
-  font-family: 'Open Sans', sans-serif;
   font-size: 0.875rem;
   font-style: italic;
 }

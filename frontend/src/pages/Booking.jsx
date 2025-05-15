@@ -12,13 +12,18 @@ const excludedStatuses = ['pending', 'under repair', 'not working', 'unknown'];
 
 const getCurrentTimeString = () => {
   const now = new Date();
-  now.setMinutes(now.getMinutes() + 5);
+  now.setMinutes(now.getMinutes() + 1); 
   const roundedMinutes = Math.ceil(now.getMinutes() / 5) * 5;
   now.setMinutes(roundedMinutes);
   now.setSeconds(0);
   now.setMilliseconds(0);
   const hours = String(now.getHours()).padStart(2, '0');
   const mins = String(now.getMinutes()).padStart(2, '0');
+
+  if (hours === '00' && parseInt(mins) < 5) {
+    return `00:05`;
+  }
+  
   return `${hours}:${mins}`;
 };
 
@@ -27,8 +32,16 @@ const isDisplayableStatus = (status) => {
 };
 
 const Booking = () => {
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [time, setTime] = useState("");
+  const getCurrentDate = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  
+  const [date, setDate] = useState(getCurrentDate());
+  const [time, setTime] = useState(getCurrentTimeString());
   const [duration, setDuration] = useState(60);
   const [selectedComputers, setSelectedComputers] = useState([]);
   const [bookingSuccess, setBookingSuccess] = useState(false);
@@ -47,11 +60,18 @@ const Booking = () => {
 
   const validateDateTime = useCallback(() => {
     const timeToUse = time || getCurrentTimeString();
-    const bookingStart = dateUtils.parseDate(date, timeToUse);
-    const nowPlusBuffer = new Date(Date.now() + 2 * 60 * 1000);
+    const today = getCurrentDate(); 
 
+    if (date < today) {
+      setErrorMessage(`Cannot book in the past. Please select today's date (${today})`);
+      return false;
+    }
+    
+    const bookingStart = dateUtils.parseDate(date, timeToUse);
+    const nowPlusBuffer = new Date();
+    
     if (bookingStart <= nowPlusBuffer) {
-      const futureTime = new Date(Date.now() + 15 * 60 * 1000);
+      const futureTime = new Date(Date.now() + 1 * 60 * 1000);
       const hours = String(futureTime.getHours()).padStart(2, '0');
       const minutes = String(Math.ceil(futureTime.getMinutes() / 5) * 5).padStart(2, '0');
       setErrorMessage(`Cannot book in the past. Choose time after ${hours}:${minutes}`);
@@ -67,12 +87,19 @@ const Booking = () => {
     return true;
   }, [date, time, duration]);
 
+  
   const checkAvailability = useCallback(() => {
+    const today = getCurrentDate(); 
+    
+    if (date < today) {
+      setDate(today);
+    }
+    
     if (!validateDateTime()) return;
     const timeToUse = time || getCurrentTimeString();
 
     const updatedList = fetchedComputers
-      .filter(c => !excludedStatuses.includes(c.status)) // Фильтруем сразу
+      .filter(c => !excludedStatuses.includes(c.status))
       .map((c) => {
         const available = isComputerAvailable(c.id, bookings, date, timeToUse, duration);
         return {
@@ -89,6 +116,8 @@ const Booking = () => {
   }, [fetchedComputers, bookings, date, time, duration, validateDateTime]);
 
   useEffect(() => {
+    setDate(getCurrentDate());
+    
     if (fetchedComputers.length > 0 && bookings.length > 0) {
       checkAvailability();
     }

@@ -19,7 +19,6 @@ const Navbar = (props) => {
         <div className="navbar__links">
           <Link to="/about">About</Link>
           <Link to="/booking">Booking</Link>
-          <Link to="/calendar">Calendar</Link>
 
           {!isAuth && (
             <>
