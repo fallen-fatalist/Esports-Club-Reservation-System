@@ -1,0 +1,38 @@
+.calendar-container {
+  padding: 20px;
+  font-family: sans-serif;
+}
+
+.booking-grid {
+  display: grid;
+  grid-template-columns: 80px repeat(7, 1fr);
+  gap: 4px;
+  margin-top: 20px;
+}
+
+.grid-header, .grid-row {
+  display: contents;
+}
+
+.time-cell {
+  background-color: #f0f0f0;
+  padding: 8px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.day-cell, .slot-cell {
+  padding: 10px;
+  text-align: center;
+  border: 1px solid #ccc;
+}
+
+.slot-cell.free {
+  background-color: #e0ffe0;
+  cursor: pointer;
+}
+
+.slot-cell.booked {
+  background-color: #ffc0c0;
+  cursor: not-allowed;
+}
