@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import useComputers from "../hooks/useComputers";
 import useBookings from "../hooks/useBookings";
 import ComputerList from "../components/BookingSystem/ComputerList";
@@ -6,7 +6,7 @@ import bookingService from "../services/bookingService";
 import isComputerAvailable from "../components/utils/isComputerAvailable";
 import dateUtils from "../components/utils/dateUtils";
 import ComputerDetailsModal from "../components/BookingSystem/ComputerDetailsModal";
-import BookingForm from "../components/BookingSystem/BookingForm";
+import BookingForm from "../components/BookingSystem/BookingForm";  
 
 const Booking = () => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -23,8 +23,6 @@ const Booking = () => {
   const [autoSelectCount, setAutoSelectCount] = useState(1);
   const [autoSelectCountInput, setAutoSelectCountInput] = useState("1");
 
-
-
   const { computers: fetchedComputers = [], loading, error } = useComputers();
   const { bookings, refetchBookings } = useBookings();
   const [computers, setComputers] = useState([]);
@@ -35,8 +33,8 @@ const Booking = () => {
       setFilteredComputers(fetchedComputers);
     }
   }, [fetchedComputers]);
-
-  const validateDateTime = () => {
+  
+  const validateDateTime = useCallback(() => {
     try {
       const bookingStart = dateUtils.parseDate(date, time);
       const now = new Date();
@@ -56,9 +54,9 @@ const Booking = () => {
       setErrorMessage(error.message);
       return false;
     }
-  };
+  }, [date, time, duration]);
 
-  const handleAvailabilityCheck = () => {
+  const checkAvailability = useCallback(() => {
     if (!validateDateTime()) return;
 
     const updatedList = computers.map((c) => {
@@ -73,18 +71,23 @@ const Booking = () => {
     setIsFiltered(true);
     setSelectedComputers([]);
     setErrorMessage(null);
-  };
+  }, [computers, bookings, date, time, duration, validateDateTime]);
 
-  // Changed: Separated selection logic from modal opening
+  useEffect(() => {
+    if (computers.length > 0) {
+      checkAvailability();
+    }
+  }, [computers.length, checkAvailability]);
+
+
+
   const handleComputerClick = (computerId) => {
-    // Check if computer is available for booking
     const computer = computersToDisplay.find(c => c.id === computerId);
     if (computer && computer.status === 'busy') {
-      return; // Don't allow selection of busy computers
+      return; 
     }
     
     setSelectedComputers((prev) => {
-      // If computer is already selected - remove it, otherwise - add it
       if (prev.includes(computerId)) {
         return prev.filter((id) => id !== computerId);
       } else {
@@ -94,7 +97,6 @@ const Booking = () => {
     setErrorMessage(null);
   };
 
-  // New method: Open modal window to view computer details
   const handleViewComputerDetails = (computerId) => {
     setModalComputerId(computerId);
     setModalVisible(true);
@@ -182,7 +184,7 @@ const Booking = () => {
   };
 
   const handleAutoSelectComputers = (count = 1) => {
-    const available = computers.filter((comp) => comp.status !== 'busy');
+    const available = computersToDisplay.filter((comp) => comp.status === 'available');
     const autoSelected = available.slice(0, count).map((comp) => comp.id);
     setSelectedComputers(autoSelected);
   };
@@ -245,7 +247,6 @@ const Booking = () => {
           setTime={setTime}
           duration={duration}
           setDuration={setDuration}
-          onCheckAvailability={handleAvailabilityCheck}
           errorMessage={errorMessage}
           infoMessage={infoMessage}
           bookingSuccess={bookingSuccess}
@@ -260,7 +261,6 @@ const Booking = () => {
         />
 
         <div className="computers__container">
-
           <ComputerList
             computers={computersToDisplay}
             onComputerClick={handleComputerClick}
