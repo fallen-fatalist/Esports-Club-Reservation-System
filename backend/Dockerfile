@@ -10,7 +10,6 @@ FROM alpine:latest as runner
 
 WORKDIR /app 
 
-# Copy binary
 COPY --from=builder /app/bin /app
 
 EXPOSE 8080

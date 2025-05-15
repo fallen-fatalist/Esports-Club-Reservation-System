@@ -41,9 +41,9 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("/api/computers/{id}", s.HandleComputer)
 	mux.HandleFunc("/api/computers/status", s.HandleComputerStatuses)
 	mux.HandleFunc("/api/computers/{id}/status", s.HandleComputerStatus)
+	mux.HandleFunc("/api/computers/{id}/bookings", s.HandleComputerBookings)
 
 	/* Bookings */
-	mux.HandleFunc("/api/bookings/{id}", s.HandleComputerBookings)
 	mux.HandleFunc("/api/bookings", s.HandleBookings)
 	mux.HandleFunc("/api/bookings/pending", s.HandlePendingBookings)
 	mux.HandleFunc("/api/bookings/active", s.HandleActiveBookings)

@@ -251,53 +251,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/bookings/{id}": {
-            "get": {
-                "description": "Returns a list of bookings for the specified computer ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Bookings"
-                ],
-                "summary": "Get bookings for a specific computer with time format \"2006-01-02T15:04:05Z07:00\"",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Computer ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "List of bookings for the computer",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/entities.Booking"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid computer ID",
-                        "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
-                        }
-                    }
-                }
-            }
-        },
         "/api/bookings/{id}/left": {
             "get": {
                 "description": "Returns the left time for the specified computer ID",
@@ -526,6 +479,53 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Computer not found",
+                        "schema": {
+                            "$ref": "#/definitions/server.JSONAnswer"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/server.JSONAnswer"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/computers/{id}/bookings": {
+            "get": {
+                "description": "Returns a list of bookings for the specified computer ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Get bookings for a specific computer with time format \"2006-01-02T15:04:05Z07:00\"",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Computer ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of bookings for the computer",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entities.Booking"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid computer ID",
                         "schema": {
                             "$ref": "#/definitions/server.JSONAnswer"
                         }
