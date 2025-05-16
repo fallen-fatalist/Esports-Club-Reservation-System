@@ -1,9 +1,8 @@
-package httpserver
+package handlers
 
 import (
 	"encoding/json"
 	"esports_club_booking/internal/entities"
-	"esports_club_booking/internal/server"
 	"esports_club_booking/internal/service"
 	"log/slog"
 	"net/http"
@@ -18,14 +17,14 @@ import (
 // @Success 200 {array} entities.Booking
 // @Failure 500 {object} server.JSONAnswer "Internal server error"
 // @Router /api/bookings [get]
-func (s *Server) getBookings(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) getBookings(w http.ResponseWriter, r *http.Request) {
 	bookings, err := s.service.BookingService.GetAllBookings()
 	if err != nil {
 		slog.Error("Error fetching bookings:", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	} else if len(bookings) == 0 {
-		jsonPayload := server.JSONAnswer{
+		jsonPayload := JSONAnswer{
 			Message: "No bookings",
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -53,7 +52,7 @@ func (s *Server) getBookings(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} server.JSONAnswer "Invalid request body"
 // @Failure 500 {object} server.JSONAnswer "Internal server error"
 // @Router /api/bookings [post]
-func (s *Server) postBookings(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) postBookings(w http.ResponseWriter, r *http.Request) {
 	var booking entities.Booking
 
 	// Parse the JSON body into the struct
@@ -69,7 +68,7 @@ func (s *Server) postBookings(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		} else {
-			jsonPayload := server.JSONAnswer{
+			jsonPayload := JSONAnswer{
 				Message: err.Error(),
 			}
 
@@ -85,7 +84,7 @@ func (s *Server) postBookings(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	jsonPayload := server.JSONAnswer{
+	jsonPayload := JSONAnswer{
 		Message: "Booking created successfully",
 		ID:      id,
 	}
@@ -101,7 +100,7 @@ func (s *Server) postBookings(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
-func (s *Server) HandleBookings(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) HandleBookings(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		s.getBookings(w, r)
@@ -124,11 +123,11 @@ func (s *Server) HandleBookings(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} server.JSONAnswer "Invalid computer ID"
 // @Failure 500 {object} server.JSONAnswer "Internal server error"
 // @Router /api/bookings/{id} [get]
-func (s *Server) getComputerBookings(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) getComputerBookings(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		jsonPayload := server.JSONAnswer{
+		jsonPayload := JSONAnswer{
 			Message: "Invalid computer ID",
 		}
 		w.WriteHeader(http.StatusBadRequest)
@@ -147,7 +146,7 @@ func (s *Server) getComputerBookings(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	} else if len(bookings) == 0 {
-		jsonPayload := server.JSONAnswer{
+		jsonPayload := JSONAnswer{
 			Message: "No bookings",
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -166,7 +165,7 @@ func (s *Server) getComputerBookings(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
-func (s *Server) HandleComputerBookings(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) HandleComputerBookings(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		s.getComputerBookings(w, r)
@@ -186,7 +185,7 @@ func (s *Server) HandleComputerBookings(w http.ResponseWriter, r *http.Request) 
 // @Success 200 {array} entities.Booking "List of finished bookings"
 // @Failure 500 {object} server.JSONAnswer "Internal server error"
 // @Router /api/bookings/finished [get]
-func (s *Server) getFinishedBookings(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) getFinishedBookings(w http.ResponseWriter, r *http.Request) {
 	bookings, err := s.service.BookingService.GetFinishedBookings()
 	if err != nil {
 		slog.Error("Error fetching finished bookings:", slog.Any("error", err))
@@ -201,7 +200,7 @@ func (s *Server) getFinishedBookings(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
-func (s *Server) HandleFinishedBookings(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) HandleFinishedBookings(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		s.getFinishedBookings(w, r)
@@ -219,7 +218,7 @@ func (s *Server) HandleFinishedBookings(w http.ResponseWriter, r *http.Request) 
 // @Success 200 {array} entities.Booking "List of pending bookings"
 // @Failure 500 {object} server.JSONAnswer "Internal server error"
 // @Router /api/bookings/pending [get]
-func (s *Server) getPendingBookings(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) getPendingBookings(w http.ResponseWriter, r *http.Request) {
 	bookings, err := s.service.BookingService.GetPendingBookings()
 	if err != nil {
 		slog.Error("Error fetching pending bookings:", slog.Any("error", err))
@@ -234,7 +233,7 @@ func (s *Server) getPendingBookings(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) HandlePendingBookings(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) HandlePendingBookings(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		s.getPendingBookings(w, r)
@@ -252,7 +251,7 @@ func (s *Server) HandlePendingBookings(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {array} entities.Booking "List of active bookings"
 // @Failure 500 {object} server.JSONAnswer "Internal server error"
 // @Router /api/bookings/active [get]
-func (s *Server) getActiveBookings(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) getActiveBookings(w http.ResponseWriter, r *http.Request) {
 	activeBookings, err := s.service.BookingService.GetActiveBookings()
 	if err != nil {
 		slog.Error("Error fetching active bookings:", slog.Any("error", err))
@@ -268,7 +267,7 @@ func (s *Server) getActiveBookings(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (s *Server) HandleActiveBookings(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) HandleActiveBookings(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		s.getActiveBookings(w, r)
@@ -286,7 +285,7 @@ func (s *Server) HandleActiveBookings(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {array} entities.Booking "List of cancelled bookings"
 // @Failure 500 {object} server.JSONAnswer "Internal server error"
 // @Router /api/bookings/cancelled [get]
-func (s *Server) getCancelledBookings(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) getCancelledBookings(w http.ResponseWriter, r *http.Request) {
 	cancelledBookings, err := s.service.BookingService.GetCancelledBookings()
 	if err != nil {
 		slog.Error("Error fetching cancelled bookings:", slog.Any("error", err))
@@ -302,7 +301,7 @@ func (s *Server) getCancelledBookings(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (s *Server) HandleCancelledBookings(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) HandleCancelledBookings(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		s.getCancelledBookings(w, r)
@@ -322,7 +321,7 @@ func (s *Server) HandleCancelledBookings(w http.ResponseWriter, r *http.Request)
 // @Failure 400 {object} server.JSONAnswer "Invalid computer ID"
 // @Failure 500 {object} server.JSONAnswer "Internal server error"
 // @Router /api/bookings/{id}/left [get]
-func (s *Server) HandleComputerLeftTime(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) HandleComputerLeftTime(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		idStr := r.PathValue("id")
@@ -357,7 +356,7 @@ func (s *Server) HandleComputerLeftTime(w http.ResponseWriter, r *http.Request) 
 // @Success 200 {array} entities.ComputerOccupiedLeftTime "List of computers left time"
 // @Failure 500 {object} server.JSONAnswer "Internal server error"
 // @Router /api/bookings/computers-left-time [get]
-func (s *Server) HandleComputersLeftTime(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) HandleComputersLeftTime(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		computersLeftTime, err := s.service.BookingService.GetComputersLeftOccupiedTime()

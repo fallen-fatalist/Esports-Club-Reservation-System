@@ -1,0 +1,75 @@
+package config
+
+import (
+	"fmt"
+	"os"
+	"strconv"
+	"time"
+)
+
+type (
+	Config struct {
+		Server    Server
+		DataBase  DataBase
+		JWTConfig JWTConfig
+	}
+
+	Server struct {
+		Adress string
+		Port   string
+	}
+
+	DataBase struct {
+		User     string
+		Password string
+		Host     string
+		Port     string
+		Name     string
+	}
+
+	JWTConfig struct {
+		Secret     string
+		Expiration time.Duration
+	}
+)
+
+func NewConfig() *Config {
+	return &Config{
+		Server: Server{
+			Port: getEnvStr("PORT", "8080"),
+		},
+		DataBase: DataBase{
+			User:     getEnvStr("DB_USER", "user"),
+			Password: getEnvStr("DB_PASSWORD", "password"),
+			Host:     getEnvStr("DB_HOST", "localhost"),
+			Port:     getEnvStr("DB_PORT", "5432"),
+			Name:     getEnvStr("DB_NAME", "booking_service"),
+		},
+		JWTConfig: JWTConfig{
+			Secret:     getEnvStr("JWT_SECRET", "supersecretkey"),
+			Expiration: time.Duration(getEnvInt64("JWT_EXPIRATION", 60*60)) * time.Second, // default: 1 hour
+		},
+	}
+}
+
+func (d *DataBase) DSN() string {
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		d.User, d.Password, d.Host, d.Port, d.Name)
+}
+
+func getEnvStr(key, fallback string) string {
+	if val, ok := os.LookupEnv(key); ok {
+		return val
+	}
+	return fallback
+}
+
+func getEnvInt64(key string, fallback int64) int64 {
+	if val, ok := os.LookupEnv(key); ok {
+		v, err := strconv.ParseInt(val, 10, 64)
+		if err == nil {
+			return v
+		}
+	}
+	return fallback
+}

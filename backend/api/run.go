@@ -1,13 +1,13 @@
 package api
 
 import (
-	"database/sql"
-	"esports_club_booking/internal/repository"
+	"esports_club_booking/internal/auth"
+	"esports_club_booking/internal/config"
 	"esports_club_booking/internal/repository/postgres"
-	"esports_club_booking/internal/server"
-	httpserver "esports_club_booking/internal/server/http"
 	"esports_club_booking/internal/service"
 	"esports_club_booking/internal/service/implementation"
+	"esports_club_booking/internal/transport/httpserver"
+	"esports_club_booking/internal/transport/httpserver/handlers"
 	"fmt"
 	"log"
 	"log/slog"
@@ -16,68 +16,54 @@ import (
 	"time"
 )
 
-var (
-	db   *sql.DB
-	err  error
-	port string
-)
-
 func Run() {
+	// Load the configuration
+	cfg := config.NewConfig()
+
+	// Initialize the logger
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	// Database connection
-	db, err := postgres.OpenDB()
+	db, err := postgres.OpenDB(cfg.DataBase)
 	if err != nil {
 		log.Fatal(err)
 	}
 	slog.Info("Successfully connected to database")
 
 	// Repositories init
-	var userRepository repository.UserRepository
-	var computerRepository repository.ComputerRepository
-	var bookingRepository repository.BookingRepository
-	var packageRepository repository.PackageRepository
 
-	userRepository, _ = postgres.NewUserRepository(db)
-	computerRepository, _ = postgres.NewComputerRepository(db)
-	bookingRepository, _ = postgres.NewBookingRepository(db)
-	packageRepository, _ = postgres.NewPackageRepository(db)
+	userRepository, _ := postgres.NewUserRepository(db)
+	computerRepository, _ := postgres.NewComputerRepository(db)
+	bookingRepository, _ := postgres.NewBookingRepository(db)
+	packageRepository, _ := postgres.NewPackageRepository(db)
 
 	// Services init
-	var userService service.UserService
-	var computerService service.ComputerService
-	var bookingService service.BookingService
-	var packageService service.PackageService
-
-	userService, _ = implementation.NewUserService(userRepository)
-	computerService, _ = implementation.NewComputerService(computerRepository)
-	bookingService, _ = implementation.NewBookingService(bookingRepository)
-	packageService, _ = implementation.NewPackageService(packageRepository)
-	service, _ := service.NewService(
+	jwtManager := auth.NewJWTManager(cfg.JWTConfig.Secret, cfg.JWTConfig.Expiration)
+	userService, _ := implementation.NewUserService(userRepository, jwtManager)
+	computerService, _ := implementation.NewComputerService(computerRepository)
+	bookingService, _ := implementation.NewBookingService(bookingRepository)
+	packageService, _ := implementation.NewPackageService(packageRepository)
+	svc := service.NewService(
 		computerService,
 		userService,
 		bookingService,
 		packageService,
 	)
 
-	// Server init
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+	mux := http.NewServeMux()
+	handlers := handlers.NewHandler(svc, logger, jwtManager)
+	handlers.RegisterEndpoints(mux)
+
+	address := fmt.Sprintf("%s:%s", cfg.Server.Adress, cfg.Server.Port)
+	srv := httpserver.NewServer(mux, logger, address)
+
+	turnOnTimers(*svc)
+
+	if err := srv.Start(); err != nil {
+		logger.Error("Failed to start server", slog.Any("error", err))
+		return
 	}
 
-	var app server.Server
-	var logger *slog.Logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
-	app = httpserver.NewServer(
-		service,
-		logger,
-	)
-
-	turnOnTimers(*service)
-
-	mux := app.Routes()
-
-	slog.Info("Starting server on: " + port + " port")
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), mux))
 }
 
 func turnOnTimers(service service.Service) {

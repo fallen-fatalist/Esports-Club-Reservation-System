@@ -1,9 +1,8 @@
-package httpserver
+package handlers
 
 import (
 	"encoding/json"
 	"esports_club_booking/internal/entities"
-	"esports_club_booking/internal/server"
 	"esports_club_booking/internal/service/implementation"
 	"log/slog"
 	"net/http"
@@ -17,7 +16,7 @@ import (
 // @Success 200 {array} entities.Computer "List of computers"
 // @Failure 500 {object} server.JSONAnswer "Internal server error"
 // @Router /api/computers [get]
-func (s *Server) getComputers(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) getComputers(w http.ResponseWriter, r *http.Request) {
 	computerSpecs, err := s.service.ComputerService.GetAllComputers()
 	if err != nil {
 		slog.Error("Error fetching computer specs:", err)
@@ -44,7 +43,7 @@ func (s *Server) getComputers(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} server.JSONAnswer "Invalid request body"
 // @Failure 500 {object} server.JSONAnswer "Internal server error"
 // @Router /api/computers [post]
-func (s *Server) postComputers(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) postComputers(w http.ResponseWriter, r *http.Request) {
 	var computer entities.Computer
 
 	// Parse the JSON body into the struct
@@ -61,7 +60,7 @@ func (s *Server) postComputers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonPayload := server.JSONAnswer{
+	jsonPayload := JSONAnswer{
 		Message: "Computer created successfully",
 		ID:      id,
 	}
@@ -77,7 +76,7 @@ func (s *Server) postComputers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) HandleComputers(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) HandleComputers(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		s.getComputers(w, r)
@@ -101,11 +100,11 @@ func (s *Server) HandleComputers(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} server.JSONAnswer "Computer not found"
 // @Failure 500 {object} server.JSONAnswer "Internal server error"
 // @Router /api/computers/{id} [get]
-func (s *Server) getComputer(w http.ResponseWriter, r *http.Request, id int64) {
+func (s *Handler) getComputer(w http.ResponseWriter, r *http.Request, id int64) {
 	computer, err := s.service.ComputerService.GetComputer(id)
 	if err != nil {
 		if err == implementation.ErrComputerNotFound {
-			jsonPayload := server.JSONAnswer{
+			jsonPayload := JSONAnswer{
 				Message: "Computer not found",
 				ID:      id,
 			}
@@ -143,11 +142,11 @@ func (s *Server) getComputer(w http.ResponseWriter, r *http.Request, id int64) {
 // @Failure 404 {object} server.JSONAnswer "Computer not found"
 // @Failure 500 {object} server.JSONAnswer "Internal server error"
 // @Router /api/computers/{id} [delete]
-func (s *Server) deleteComputer(w http.ResponseWriter, r *http.Request, id int64) {
+func (s *Handler) deleteComputer(w http.ResponseWriter, r *http.Request, id int64) {
 	err := s.service.ComputerService.DeleteComputer(id)
 	if err != nil {
 		if err == implementation.ErrComputerNotFound {
-			jsonPayload := server.JSONAnswer{
+			jsonPayload := JSONAnswer{
 				Message: "Computer not found",
 				ID:      id,
 			}
@@ -170,7 +169,7 @@ func (s *Server) deleteComputer(w http.ResponseWriter, r *http.Request, id int64
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (s *Server) HandleComputer(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) HandleComputer(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
@@ -200,7 +199,7 @@ func (s *Server) HandleComputer(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {array} entities.ComputerStatus "List of computer statuses"
 // @Failure 500 {object} server.JSONAnswer "Internal server error"
 // @Router /api/computers/statuses [get]
-func (s *Server) HandleComputerStatuses(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) HandleComputerStatuses(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", "GET")
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -231,7 +230,7 @@ func (s *Server) HandleComputerStatuses(w http.ResponseWriter, r *http.Request) 
 // @Failure 404 {object} server.JSONAnswer "Computer not found"
 // @Failure 500 {object} server.JSONAnswer "Internal server error"
 // @Router /api/computers/{id}/status [get]
-func (s *Server) HandleComputerStatus(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) HandleComputerStatus(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", "GET")
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -248,7 +247,7 @@ func (s *Server) HandleComputerStatus(w http.ResponseWriter, r *http.Request) {
 	status, err := s.service.ComputerService.GetComputerStatus(id)
 	if err != nil {
 		if err == implementation.ErrComputerNotFound {
-			jsonPayload := server.JSONAnswer{
+			jsonPayload := JSONAnswer{
 				Message: "Computer not found",
 				ID:      id,
 			}

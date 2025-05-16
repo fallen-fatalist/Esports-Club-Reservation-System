@@ -3,7 +3,7 @@ package service
 import (
 	"errors"
 	"esports_club_booking/internal/entities"
-	"log"
+	"esports_club_booking/internal/transport/dto"
 )
 
 type Service struct {
@@ -11,6 +11,20 @@ type Service struct {
 	UserService     UserService
 	BookingService  BookingService
 	PackageService  PackageService
+}
+
+func NewService(
+	ComputerService ComputerService,
+	UserService UserService,
+	BookingService BookingService,
+	PackageService PackageService,
+) *Service {
+	return &Service{
+		ComputerService: ComputerService,
+		UserService:     UserService,
+		BookingService:  BookingService,
+		PackageService:  PackageService,
+	}
 }
 
 type ComputerService interface {
@@ -27,7 +41,8 @@ type UserService interface {
 	GetUser(int64) (*entities.User, error)
 	CreateUser(*entities.User) (int64, error)
 	//AuthUser()
-	//RegisterUser()
+	Register(userDTO dto.RegisterUser) (int64, error)
+	Login(userDTO dto.LoginUser) (string, error)
 	//FillBalance()
 
 }
@@ -52,29 +67,6 @@ type PackageService interface {
 	CreatePackage(*entities.Package) (int64, error)
 	UpdatePackage(*entities.Package) (int64, error)
 	DeletePackage(int64) error
-}
-
-func NewService(
-	ComputerService ComputerService,
-	UserService UserService,
-	BookingService BookingService,
-	PackageService PackageService,
-) (*Service, error) {
-	if ComputerService == nil {
-		log.Fatal("Nil computer service provided to general service")
-	} else if UserService == nil {
-		log.Fatal("Nil user service provided to general service")
-	} else if BookingService == nil {
-		log.Fatal("Nil booking service provided to general service")
-	} else if PackageService == nil {
-		log.Fatal("Nil package service provided to general service")
-	}
-	return &Service{
-		ComputerService: ComputerService,
-		UserService:     UserService,
-		BookingService:  BookingService,
-		PackageService:  PackageService,
-	}, nil
 }
 
 var (

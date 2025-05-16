@@ -10,6 +10,13 @@ type User struct {
 	CreatedAt string `json:"created_at"`
 }
 
+type UserCredentials struct {
+	ID             int
+	Email          string
+	HashedPassword string
+	Role           string // если роль используется при авторизации
+}
+
 // user_id SERIAL PRIMARY KEY,
 // login VARCHAR(255) UNIQUE NOT NULL,
 // email VARCHAR(255) UNIQUE NOT NULL,
