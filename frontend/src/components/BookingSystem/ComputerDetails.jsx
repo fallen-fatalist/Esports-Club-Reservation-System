@@ -81,8 +81,8 @@ const ComputerDetails = ({ computer, bookings, date }) => {
 
   return (
     <div className="computer-details">
+      <TimelineSchedule bookings={computerBookings} date={selectedDate} />
       <h3>Computer Info</h3>
-
       <div className="computer-specs">
         <h4>Specifications</h4>
         <ul className="specs-list">
@@ -97,7 +97,6 @@ const ComputerDetails = ({ computer, bookings, date }) => {
       <div className="computer-schedule">
         {computerBookings.length > 0 ? (
           <div className="schedule-timeline">
-            <TimelineSchedule bookings={computerBookings} date={selectedDate} />
             <div className="timeline-bookings">
               {computerBookings.map((booking, i) => {
                 const start = new Date(booking.start_time);
