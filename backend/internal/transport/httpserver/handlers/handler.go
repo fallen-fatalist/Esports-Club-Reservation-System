@@ -21,20 +21,20 @@ func NewHandler(svc *service.Service, logger *slog.Logger, jwtMng auth.JWTManage
 
 func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	/* Computers */
-	mux.HandleFunc("/computers", auth.WithAuth(h.jwtMng, allRoles, h.HandleComputers))
-	mux.HandleFunc("/computers/{id}", auth.WithAuth(h.jwtMng, allRoles, h.HandleComputer))
-	mux.HandleFunc("/computers/status", auth.WithAuth(h.jwtMng, allRoles, h.HandleComputerStatuses))
-	mux.HandleFunc("/computers/{id}/status", auth.WithAuth(h.jwtMng, allRoles, h.HandleComputerStatus))
+	mux.HandleFunc("/computers", h.HandleComputers)
+	mux.HandleFunc("/computers/{id}", h.HandleComputer)
+	mux.HandleFunc("/computers/status", h.HandleComputerStatuses)
+	mux.HandleFunc("/computers/{id}/status", h.HandleComputerStatus)
 
 	/* Bookings */
-	mux.HandleFunc("/bookings/{id}", auth.WithAuth(h.jwtMng, allRoles, h.HandleComputerBookings))
-	mux.HandleFunc("/bookings", auth.WithAuth(h.jwtMng, allRoles, h.HandleBookings))
-	mux.HandleFunc("/bookings/pending", auth.WithAuth(h.jwtMng, allRoles, h.HandlePendingBookings))
-	mux.HandleFunc("/bookings/active", auth.WithAuth(h.jwtMng, allRoles, h.HandleActiveBookings))
-	mux.HandleFunc("/bookings/finished", auth.WithAuth(h.jwtMng, allRoles, h.HandleFinishedBookings))
-	mux.HandleFunc("/bookings/cancelled", auth.WithAuth(h.jwtMng, allRoles, h.HandleCancelledBookings))
-	mux.HandleFunc("/bookings/left", auth.WithAuth(h.jwtMng, allRoles, h.HandleComputersLeftTime))
-	mux.HandleFunc("/bookings/{id}/left", auth.WithAuth(h.jwtMng, allRoles, h.HandleComputerLeftTime))
+	mux.HandleFunc("/bookings/{id}", h.HandleComputerBookings)
+	mux.HandleFunc("/bookings", h.HandleBookings)
+	mux.HandleFunc("/bookings/pending", h.HandlePendingBookings)
+	mux.HandleFunc("/bookings/active", h.HandleActiveBookings)
+	mux.HandleFunc("/bookings/finished", h.HandleFinishedBookings)
+	mux.HandleFunc("/bookings/cancelled", h.HandleCancelledBookings)
+	mux.HandleFunc("/bookings/left", h.HandleComputersLeftTime)
+	mux.HandleFunc("/bookings/{id}/left", h.HandleComputerLeftTime)
 
 	//mux.HandleFunc("/api/users", s.GetUsers)
 	// mux.Handle("/api/packages", s.GetAllPackages)

@@ -36,7 +36,7 @@ const useComputers = () => {
         setComputers(formatted);
       } catch (err) {
         console.error(err);
-        setError('Cannot load computer data');
+        setError('Cannot load computers data');
       } finally {
         setLoading(false);
       }
