@@ -1,9 +1,10 @@
-
 .schedule-container {
   font-family: Arial, sans-serif;
-  margin: 0;
   padding: 20px;
   background-color: #f8f8f8;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .date-container {
@@ -15,9 +16,34 @@
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
+.date-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.date-navigation button {
+  background-color: #9c2626;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.date-navigation button:hover {
+  background-color: #7a1d1d;
+}
+
 .current-date {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: bold;
+  padding: 0 8px;
   color: #333;
 }
 
@@ -27,6 +53,8 @@
   background-color: white;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   border-radius: 4px;
+  position: relative;
+  border: 1px solid #ddd;
 }
 
 .timeline {
@@ -38,6 +66,8 @@
 .timeline-header {
   display: flex;
   border-bottom: 1px solid #e0e0e0;
+  padding-left: 120px;
+  width: 100%;
 }
 
 .hours-container {
@@ -53,23 +83,40 @@
   font-weight: bold;
   border-right: 1px solid #e0e0e0;
   min-width: 60px;
+  font-size: 12px;
+  color: #666;
 }
 
 .timeline-content {
-  height: 60px;
   position: relative;
-  border-bottom: 1px solid #e0e0e0;
+}
+
+.user-timeline-row {
+  display: flex;
+  border-bottom: 1px solid #eee;
+}
+
+.user-info {
+  width: 120px;
+  padding: 10px;
+  font-weight: bold;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background-color: #f5f5f5;
+  border-right: 1px solid #ddd;
 }
 
 .hour-cell {
   flex: 1;
   border-right: 1px solid #e0e0e0;
   min-width: 60px;
+  min-height: 28px;
 }
 
 .appointment {
   position: absolute;
-  height: 38px; /* Уменьшил высоту, чтобы создать гэп между ячейками */
+  height: 26px;
   top: 10px;
   background-color: #9c2626;
   color: white;
@@ -80,7 +127,7 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   z-index: 0;
-  margin: 1px; /* Добавил маргин для создания гэпа между ячейками */
+  margin: 1px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -96,29 +143,38 @@
   width: 2px;
   height: 100%;
   background-color: red;
-  z-index: 2;
+  z-index: 10;
   top: 0;
 }
 
-/* Стили для модального окна */
 .appointment-modal {
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
   border-radius: 6px;
   background-color: white;
   width: 240px;
-  pointer-events: none; /* Позволяет кликать "сквозь" модальное окно */
+  pointer-events: none;
   border: 1px solid #ddd;
   z-index: 1000;
   animation: fadeIn 0.2s ease;
+  position: fixed;
+  padding: 10px;
+  min-width: 200px;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px) translateX(-50%); }
-  to { opacity: 1; transform: translateY(0) translateX(-50%); }
+  from {
+    opacity: 0;
+    transform: translateY(10px) translateX(-50%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateX(-50%);
+  }
 }
 
 .modal-content {
   padding: 12px;
+  font-size: 14px;
 }
 
 .modal-content h3 {
@@ -138,4 +194,26 @@
 
 .modal-content strong {
   color: #333;
+}
+
+.week-selector {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+  gap: 6px;
+}
+
+.day-button {
+  background-color: #fff;
+  border: 1px solid #ccc;
+  padding: 6px 10px;
+  font-size: 14px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.day-button.active {
+  background-color: #9c2626;
+  color: white;
+  border-color: #9c2626;
 }
