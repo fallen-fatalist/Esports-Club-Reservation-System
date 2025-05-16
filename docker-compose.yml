@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   backend:
@@ -37,14 +36,6 @@ services:
     container_name: booking-service-frontend
     ports:
       - "3000:3000"
-    volumes:
-      - ./frontend:/app        
-      - /app/node_modules       
-    environment:
-      - CHOKIDAR_USEPOLLING=true
-    stdin_open: true
-    tty: true
-    command: npm start
     depends_on: 
       - backend  
 
