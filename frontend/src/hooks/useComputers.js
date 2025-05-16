@@ -1,21 +1,6 @@
 import { useState, useEffect } from 'react';
 import computerService from '../services/computerService';
 
-const STATUS_MAP = {
-  busy: 'booked',
-  available: 'available',
-  pending: 'unknown',
-  'not working': 'unknown',
-  'under repair': 'unknown'
-};
-
-const mapComputerStatus = (apiStatus) => {
-  if (apiStatus === null || apiStatus === undefined) return 'unknown';
-
-  const status = apiStatus?.trim().toLowerCase();
-  return STATUS_MAP[status] || 'unknown';
-};
-
 const useComputers = () => {
   const [computers, setComputers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,8 +19,7 @@ const useComputers = () => {
 
         const formatted = computersData.map(comp => ({
           id: comp.id,
-          status: mapComputerStatus(comp.status),
-          originalStatus: comp.status,
+          status: comp.status?.trim().toLowerCase() || 'unknown',
           name: comp.name || `Computer #${comp.id}`,
           cpu: comp.cpu,
           gpu: comp.gpu,
@@ -67,8 +51,7 @@ const useComputers = () => {
       const response = await computerService.getComputers();
       const formatted = (response.data || []).map(comp => ({
         id: comp.id,
-        status: mapComputerStatus(comp.status),
-        originalStatus: comp.status,
+        status: comp.status?.trim().toLowerCase() || 'unknown',
         name: comp.name || `Computer #${comp.id}`,
       }));
       setComputers(formatted);

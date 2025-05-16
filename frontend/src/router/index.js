@@ -18,5 +18,6 @@ export const publicRoutes = [
     {path: '/about', page: About, exact: true},
     {path: "/login", page: Login, exact: true},
     {path: "/register", page: Register, exact: true},
+    {path: '/booking', page: Booking, exact: true},
     {path: '*', page: Login, exact: false},
 ]

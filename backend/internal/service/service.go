@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/transport/dto"
@@ -49,7 +50,7 @@ type UserService interface {
 
 type BookingService interface {
 	GetAllBookings() ([]*entities.Booking, error)
-	CreateBooking(*entities.Booking) (int64, error)
+	CreateBooking(context.Context, *entities.Booking) (int64, error)
 	GetComputerBookings(id int64) ([]*entities.Booking, error)
 	GetActiveBookings() ([]*entities.Booking, error)
 	GetPendingBookings() ([]*entities.Booking, error)
@@ -58,7 +59,7 @@ type BookingService interface {
 	GetComputersLeftOccupiedTime() ([]*entities.ComputerOccupiedLeftTime, error)
 	GetComputerLeftOccupiedTime(id int64) (*entities.ComputerOccupiedLeftTime, error)
 	RefreshBookings()
-	GenerateBooking()
+	GenerateBooking(context.Context)
 }
 
 type PackageService interface {

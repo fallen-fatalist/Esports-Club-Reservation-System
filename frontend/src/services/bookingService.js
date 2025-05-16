@@ -61,7 +61,7 @@ const bookingService = {
     },
     async getBookingsByComputerId(id) {
         try {
-          const response = await axios.get(`/api/bookings/${id}`);
+          const response = await axios.get(`/api/computer/${id}/bookings`);
           return response.data;
         } catch (error) {
           console.error(`Error getting bookings for computer #${id}:`, error);

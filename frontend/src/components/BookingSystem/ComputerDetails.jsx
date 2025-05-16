@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import computerService from "../../services/computerService";
+import TimelineSchedule from "../UI/timeline/TimelineSchedule";
 
 const isSameDay = (date1, date2) =>
   date1.getFullYear() === date2.getFullYear() &&
@@ -80,12 +81,12 @@ const ComputerDetails = ({ computer, bookings, date }) => {
 
   return (
     <div className="computer-details">
+      <TimelineSchedule bookings={computerBookings} date={selectedDate} />
       <h3>Computer Info</h3>
-
       <div className="computer-specs">
         <h4>Specifications</h4>
         <ul className="specs-list">
-          {["cpu", "gpu", "ram", "ssd", "hdd", "monitor", "mouse", "keyboard", "headset", "mousepad"].map((spec) => (
+          {["cpu", "gpu", "ram", "monitor", "mouse", "keyboard", "headset", "mousepad"].map((spec) => (
             <li key={spec}>
               <strong>{spec.toUpperCase()}:</strong> {detailedComputer?.[spec] || "N/A"}
             </li>
@@ -94,18 +95,8 @@ const ComputerDetails = ({ computer, bookings, date }) => {
       </div>
 
       <div className="computer-schedule">
-        <h4>Schedule for {date}</h4>
-
         {computerBookings.length > 0 ? (
           <div className="schedule-timeline">
-            <div className="timeline-hours">
-              {Array.from({ length: 24 }, (_, i) => (
-                <div key={i} className="timeline-hour">
-                  <span>{i}:00</span>
-                </div>
-              ))}
-            </div>
-
             <div className="timeline-bookings">
               {computerBookings.map((booking, i) => {
                 const start = new Date(booking.start_time);
@@ -122,9 +113,6 @@ const ComputerDetails = ({ computer, bookings, date }) => {
                     style={{ left: `${startOffset}%`, width: `${width}%` }}
                     title={`${start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
                   >
-                    <span>
-                      {start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - {end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </span>
                   </div>
                 );
               })}

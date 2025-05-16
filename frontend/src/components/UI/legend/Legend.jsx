@@ -9,11 +9,11 @@ const Legend = () => (
     </div>
     <div className={styles.legendItem}>
       <span className={`${styles.circle} ${styles.booked}`}></span>
-      <span>Booked</span>
+      <span>Booked</span> {/*change styles*/}
     </div>
     <div className={styles.legendItem}>
       <span className={`${styles.circle} ${styles.unknown}`}></span>
-      <span>Unavailable</span>
+      <span>Unknown</span>
     </div>
   </div>
 );

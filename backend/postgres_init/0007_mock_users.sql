@@ -1,13 +1,5 @@
 INSERT INTO users (login, email, hashed_password, role, balance)
 VALUES
-    -- 6 Administrators
-    ('alice_admin', 'alice.admin@example.com', '$2a$12$ABCDEFG1234567890ABCDEFGHIJKL', 'admin', 0),
-    ('bob_admin', 'bob.admin@example.com', '$2a$12$ABCDEFG1234567890ABCDEFGHIJKL', 'admin', 0),
-    ('charlie_admin', 'charlie.admin@example.com', '$2a$12$ABCDEFG1234567890ABCDEFGHIJKL', 'admin', 0),
-    ('diana_admin', 'diana.admin@example.com', '$2a$12$ABCDEFG1234567890ABCDEFGHIJKL', 'admin', 0),
-    ('edward_admin', 'edward.admin@example.com', '$2a$12$ABCDEFG1234567890ABCDEFGHIJKL', 'admin', 0),
-    ('frank_admin', 'frank.admin@example.com', '$2a$12$ABCDEFG1234567890ABCDEFGHIJKL', 'admin', 0),
-
     -- 43 Regular Users
     ('john_gamer', 'john.doe@example.com', '$2a$12$ABCDEFG1234567890ABCDEFGHIJKL', 'client', 500),
     ('emma_gamer', 'emma.smith@example.com', '$2a$12$ABCDEFG1234567890ABCDEFGHIJKL', 'client', 600),
@@ -54,7 +46,6 @@ VALUES
     ('nathan_blade', 'nathan.bishop@example.com', '$2a$12$ABCDEFG1234567890ABCDEFGHIJKL', 'client', 4700),
     ('michelle_wraith', 'michelle.lawrence@example.com', '$2a$12$ABCDEFG1234567890ABCDEFGHIJKL', 'client', 4800);
 
-
 INSERT INTO users (login, email, hashed_password, status, role, balance)
 VALUES
 -- Blocked Users
@@ -64,3 +55,13 @@ VALUES
     ('ryan_lurker', 'ryan.levi@example.com', '$2a$12$ABCDEFG1234567890ABCDEFGHIJKL', 'blocked', 'client', 600),
     ('hannah_shark', 'hannah.venn@example.com', '$2a$12$ABCDEFG1234567890ABCDEFGHIJKL', 'blocked', 'client', 0),
     ('chris_canary', 'chris.matson@example.com', '$2a$12$ABCDEFG1234567890ABCDEFGHIJKL', 'blocked', 'client', 0);
+
+INSERT INTO users (login, email, hashed_password, role, balance)
+VALUES
+    -- 6 Administrators
+    ('alice_admin', 'alice.admin@example.com', '$2a$12$ABCDEFG1234567890ABCDEFGHIJKL', 'admin', 0),
+    ('bob_admin', 'bob.admin@example.com', '$2a$12$ABCDEFG1234567890ABCDEFGHIJKL', 'admin', 0),
+    ('charlie_admin', 'charlie.admin@example.com', '$2a$12$ABCDEFG1234567890ABCDEFGHIJKL', 'admin', 0),
+    ('diana_admin', 'diana.admin@example.com', '$2a$12$ABCDEFG1234567890ABCDEFGHIJKL', 'admin', 0),
+    ('edward_admin', 'edward.admin@example.com', '$2a$12$ABCDEFG1234567890ABCDEFGHIJKL', 'admin', 0),
+    ('frank_admin', 'frank.admin@example.com', '$2a$12$ABCDEFG1234567890ABCDEFGHIJKL', 'admin', 0);

@@ -22,7 +22,7 @@ const ComputerList = ({
         >
           <div className="computer-header">
             <ComputerIcon className={`computer-icon ${comp.status === 'busy' ? 'busy' : ''}`} />
-            <span className="computer-number">#{comp.id}</span>
+            <span className="computer-number">id: #{comp.id}</span>
           </div>
           
           <div className="computer-specs">
@@ -48,13 +48,16 @@ const ComputerList = ({
             )}
           </div>
           <div className="computer-status">
-            {comp.status === 'busy' ? (
-              <span className="busy-status">Busy</span>
+            {comp.status && comp.status.trim() !== "" ? (
+              comp.status === 'busy' ? (
+                <span className="busy-status">Busy</span>
+              ) : (
+                <span className="available-status">Available</span>
+              )
             ) : (
-              <span className="available-status">Available</span>
+              <span className="na-status">N/A</span>
             )}
-          </div>
-          
+          </div>   
         </div>
       ))}
     </div>

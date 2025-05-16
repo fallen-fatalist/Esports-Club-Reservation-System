@@ -1,11 +1,11 @@
 package postgres
 
 import (
+	"context"
 	"database/sql"
 	"esports_club_booking/internal/entities"
 	"fmt"
 	"log/slog"
-	"math/rand"
 	"time"
 )
 
@@ -98,7 +98,7 @@ func (r *BookingRepository) GetByID(id int64) (*entities.Booking, error) {
 	return &booking, nil
 }
 
-func (r *BookingRepository) Create(booking *entities.Booking) (int64, error) {
+func (r *BookingRepository) Create(ctx context.Context, booking *entities.Booking) (int64, error) {
 	startTime, err := time.Parse(time.RFC3339, booking.StartTime)
 	if err != nil {
 		return 0, fmt.Errorf("invalid start_time: %w", err)
@@ -119,7 +119,8 @@ func (r *BookingRepository) Create(booking *entities.Booking) (int64, error) {
 		RETURNING booking_id
 	`
 
-	err = r.db.QueryRow(
+	err = r.db.QueryRowContext(
+		ctx,
 		query,
 		booking.UserID,
 		booking.ComputerID,
@@ -213,7 +214,7 @@ func (r *BookingRepository) RefreshStatus() {
 		WHERE end_time <= $1 AND status IN ('pending', 'active')
 	`, now)
 	if err != nil {
-		slog.Error("error setting finished bookings: %v", err)
+		slog.Error("error setting finished bookings: %v", slog.Any("error", err))
 	}
 
 	// 2. Set 'cancelled' for pending bookings that haven't started 15+ minutes after start_time
@@ -226,33 +227,4 @@ func (r *BookingRepository) RefreshStatus() {
 		slog.Error("error setting cancelled bookings: %v", err)
 	}
 
-}
-
-func (r *BookingRepository) GenerateBooking() {
-	now := time.Now().UTC()
-
-	// Booking can start up to 50 minutes in the past or 50 minutes in the future
-	startOffset := time.Duration(rand.Intn(100)-50) * time.Minute // [-50, +50] minutes
-	startTime := now.Add(startOffset)
-	endTime := startTime.Add(time.Duration(10+rand.Intn(50)) * time.Minute) // duration: 10–60 min
-
-	// Determine booking status
-	status := "active"
-	if startTime.After(now) {
-		status = "pending"
-	}
-
-	// Random IDs
-	userID := rand.Intn(49) + 1     // e.g. 1–49
-	computerID := rand.Intn(40) + 1 // e.g. 1–40
-	packageID := rand.Intn(7) + 1   // e.g. 1–7
-
-	_, err := r.db.Exec(`
-		INSERT INTO bookings (user_id, computer_id, package_id, start_time, end_time, status)
-		VALUES ($1, $2, $3, $4, $5, $6)
-	`, userID, computerID, packageID, startTime, endTime, status)
-
-	if err != nil {
-		slog.Error("error inserting booking: %v", err)
-	}
 }

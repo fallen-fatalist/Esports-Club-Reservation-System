@@ -1,0 +1,141 @@
+
+.schedule-container {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+  background-color: #f8f8f8;
+}
+
+.date-container {
+  text-align: center;
+  margin-bottom: 20px;
+  background-color: white;
+  padding: 15px;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.current-date {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+}
+
+.timeline-container {
+  width: 100%;
+  overflow-x: auto;
+  background-color: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  min-width: 1500px;
+}
+
+.timeline-header {
+  display: flex;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.hours-container {
+  display: flex;
+  flex: 1;
+  position: relative;
+}
+
+.timeline-header-cell {
+  flex: 1;
+  padding: 10px;
+  text-align: center;
+  font-weight: bold;
+  border-right: 1px solid #e0e0e0;
+  min-width: 60px;
+}
+
+.timeline-content {
+  height: 60px;
+  position: relative;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.hour-cell {
+  flex: 1;
+  border-right: 1px solid #e0e0e0;
+  min-width: 60px;
+}
+
+.appointment {
+  position: absolute;
+  height: 38px; /* Уменьшил высоту, чтобы создать гэп между ячейками */
+  top: 10px;
+  background-color: #9c2626;
+  color: white;
+  padding: 5px;
+  border-radius: 3px;
+  font-size: 14px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  z-index: 0;
+  margin: 1px; /* Добавил маргин для создания гэпа между ячейками */
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.appointment:hover {
+  transform: scale(1.03);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 5;
+}
+
+.current-time-indicator {
+  position: absolute;
+  width: 2px;
+  height: 100%;
+  background-color: red;
+  z-index: 2;
+  top: 0;
+}
+
+/* Стили для модального окна */
+.appointment-modal {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  background-color: white;
+  width: 240px;
+  pointer-events: none; /* Позволяет кликать "сквозь" модальное окно */
+  border: 1px solid #ddd;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px) translateX(-50%); }
+  to { opacity: 1; transform: translateY(0) translateX(-50%); }
+}
+
+.modal-content {
+  padding: 12px;
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  color: #9c2626;
+  font-size: 16px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 5px;
+}
+
+.modal-content p {
+  margin: 4px 0;
+  font-size: 13px;
+  color: #555;
+}
+
+.modal-content strong {
+  color: #333;
+}

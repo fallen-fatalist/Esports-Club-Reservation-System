@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/service"
 	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 // @Summary Get all bookings with time format "2006-01-02T15:04:05Z07:00"
@@ -20,7 +22,7 @@ import (
 func (s *Handler) getBookings(w http.ResponseWriter, r *http.Request) {
 	bookings, err := s.service.BookingService.GetAllBookings()
 	if err != nil {
-		slog.Error("Error fetching bookings:", err)
+		slog.Error("Error fetching bookings:", slog.String("error", err.Error()))
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	} else if len(bookings) == 0 {
@@ -33,6 +35,7 @@ func (s *Handler) getBookings(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 			return
 		}
+		return
 	}
 
 	if err := json.NewEncoder(w).Encode(bookings); err != nil {
@@ -53,6 +56,7 @@ func (s *Handler) getBookings(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} server.JSONAnswer "Internal server error"
 // @Router /api/bookings [post]
 func (s *Handler) postBookings(w http.ResponseWriter, r *http.Request) {
+
 	var booking entities.Booking
 
 	// Parse the JSON body into the struct
@@ -62,7 +66,10 @@ func (s *Handler) postBookings(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	id, err := s.service.BookingService.CreateBooking(&booking)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	id, err := s.service.BookingService.CreateBooking(ctx, &booking)
 	if err != nil {
 		if err == service.ErrUnhandledError {
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -115,14 +122,14 @@ func (s *Handler) HandleBookings(w http.ResponseWriter, r *http.Request) {
 
 // @Summary Get bookings for a specific computer with time format "2006-01-02T15:04:05Z07:00"
 // @Description Returns a list of bookings for the specified computer ID
-// @Tags Bookings
+// @Tags Computers
 // @Accept json
 // @Produce json
 // @Param id path int64 true "Computer ID"
 // @Success 200 {array} entities.Booking "List of bookings for the computer"
 // @Failure 400 {object} server.JSONAnswer "Invalid computer ID"
 // @Failure 500 {object} server.JSONAnswer "Internal server error"
-// @Router /api/bookings/{id} [get]
+// @Router /api/computers/{id}/bookings [get]
 func (s *Handler) getComputerBookings(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
@@ -142,7 +149,7 @@ func (s *Handler) getComputerBookings(w http.ResponseWriter, r *http.Request) {
 
 	bookings, err := s.service.BookingService.GetComputerBookings(id)
 	if err != nil {
-		slog.Error("Error fetching bookings:", err)
+		slog.Error("Error fetching bookings:", slog.Any("error", err))
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	} else if len(bookings) == 0 {

@@ -10,7 +10,7 @@ const BookingForm = ({
   date, setDate, 
   time, setTime, 
   duration, setDuration, 
-  onCheckAvailability, errorMessage,  
+  errorMessage,  
   infoMessage, bookingSuccess, 
   selectedComputers, handleBookMultipleComputers, 
   setSelectedComputers, handleAutoSelectComputers, 
@@ -35,9 +35,6 @@ const BookingForm = ({
         </MyDropdown>
       </div>
     </div>
-    <MyButton onClick={onCheckAvailability}>
-      <span className="btn-txt">Check Availability</span>
-    </MyButton>
     <div className="auto-selection">
       <label htmlFor="autoSelectCount">Auto-select computers:</label>
       <input
@@ -58,7 +55,7 @@ const BookingForm = ({
         className="auto-select-input"
       />
       <MyButton onClick={() => handleAutoSelectComputers(autoSelectCount)}>
-        Auto Select
+        <span className="btn-txt">Auto Select</span>
       </MyButton>
     </div>
     {errorMessage && <Message message={errorMessage} type="error" />}
