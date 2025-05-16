@@ -10,15 +10,13 @@ const useComputers = () => {
     const fetchComputers = async () => {
       try {
         setLoading(true);
-        const data = await computerService.getComputers();
+        const response = await computerService.getComputers();
+        let computersData;
 
-        const computersData = Array.isArray(data)
-          ? data
-          : (data?.computers || data?.items || []);
+        if (Array.isArray(response)) computersData = response;
+        else if (response && typeof response === 'object') computersData = response.data || response.items || response.computers || [];
+        else throw new Error('Unexpected response');
 
-        if (!Array.isArray(computersData)) {
-          throw new Error('Unexpected response format');
-        }
         const formatted = computersData.map(comp => ({
           id: comp.id,
           status: comp.status?.trim().toLowerCase() || 'unknown',
@@ -50,8 +48,8 @@ const useComputers = () => {
   const bookComputer = async (computerId, startTime, endTime) => {
     try {
       await computerService.bookComputer(computerId, startTime, endTime);
-      const data = await computerService.getComputers();
-      const formatted = data.map(comp => ({
+      const response = await computerService.getComputers();
+      const formatted = (response.data || []).map(comp => ({
         id: comp.id,
         status: comp.status?.trim().toLowerCase() || 'unknown',
         name: comp.name || `Computer #${comp.id}`,

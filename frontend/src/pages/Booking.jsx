@@ -89,19 +89,16 @@ const Booking = () => {
 
   
   const checkAvailability = useCallback(() => {
-    const today = getCurrentDate(); 
-    
-    if (date < today) {
-      setDate(today);
-    }
-    
+
     if (!validateDateTime()) return;
     const timeToUse = time || getCurrentTimeString();
 
     const updatedList = fetchedComputers
       .filter(c => !excludedStatuses.includes(c.status))
       .map((c) => {
-        const available = isComputerAvailable(c.id, bookings, date, timeToUse, duration);
+        const available = bookings.length > 0
+          ? isComputerAvailable(c.id, bookings, date, timeToUse, duration)
+          : true; 
         return {
           ...c,
           status: available ? 'available' : 'busy',
@@ -115,13 +112,14 @@ const Booking = () => {
     setErrorMessage(null);
   }, [fetchedComputers, bookings, date, time, duration, validateDateTime]);
 
+
   useEffect(() => {
-    setDate(getCurrentDate());
-    
-    if (fetchedComputers.length > 0 && bookings.length > 0) {
+
+    if (fetchedComputers.length > 0) {
       checkAvailability();
     }
-  }, [fetchedComputers, bookings, checkAvailability]);
+  }, [fetchedComputers, checkAvailability]);
+
 
   const handleBookMultipleComputers = async () => {
     if (selectedComputers.length === 0) {
