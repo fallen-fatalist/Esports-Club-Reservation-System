@@ -1,7 +1,7 @@
 package api
 
 import (
-	"database/sql"
+	"context"
 	"esports_club_booking/internal/repository"
 	"esports_club_booking/internal/repository/postgres"
 	"esports_club_booking/internal/server"
@@ -14,12 +14,6 @@ import (
 	"net/http"
 	"os"
 	"time"
-)
-
-var (
-	db   *sql.DB
-	err  error
-	port string
 )
 
 func Run() {
@@ -84,29 +78,35 @@ func turnOnTimers(service service.Service) {
 	refresherTicker := time.NewTicker(1 * time.Minute)
 	defer refresherTicker.Stop()
 
-	go refresher(refresherTicker, service.BookingService)
+	go refresherCallback(refresherTicker, service.BookingService)
 
 	creatorTicker := time.NewTicker(10 * time.Minute)
 	defer creatorTicker.Stop()
 
-	for range 10 {
-		service.BookingService.GenerateBooking()
-	}
-
-	go bookingCreator(creatorTicker, service.BookingService)
+	go generatorCallback(creatorTicker, service.BookingService)
 
 }
 
-func refresher(ticker *time.Ticker, service service.BookingService) {
+func refresherCallback(ticker *time.Ticker, service service.BookingService) {
 	for range ticker.C {
 		service.RefreshBookings()
 	}
 }
 
-func bookingCreator(ticker *time.Ticker, service service.BookingService) {
+func generatorCallback(ticker *time.Ticker, service service.BookingService) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// Run in ticker
 	for range ticker.C {
 		for range 10 {
-			service.GenerateBooking()
+			select {
+			case <-ctx.Done():
+				cancel()
+				return
+			default:
+				service.GenerateBooking(ctx)
+			}
 		}
 	}
+
+	cancel()
 }

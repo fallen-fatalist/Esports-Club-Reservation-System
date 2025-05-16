@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"esports_club_booking/internal/entities"
 )
 
@@ -49,12 +50,11 @@ type ComputerRepository interface {
 type BookingRepository interface {
 	GetAll() ([]*entities.Booking, error)
 	GetByID(int64) (*entities.Booking, error)
-	Create(booking *entities.Booking) (int64, error)
+	Create(context.Context, *entities.Booking) (int64, error)
 	Update(booking *entities.Booking) (int64, error)
 	Delete(int64) error
 	/* Very bad and stupid solution must be optimized to priority queue */
 	RefreshStatus()
-	GenerateBooking()
 }
 
 type PackageRepository interface {

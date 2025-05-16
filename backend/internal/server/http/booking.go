@@ -1,6 +1,7 @@
 package httpserver
 
 import (
+	"context"
 	"encoding/json"
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/server"
@@ -8,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 // @Summary Get all bookings with time format "2006-01-02T15:04:05Z07:00"
@@ -34,6 +36,7 @@ func (s *Server) getBookings(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 			return
 		}
+		return
 	}
 
 	if err := json.NewEncoder(w).Encode(bookings); err != nil {
@@ -54,6 +57,7 @@ func (s *Server) getBookings(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} server.JSONAnswer "Internal server error"
 // @Router /api/bookings [post]
 func (s *Server) postBookings(w http.ResponseWriter, r *http.Request) {
+
 	var booking entities.Booking
 
 	// Parse the JSON body into the struct
@@ -63,7 +67,10 @@ func (s *Server) postBookings(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	id, err := s.service.BookingService.CreateBooking(&booking)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	id, err := s.service.BookingService.CreateBooking(ctx, &booking)
 	if err != nil {
 		if err == service.ErrUnhandledError {
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -143,7 +150,7 @@ func (s *Server) getComputerBookings(w http.ResponseWriter, r *http.Request) {
 
 	bookings, err := s.service.BookingService.GetComputerBookings(id)
 	if err != nil {
-		slog.Error("Error fetching bookings:", err)
+		slog.Error("Error fetching bookings:", slog.Any("error", err))
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	} else if len(bookings) == 0 {

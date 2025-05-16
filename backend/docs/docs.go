@@ -502,7 +502,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Bookings"
+                    "Computers"
                 ],
                 "summary": "Get bookings for a specific computer with time format \"2006-01-02T15:04:05Z07:00\"",
                 "parameters": [

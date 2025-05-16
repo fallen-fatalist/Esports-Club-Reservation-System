@@ -80,3 +80,8 @@ func (b *Booking) Validate() error {
 
 	return nil
 }
+
+// Errors
+var (
+	ErrBookingOverlap = errors.New("booking overlaps with another booking")
+)
