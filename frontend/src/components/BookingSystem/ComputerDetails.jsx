@@ -26,11 +26,12 @@ const ComputerDetails = ({ computer, bookings, date }) => {
 
   useEffect(() => {
     const calculateTimeLeft = () => {
-      if (!bookings || !computer?.id) return;
+      if (!Array.isArray(bookings) || !computer?.id) return;
 
       const now = new Date();
       const activeBookings = bookings.filter((booking) => {
         if (
+          !booking ||
           booking.computer_id !== computer.id ||
           booking.status === "cancelled"
         )
@@ -43,8 +44,7 @@ const ComputerDetails = ({ computer, bookings, date }) => {
 
       if (activeBookings.length > 0) {
         const currentBooking = activeBookings.sort(
-          (a, b) =>
-            new Date(a.start_time) - new Date(b.start_time)
+          (a, b) => new Date(a.start_time) - new Date(b.start_time)
         )[0];
 
         const startTime = new Date(currentBooking.start_time);
@@ -70,14 +70,17 @@ const ComputerDetails = ({ computer, bookings, date }) => {
   if (!computer || !detailedComputer) return null;
 
   const selectedDate = new Date(date);
-  const computerBookings = bookings
-    .filter(
-      (b) =>
-        b.computer_id === computer.id &&
-        isSameDay(new Date(b.start_time), selectedDate) &&
-        b.status !== "cancelled"
-    )
-    .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+  const computerBookings = Array.isArray(bookings)
+      ? bookings
+          .filter(
+            (b) =>
+              b &&
+              b.computer_id === computer.id &&
+              isSameDay(new Date(b.start_time), selectedDate) &&
+              b.status !== "cancelled"
+          )
+          .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
+      : [];
 
   return (
     <div className="computer-details">

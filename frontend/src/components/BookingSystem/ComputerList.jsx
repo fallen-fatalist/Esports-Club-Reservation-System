@@ -37,9 +37,9 @@ const ComputerList = ({
             </div>
           </div>
           <div className="computer-actions">
-            <MyButton className="details-button" onClick={(e) => {e.stopPropagation(); onViewDetails(comp.id);}}>
+            <button className="details-button" onClick={(e) => {e.stopPropagation(); onViewDetails(comp.id);}}>
               <span className="btn-txt">Details</span>
-            </MyButton>
+            </button>
             
             {comp.status === 'available' && onBook && (
               <MyButton className="book-button" onClick={(e) => {e.stopPropagation(); onBook(comp.id);}}>

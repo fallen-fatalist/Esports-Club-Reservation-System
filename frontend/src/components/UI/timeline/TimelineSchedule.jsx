@@ -117,7 +117,6 @@ const TimelineSchedule = ({ bookings }) => {
   const timeSlots = generateTimeSlots();
   const individualBookings = groupBookingsIndividually();
 
-  // Если нет бронирований, показываем пустую строку для визуала
   const allRows =
     individualBookings.length > 0
       ? individualBookings
@@ -150,7 +149,7 @@ const TimelineSchedule = ({ bookings }) => {
           </button>
 
           <button className="today-button" onClick={() => setSelectedDate(normalizedToday)}>
-            Сегодня
+            today
           </button>
         </div>
       </div>
@@ -170,7 +169,6 @@ const TimelineSchedule = ({ bookings }) => {
           <div className="timeline-content">
             {allRows.map(({ rowId, userName, booking }) => (
               <div key={rowId} className="user-timeline-row">
-                <div className="user-info">{userName}</div>
                 <div className="hours-container">
                   {timeSlots.map((_, idx) => (
                     <div key={idx} className="hour-cell" />

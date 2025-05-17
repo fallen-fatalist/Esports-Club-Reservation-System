@@ -15,7 +15,8 @@ const BookingForm = ({
   selectedComputers, handleBookMultipleComputers, 
   setSelectedComputers, handleAutoSelectComputers, 
   autoSelectCount, setAutoSelectCount,
-  autoSelectCountInput, setAutoSelectCountInput }) => (
+  autoSelectCountInput, setAutoSelectCountInput,
+  availableComputersCount }) => (
 
   <div className="reservation__container">
     <h3>PC Reservation</h3>
@@ -41,19 +42,32 @@ const BookingForm = ({
         id="autoSelectCount"
         type="number"
         min="1"
+        max={availableComputersCount} 
         value={autoSelectCountInput}
-        onChange={(e) => setAutoSelectCountInput(e.target.value)}
+        onChange={(e) => {
+          const value = e.target.value;
+          const parsed = parseInt(value);
+          if (parsed > availableComputersCount) {
+            setAutoSelectCountInput(String(availableComputersCount));
+          } else {
+            setAutoSelectCountInput(value);
+          }
+        }}
         onBlur={() => {
           const parsed = parseInt(autoSelectCountInput);
           if (isNaN(parsed) || parsed < 1) {
             setAutoSelectCount(1);
             setAutoSelectCountInput("1");
+          } else if (parsed > availableComputersCount) {
+            setAutoSelectCount(availableComputersCount);
+            setAutoSelectCountInput(String(availableComputersCount));
           } else {
             setAutoSelectCount(parsed);
           }
         }}
         className="auto-select-input"
       />
+
       <MyButton onClick={() => handleAutoSelectComputers(autoSelectCount)}>
         <span className="btn-txt">Auto Select</span>
       </MyButton>

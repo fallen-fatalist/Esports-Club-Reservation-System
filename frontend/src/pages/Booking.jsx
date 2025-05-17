@@ -244,8 +244,24 @@ const Booking = () => {
 
   const handleAutoSelectComputers = (count = 1) => {
     const available = filteredComputers.filter((c) => c.status === 'available');
-    const autoSelected = available.slice(0, count).map((c) => c.id);
+
+    if (available.length === 0) {
+      setErrorMessage("No available computers for auto-selection.");
+      setInfoMessage(null); // extra
+      return;
+    }
+
+    const adjustedCount = Math.min(count, available.length);
+
+    if (count > available.length) {
+      setInfoMessage(`Requested ${count}, but only ${available.length} available. All available computers have been selected.`);
+    } else {
+      setInfoMessage(`Automatically selected ${adjustedCount} computer(s).`);
+    }
+
+    const autoSelected = available.slice(0, adjustedCount).map((c) => c.id);
     setSelectedComputers(autoSelected);
+    setErrorMessage(null);
   };
 
   const handleViewComputerDetails = (computerId) => {
