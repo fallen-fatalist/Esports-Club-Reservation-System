@@ -255,9 +255,7 @@ const Booking = () => {
 
     if (count > available.length) {
       setInfoMessage(`Requested ${count}, but only ${available.length} available. All available computers have been selected.`);
-    } else {
-      setInfoMessage(`Automatically selected ${adjustedCount} computer(s).`);
-    }
+    } 
 
     const autoSelected = available.slice(0, adjustedCount).map((c) => c.id);
     setSelectedComputers(autoSelected);
