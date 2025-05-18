@@ -1,5 +1,62 @@
 basePath: /api
 definitions:
+  dto.LoginUser:
+    properties:
+      email:
+        description: |-
+          required: true
+          example: user@example.com
+        type: string
+      login:
+        description: |-
+          required: true
+          example: username123
+        type: string
+      password:
+        description: |-
+          required: true
+          example: securePassword123
+        type: string
+    type: object
+  dto.RegisterUser:
+    properties:
+      email:
+        description: |-
+          required: true
+          example: user@example.com
+        type: string
+      login:
+        description: |-
+          required: true
+          example: username123
+        type: string
+      password:
+        description: |-
+          required: true
+          example: securePassword123
+        type: string
+    type: object
+  dto.VerificationRequest:
+    properties:
+      email:
+        description: |-
+          required: true
+          example: user@example.com
+        type: string
+    type: object
+  dto.VerifyEmailRequest:
+    properties:
+      code:
+        description: |-
+          required: true
+          example: 123456
+        type: string
+      email:
+        description: |-
+          required: true
+          example: user@example.com
+        type: string
+    type: object
   entities.Booking:
     properties:
       computer_id:
@@ -66,10 +123,20 @@ definitions:
       updated_at:
         type: string
     type: object
-  server.JSONAnswer:
+  handlers.JSONAnswer:
     properties:
       id:
         type: integer
+      message:
+        type: string
+    type: object
+  utils.HTTPError:
+    properties:
+      error:
+        type: string
+    type: object
+  utils.Message:
+    properties:
       message:
         type: string
     type: object
@@ -97,7 +164,7 @@ paths:
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
       summary: Get all bookings with time format "2006-01-02T15:04:05Z07:00"
       tags:
       - Bookings
@@ -118,15 +185,15 @@ paths:
         "201":
           description: Booking created successfully
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
         "400":
           description: Invalid request body
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
       summary: Create a new booking
       tags:
       - Bookings
@@ -151,11 +218,11 @@ paths:
         "400":
           description: Invalid computer ID
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
       summary: Get the left time for a specific computer in seconds
       tags:
       - Bookings
@@ -176,7 +243,7 @@ paths:
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
       summary: Get active bookings with time format "2006-01-02T15:04:05Z07:00"
       tags:
       - Bookings
@@ -197,7 +264,7 @@ paths:
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
       summary: Get cancelled bookings with time format "2006-01-02T15:04:05Z07:00"
       tags:
       - Bookings
@@ -218,7 +285,7 @@ paths:
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
       summary: Get computers left time in seconds
       tags:
       - Bookings
@@ -239,7 +306,7 @@ paths:
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
       summary: Get finished bookings with time format "2006-01-02T15:04:05Z07:00"
       tags:
       - Bookings
@@ -260,7 +327,7 @@ paths:
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
       summary: Get pending bookings with time format "2006-01-02T15:04:05Z07:00"
       tags:
       - Bookings
@@ -279,7 +346,7 @@ paths:
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
       summary: Get all computers
       tags:
       - Computers
@@ -300,15 +367,15 @@ paths:
         "201":
           description: Computer created successfully
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
         "400":
           description: Invalid request body
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
       summary: Create a new computer
       tags:
       - Computers
@@ -327,19 +394,19 @@ paths:
         "204":
           description: Computer deleted successfully
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
         "400":
           description: Invalid computer ID
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
         "404":
           description: Computer not found
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
       summary: Delete a specific computer
       tags:
       - Computers
@@ -361,15 +428,15 @@ paths:
         "400":
           description: Invalid computer ID
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
         "404":
           description: Computer not found
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
       summary: Get a specific computer
       tags:
       - Computers
@@ -396,11 +463,11 @@ paths:
         "400":
           description: Invalid computer ID
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
       summary: Get bookings for a specific computer with time format "2006-01-02T15:04:05Z07:00"
       tags:
       - Computers
@@ -425,15 +492,15 @@ paths:
         "400":
           description: Invalid computer ID
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
         "404":
           description: Computer not found
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
       summary: Get the status of a specific computer
       tags:
       - Computers
@@ -454,8 +521,140 @@ paths:
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/server.JSONAnswer'
+            $ref: '#/definitions/handlers.JSONAnswer'
       summary: Get all computer statuses
       tags:
       - Computers
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Login user with email, login and password, returns JWT token
+      parameters:
+      - description: Login credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginUser'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: JWT token
+          schema:
+            $ref: '#/definitions/utils.Message'
+        "400":
+          description: Bad request, validation error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "401":
+          description: Unauthorized, invalid credentials or blocked user
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      summary: User login
+      tags:
+      - auth
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Registers a user with email, login and password
+      parameters:
+      - description: User registration data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RegisterUser'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User created successfully
+          schema:
+            $ref: '#/definitions/utils.Message'
+        "400":
+          description: Bad request, validation error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "409":
+          description: User already exists
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      summary: Register a new user
+      tags:
+      - auth
+  /request-code:
+    post:
+      consumes:
+      - application/json
+      description: Sends a verification code to the email provided in request body
+      parameters:
+      - description: Verification code request
+        in: body
+        name: verificationRequest
+        required: true
+        schema:
+          $ref: '#/definitions/dto.VerificationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Verification code sent
+          schema:
+            $ref: '#/definitions/handlers.JSONAnswer'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      summary: Send verification code to user's email
+      tags:
+      - auth
+  /verify-email:
+    post:
+      consumes:
+      - application/json
+      description: Verifies user's email using a verification code
+      parameters:
+      - description: Email verification request
+        in: body
+        name: verifyEmailRequest
+        required: true
+        schema:
+          $ref: '#/definitions/dto.VerifyEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email verified successfully
+          schema:
+            $ref: '#/definitions/handlers.JSONAnswer'
+        "400":
+          description: Invalid request or verification error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "429":
+          description: Too many attempts
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      summary: Verify email with code
+      tags:
+      - auth
 swagger: "2.0"

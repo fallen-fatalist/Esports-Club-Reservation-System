@@ -44,6 +44,9 @@ type UserService interface {
 	//AuthUser()
 	Register(userDTO dto.RegisterUser) (int64, error)
 	Login(userDTO dto.LoginUser) (string, error)
+	VerifyEmail(emailverify dto.VerifyEmailRequest) error
+	SendVerificationCode(dto.VerificationRequest) error
+	DeleteUnverifiedUsers() error
 	//FillBalance()
 
 }

@@ -14,5 +14,6 @@ type UserCredentials struct {
 	ID             int
 	Email          string
 	HashedPassword string
+	Status         string
 	Role           string // если роль используется при авторизации
 }

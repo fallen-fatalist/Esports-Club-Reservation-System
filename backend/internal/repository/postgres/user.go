@@ -63,13 +63,14 @@ func (r *UserRepository) GetByID(int64) (*entities.User, error) {
 }
 
 func (r *UserRepository) GetCredentialsByEmail(email string) (entities.UserCredentials, error) {
-	query := `SELECT user_id, hashed_password, role FROM users WHERE email = $1`
+	query := `SELECT user_id, hashed_password, role, status FROM users WHERE email = $1`
 
 	var uc entities.UserCredentials
 	err := r.db.QueryRow(query, email).Scan(
 		&uc.ID,
 		&uc.HashedPassword,
 		&uc.Role,
+		&uc.Status,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {

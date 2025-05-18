@@ -4,11 +4,13 @@ import (
 	"context"
 	"esports_club_booking/internal/auth"
 	"esports_club_booking/internal/config"
+	"esports_club_booking/internal/email"
 	"esports_club_booking/internal/repository/postgres"
 	"esports_club_booking/internal/service"
 	"esports_club_booking/internal/service/implementation"
 	"esports_club_booking/internal/transport/httpserver"
 	"esports_club_booking/internal/transport/httpserver/handlers"
+	"esports_club_booking/internal/worker"
 	"fmt"
 	"log"
 	"log/slog"
@@ -18,11 +20,18 @@ import (
 )
 
 func Run() {
+	// err := godotenv.Load()
+	// if err != nil {
+	// 	log.Fatal("Error loading .env file")
+	// }
 	// Load the configuration
 	cfg := config.NewConfig()
 
 	// Initialize the logger
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	// Database connection
 	db, err := postgres.OpenDB(cfg.DataBase)
@@ -32,24 +41,24 @@ func Run() {
 	slog.Info("Successfully connected to database")
 
 	// Repositories init
-
 	userRepository, _ := postgres.NewUserRepository(db)
 	computerRepository, _ := postgres.NewComputerRepository(db)
 	bookingRepository, _ := postgres.NewBookingRepository(db)
 	packageRepository, _ := postgres.NewPackageRepository(db)
 
 	// Services init
-	jwtManager := auth.NewJWTManager(cfg.JWTConfig.Secret, cfg.JWTConfig.Expiration)
-	userService, _ := implementation.NewUserService(userRepository, jwtManager)
+	jwtManager := auth.NewJWTManager(cfg.JWT.Secret, cfg.JWT.Expiration)
+	emailSender := email.NewEmailSender(cfg.EmailSender.FromAddress, cfg.EmailSender.Password, cfg.EmailSender.SMTPHost, int(cfg.EmailSender.SMTPPort))
+
+	userService, _ := implementation.NewUserService(userRepository, jwtManager, emailSender)
 	computerService, _ := implementation.NewComputerService(computerRepository)
 	bookingService, _ := implementation.NewBookingService(bookingRepository)
 	packageService, _ := implementation.NewPackageService(packageRepository)
-	svc := service.NewService(
-		computerService,
-		userService,
-		bookingService,
-		packageService,
-	)
+
+	svc := service.NewService(computerService, userService, bookingService, packageService)
+
+	// workers
+	startWorkers(*svc, ctx)
 
 	mux := http.NewServeMux()
 	handlers := handlers.NewHandler(svc, logger, jwtManager)
@@ -58,8 +67,6 @@ func Run() {
 	address := fmt.Sprintf("%s:%s", cfg.Server.Adress, cfg.Server.Port)
 	srv := httpserver.NewServer(mux, logger, address)
 
-	turnOnTimers(*svc)
-
 	if err := srv.Start(); err != nil {
 		logger.Error("Failed to start server", slog.Any("error", err))
 		return
@@ -67,39 +74,16 @@ func Run() {
 
 }
 
-func turnOnTimers(service service.Service) {
+func startWorkers(svc service.Service, ctx context.Context) {
 	refresherTicker := time.NewTicker(1 * time.Minute)
 	defer refresherTicker.Stop()
-
-	go refresherCallback(refresherTicker, service.BookingService)
+	go worker.RefresherCallback(refresherTicker, svc.BookingService)
 
 	creatorTicker := time.NewTicker(10 * time.Minute)
 	defer creatorTicker.Stop()
+	go worker.GeneratorCallback(creatorTicker, svc.BookingService)
 
-	go generatorCallback(creatorTicker, service.BookingService)
-
-}
-
-func refresherCallback(ticker *time.Ticker, service service.BookingService) {
-	for range ticker.C {
-		service.RefreshBookings()
-	}
-}
-
-func generatorCallback(ticker *time.Ticker, service service.BookingService) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	// Run in ticker
-	for range ticker.C {
-		for range 10 {
-			select {
-			case <-ctx.Done():
-				cancel()
-				return
-			default:
-				service.GenerateBooking(ctx)
-			}
-		}
-	}
-
-	cancel()
+	cleanupTicker := time.NewTicker(time.Minute)
+	defer cleanupTicker.Stop()
+	go worker.StartUserCleanupWorker(ctx, svc.UserService)
 }

@@ -11,14 +11,14 @@ import (
 	"time"
 )
 
-// @Summary Get all bookings with time format "2006-01-02T15:04:05Z07:00"
-// @Description Returns a list of bookings with various statuses
-// @Tags Bookings
-// @Accept json
-// @Produce json
-// @Success 200 {array} entities.Booking
-// @Failure 500 {object} server.JSONAnswer "Internal server error"
-// @Router /api/bookings [get]
+// @Summary		Get all bookings with time format "2006-01-02T15:04:05Z07:00"
+// @Description	Returns a list of bookings with various statuses
+// @Tags			Bookings
+// @Accept			json
+// @Produce		json
+// @Success		200	{array}		entities.Booking
+// @Failure		500	{object}	handlers.JSONAnswer	"Internal server error"
+// @Router			/api/bookings [get]
 func (s *Handler) getBookings(w http.ResponseWriter, r *http.Request) {
 	bookings, err := s.service.BookingService.GetAllBookings()
 	if err != nil {
@@ -45,16 +45,16 @@ func (s *Handler) getBookings(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @Summary Create a new booking
-// @Description Creates a new booking with the given details
-// @Tags Bookings
-// @Accept json
-// @Produce json
-// @Param booking body entities.Booking true "Booking details"
-// @Success 201 {object} server.JSONAnswer "Booking created successfully"
-// @Failure 400 {object} server.JSONAnswer "Invalid request body"
-// @Failure 500 {object} server.JSONAnswer "Internal server error"
-// @Router /api/bookings [post]
+// @Summary		Create a new booking
+// @Description	Creates a new booking with the given details
+// @Tags			Bookings
+// @Accept			json
+// @Produce		json
+// @Param			booking	body		entities.Booking	true	"Booking details"
+// @Success		201		{object}	handlers.JSONAnswer	"Booking created successfully"
+// @Failure		400		{object}	handlers.JSONAnswer	"Invalid request body"
+// @Failure		500		{object}	handlers.JSONAnswer	"Internal server error"
+// @Router			/api/bookings [post]
 func (s *Handler) postBookings(w http.ResponseWriter, r *http.Request) {
 
 	var booking entities.Booking
@@ -120,16 +120,16 @@ func (s *Handler) HandleBookings(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @Summary Get bookings for a specific computer with time format "2006-01-02T15:04:05Z07:00"
-// @Description Returns a list of bookings for the specified computer ID
-// @Tags Computers
-// @Accept json
-// @Produce json
-// @Param id path int64 true "Computer ID"
-// @Success 200 {array} entities.Booking "List of bookings for the computer"
-// @Failure 400 {object} server.JSONAnswer "Invalid computer ID"
-// @Failure 500 {object} server.JSONAnswer "Internal server error"
-// @Router /api/computers/{id}/bookings [get]
+// @Summary		Get bookings for a specific computer with time format "2006-01-02T15:04:05Z07:00"
+// @Description	Returns a list of bookings for the specified computer ID
+// @Tags			Computers
+// @Accept			json
+// @Produce		json
+// @Param			id	path		int64				true	"Computer ID"
+// @Success		200	{array}		entities.Booking	"List of bookings for the computer"
+// @Failure		400	{object}	handlers.JSONAnswer	"Invalid computer ID"
+// @Failure		500	{object}	handlers.JSONAnswer	"Internal server error"
+// @Router			/api/computers/{id}/bookings [get]
 func (s *Handler) getComputerBookings(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
@@ -184,14 +184,14 @@ func (s *Handler) HandleComputerBookings(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// @Summary Get finished bookings with time format "2006-01-02T15:04:05Z07:00"
-// @Description Returns a list of finished bookings
-// @Tags Bookings
-// @Accept json
-// @Produce json
-// @Success 200 {array} entities.Booking "List of finished bookings"
-// @Failure 500 {object} server.JSONAnswer "Internal server error"
-// @Router /api/bookings/finished [get]
+// @Summary		Get finished bookings with time format "2006-01-02T15:04:05Z07:00"
+// @Description	Returns a list of finished bookings
+// @Tags			Bookings
+// @Accept			json
+// @Produce		json
+// @Success		200	{array}		entities.Booking	"List of finished bookings"
+// @Failure		500	{object}	handlers.JSONAnswer	"Internal server error"
+// @Router			/api/bookings/finished [get]
 func (s *Handler) getFinishedBookings(w http.ResponseWriter, r *http.Request) {
 	bookings, err := s.service.BookingService.GetFinishedBookings()
 	if err != nil {
@@ -217,14 +217,14 @@ func (s *Handler) HandleFinishedBookings(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// @Summary Get pending bookings with time format "2006-01-02T15:04:05Z07:00"
-// @Description Returns a list of pending bookings
-// @Tags Bookings
-// @Accept json
-// @Produce json
-// @Success 200 {array} entities.Booking "List of pending bookings"
-// @Failure 500 {object} server.JSONAnswer "Internal server error"
-// @Router /api/bookings/pending [get]
+// @Summary		Get pending bookings with time format "2006-01-02T15:04:05Z07:00"
+// @Description	Returns a list of pending bookings
+// @Tags			Bookings
+// @Accept			json
+// @Produce		json
+// @Success		200	{array}		entities.Booking	"List of pending bookings"
+// @Failure		500	{object}	handlers.JSONAnswer	"Internal server error"
+// @Router			/api/bookings/pending [get]
 func (s *Handler) getPendingBookings(w http.ResponseWriter, r *http.Request) {
 	bookings, err := s.service.BookingService.GetPendingBookings()
 	if err != nil {
@@ -250,14 +250,14 @@ func (s *Handler) HandlePendingBookings(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-// @Summary Get active bookings with time format "2006-01-02T15:04:05Z07:00"
-// @Description Returns a list of active bookings
-// @Tags Bookings
-// @Accept json
-// @Produce json
-// @Success 200 {array} entities.Booking "List of active bookings"
-// @Failure 500 {object} server.JSONAnswer "Internal server error"
-// @Router /api/bookings/active [get]
+// @Summary		Get active bookings with time format "2006-01-02T15:04:05Z07:00"
+// @Description	Returns a list of active bookings
+// @Tags			Bookings
+// @Accept			json
+// @Produce		json
+// @Success		200	{array}		entities.Booking	"List of active bookings"
+// @Failure		500	{object}	handlers.JSONAnswer	"Internal server error"
+// @Router			/api/bookings/active [get]
 func (s *Handler) getActiveBookings(w http.ResponseWriter, r *http.Request) {
 	activeBookings, err := s.service.BookingService.GetActiveBookings()
 	if err != nil {
@@ -284,14 +284,14 @@ func (s *Handler) HandleActiveBookings(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @Summary Get cancelled bookings with time format "2006-01-02T15:04:05Z07:00"
-// @Description Returns a list of cancelled bookings
-// @Tags Bookings
-// @Accept json
-// @Produce json
-// @Success 200 {array} entities.Booking "List of cancelled bookings"
-// @Failure 500 {object} server.JSONAnswer "Internal server error"
-// @Router /api/bookings/cancelled [get]
+// @Summary		Get cancelled bookings with time format "2006-01-02T15:04:05Z07:00"
+// @Description	Returns a list of cancelled bookings
+// @Tags			Bookings
+// @Accept			json
+// @Produce		json
+// @Success		200	{array}		entities.Booking	"List of cancelled bookings"
+// @Failure		500	{object}	handlers.JSONAnswer	"Internal server error"
+// @Router			/api/bookings/cancelled [get]
 func (s *Handler) getCancelledBookings(w http.ResponseWriter, r *http.Request) {
 	cancelledBookings, err := s.service.BookingService.GetCancelledBookings()
 	if err != nil {
@@ -318,16 +318,16 @@ func (s *Handler) HandleCancelledBookings(w http.ResponseWriter, r *http.Request
 	}
 }
 
-// @Summary Get the left time for a specific computer in seconds
-// @Description Returns the left time for the specified computer ID
-// @Tags Bookings
-// @Accept json
-// @Produce json
-// @Param id path int64 true "Computer ID"
-// @Success 200 {object} entities.ComputerOccupiedLeftTime "Left time for the computer"
-// @Failure 400 {object} server.JSONAnswer "Invalid computer ID"
-// @Failure 500 {object} server.JSONAnswer "Internal server error"
-// @Router /api/bookings/{id}/left [get]
+// @Summary		Get the left time for a specific computer in seconds
+// @Description	Returns the left time for the specified computer ID
+// @Tags			Bookings
+// @Accept			json
+// @Produce		json
+// @Param			id	path		int64								true	"Computer ID"
+// @Success		200	{object}	entities.ComputerOccupiedLeftTime	"Left time for the computer"
+// @Failure		400	{object}	handlers.JSONAnswer					"Invalid computer ID"
+// @Failure		500	{object}	handlers.JSONAnswer					"Internal server error"
+// @Router			/api/bookings/{id}/left [get]
 func (s *Handler) HandleComputerLeftTime(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -355,14 +355,14 @@ func (s *Handler) HandleComputerLeftTime(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// @Summary Get computers left time in seconds
-// @Description Returns a list of computers left time
-// @Tags Bookings
-// @Accept json
-// @Produce json
-// @Success 200 {array} entities.ComputerOccupiedLeftTime "List of computers left time"
-// @Failure 500 {object} server.JSONAnswer "Internal server error"
-// @Router /api/bookings/computers-left-time [get]
+// @Summary		Get computers left time in seconds
+// @Description	Returns a list of computers left time
+// @Tags			Bookings
+// @Accept			json
+// @Produce		json
+// @Success		200	{array}		entities.ComputerOccupiedLeftTime	"List of computers left time"
+// @Failure		500	{object}	handlers.JSONAnswer					"Internal server error"
+// @Router			/api/bookings/computers-left-time [get]
 func (s *Handler) HandleComputersLeftTime(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:

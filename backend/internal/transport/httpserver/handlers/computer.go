@@ -9,13 +9,13 @@ import (
 	"strconv"
 )
 
-// @Summary Get all computers
-// @Description Returns a list of all computers
-// @Tags Computers
-// @Produce json
-// @Success 200 {array} entities.Computer "List of computers"
-// @Failure 500 {object} server.JSONAnswer "Internal server error"
-// @Router /api/computers [get]
+// @Summary		Get all computers
+// @Description	Returns a list of all computers
+// @Tags			Computers
+// @Produce		json
+// @Success		200	{array}		entities.Computer	"List of computers"
+// @Failure		500	{object}	handlers.JSONAnswer	"Internal server error"
+// @Router			/api/computers [get]
 func (s *Handler) getComputers(w http.ResponseWriter, r *http.Request) {
 	computerSpecs, err := s.service.ComputerService.GetAllComputers()
 	if err != nil {
@@ -33,16 +33,16 @@ func (s *Handler) getComputers(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// @Summary Create a new computer
-// @Description Creates a new computer
-// @Tags Computers
-// @Accept json
-// @Produce json
-// @Param computer body entities.Computer true "Computer details"
-// @Success 201 {object} server.JSONAnswer "Computer created successfully"
-// @Failure 400 {object} server.JSONAnswer "Invalid request body"
-// @Failure 500 {object} server.JSONAnswer "Internal server error"
-// @Router /api/computers [post]
+// @Summary		Create a new computer
+// @Description	Creates a new computer
+// @Tags			Computers
+// @Accept			json
+// @Produce		json
+// @Param			computer	body		entities.Computer	true	"Computer details"
+// @Success		201			{object}	handlers.JSONAnswer	"Computer created successfully"
+// @Failure		400			{object}	handlers.JSONAnswer	"Invalid request body"
+// @Failure		500			{object}	handlers.JSONAnswer	"Internal server error"
+// @Router			/api/computers [post]
 func (s *Handler) postComputers(w http.ResponseWriter, r *http.Request) {
 	var computer entities.Computer
 
@@ -90,16 +90,16 @@ func (s *Handler) HandleComputers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @Summary Get a specific computer
-// @Description Returns a specific computer by ID
-// @Tags Computers
-// @Produce json
-// @Param id path int64 true "Computer ID"
-// @Success 200 {object} entities.Computer "Computer details"
-// @Failure 400 {object} server.JSONAnswer "Invalid computer ID"
-// @Failure 404 {object} server.JSONAnswer "Computer not found"
-// @Failure 500 {object} server.JSONAnswer "Internal server error"
-// @Router /api/computers/{id} [get]
+// @Summary		Get a specific computer
+// @Description	Returns a specific computer by ID
+// @Tags			Computers
+// @Produce		json
+// @Param			id	path		int64				true	"Computer ID"
+// @Success		200	{object}	entities.Computer	"Computer details"
+// @Failure		400	{object}	handlers.JSONAnswer	"Invalid computer ID"
+// @Failure		404	{object}	handlers.JSONAnswer	"Computer not found"
+// @Failure		500	{object}	handlers.JSONAnswer	"Internal server error"
+// @Router			/api/computers/{id} [get]
 func (s *Handler) getComputer(w http.ResponseWriter, r *http.Request, id int64) {
 	computer, err := s.service.ComputerService.GetComputer(id)
 	if err != nil {
@@ -132,16 +132,16 @@ func (s *Handler) getComputer(w http.ResponseWriter, r *http.Request, id int64) 
 
 }
 
-// @Summary Delete a specific computer
-// @Description Deletes a specific computer by ID
-// @Tags Computers
-// @Produce json
-// @Param id path int64 true "Computer ID"
-// @Success 204 {object} server.JSONAnswer "Computer deleted successfully"
-// @Failure 400 {object} server.JSONAnswer "Invalid computer ID"
-// @Failure 404 {object} server.JSONAnswer "Computer not found"
-// @Failure 500 {object} server.JSONAnswer "Internal server error"
-// @Router /api/computers/{id} [delete]
+// @Summary		Delete a specific computer
+// @Description	Deletes a specific computer by ID
+// @Tags			Computers
+// @Produce		json
+// @Param			id	path		int64				true	"Computer ID"
+// @Success		204	{object}	handlers.JSONAnswer	"Computer deleted successfully"
+// @Failure		400	{object}	handlers.JSONAnswer	"Invalid computer ID"
+// @Failure		404	{object}	handlers.JSONAnswer	"Computer not found"
+// @Failure		500	{object}	handlers.JSONAnswer	"Internal server error"
+// @Router			/api/computers/{id} [delete]
 func (s *Handler) deleteComputer(w http.ResponseWriter, r *http.Request, id int64) {
 	err := s.service.ComputerService.DeleteComputer(id)
 	if err != nil {
@@ -191,14 +191,14 @@ func (s *Handler) HandleComputer(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// @Summary Get all computer statuses
-// @Description Returns a list of all computer statuses
-// @Tags Computers
-// @Accept json
-// @Produce json
-// @Success 200 {array} entities.ComputerStatus "List of computer statuses"
-// @Failure 500 {object} server.JSONAnswer "Internal server error"
-// @Router /api/computers/statuses [get]
+// @Summary		Get all computer statuses
+// @Description	Returns a list of all computer statuses
+// @Tags			Computers
+// @Accept			json
+// @Produce		json
+// @Success		200	{array}		entities.ComputerStatus	"List of computer statuses"
+// @Failure		500	{object}	handlers.JSONAnswer		"Internal server error"
+// @Router			/api/computers/statuses [get]
 func (s *Handler) HandleComputerStatuses(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", "GET")
@@ -219,17 +219,17 @@ func (s *Handler) HandleComputerStatuses(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// @Summary Get the status of a specific computer
-// @Description Returns the status of the specified computer ID
-// @Tags Computers
-// @Accept json
-// @Produce json
-// @Param id path int64 true "Computer ID"
-// @Success 200 {object} entities.ComputerStatus "Computer status"
-// @Failure 400 {object} server.JSONAnswer "Invalid computer ID"
-// @Failure 404 {object} server.JSONAnswer "Computer not found"
-// @Failure 500 {object} server.JSONAnswer "Internal server error"
-// @Router /api/computers/{id}/status [get]
+// @Summary		Get the status of a specific computer
+// @Description	Returns the status of the specified computer ID
+// @Tags			Computers
+// @Accept			json
+// @Produce		json
+// @Param			id	path		int64					true	"Computer ID"
+// @Success		200	{object}	entities.ComputerStatus	"Computer status"
+// @Failure		400	{object}	handlers.JSONAnswer		"Invalid computer ID"
+// @Failure		404	{object}	handlers.JSONAnswer		"Computer not found"
+// @Failure		500	{object}	handlers.JSONAnswer		"Internal server error"
+// @Router			/api/computers/{id}/status [get]
 func (s *Handler) HandleComputerStatus(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.Header().Set("Allow", "GET")

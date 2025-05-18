@@ -1,5 +1,5 @@
 CREATE TYPE user_role AS ENUM ('client', 'admin', 'analyst', 'manager');
-CREATE TYPE user_status AS ENUM ('active', 'blocked');
+CREATE TYPE user_status AS ENUM ('active', 'blocked','unverified');
 CREATE TYPE user_promotion AS ENUM ('flyer', 'birthday', '');
 
 CREATE TABLE users (

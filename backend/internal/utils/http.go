@@ -19,6 +19,14 @@ func WriteJSON(w http.ResponseWriter, status int, v any) error {
 	return json.NewEncoder(w).Encode(v)
 }
 
+type Message struct {
+	Message string `json:"message"`
+}
+
+type HTTPError struct {
+	Error string `json:"error"`
+}
+
 func WriteError(w http.ResponseWriter, status int, err error) {
-	WriteJSON(w, status, map[string]string{"error": err.Error()})
+	json.NewEncoder(w).Encode(HTTPError{Error: err.Error()})
 }

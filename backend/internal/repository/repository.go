@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 	"esports_club_booking/internal/entities"
+	"esports_club_booking/internal/repository/postgres"
+	"time"
 )
 
 type Repository struct {
@@ -21,7 +23,7 @@ func NewRepository(
 		panic("User repository is nil")
 	} else if computerRepository == nil {
 		panic("Computer repository is nil")
-	} else if userRepository == nil {
+	} else if bookingRepository == nil {
 		panic("User repository is nil")
 	}
 	return &Repository{
@@ -39,6 +41,13 @@ type UserRepository interface {
 	Create(entity *entities.User, hashedPassword string) (int64, error)
 	Update(*entities.Booking) (int64, error)
 	Delete(int64) error
+	GetVerificationByEmail(email string) (postgres.EmailVerification, error)
+	SaveEmailVerification(email string, code string, expiresAt time.Time) error
+	MarkEmailVerified(userID int64) error
+	BlockEmail(email string, duration time.Duration) error
+	IncrementAttempt(email string) error
+	DeleteVerification(email string) error
+	DeleteUnverifiedUsers(olderThan time.Time) error
 }
 
 type ComputerRepository interface {

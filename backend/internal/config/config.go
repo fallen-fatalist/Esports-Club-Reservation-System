@@ -9,9 +9,10 @@ import (
 
 type (
 	Config struct {
-		Server    Server
-		DataBase  DataBase
-		JWTConfig JWTConfig
+		Server      Server
+		DataBase    DataBase
+		JWT         JWTConfig
+		EmailSender EmailSender
 	}
 
 	Server struct {
@@ -31,6 +32,13 @@ type (
 		Secret     string
 		Expiration time.Duration
 	}
+
+	EmailSender struct {
+		FromAddress string
+		SMTPHost    string
+		SMTPPort    int64
+		Password    string
+	}
 )
 
 func NewConfig() *Config {
@@ -45,11 +53,18 @@ func NewConfig() *Config {
 			Port:     getEnvStr("DB_PORT", "5432"),
 			Name:     getEnvStr("DB_NAME", "booking_service"),
 		},
-		JWTConfig: JWTConfig{
+		JWT: JWTConfig{
 			Secret:     getEnvStr("JWT_SECRET", "supersecretkey"),
 			Expiration: time.Duration(getEnvInt64("JWT_EXPIRATION", 60*60)) * time.Second, // default: 1 hour
 		},
+		EmailSender: EmailSender{
+			FromAddress: getEnvStr("EMAIL_SENDER_FROM_ADDRESS", "esports.booking.service@gmail.com"),
+			SMTPHost:    getEnvStr("EMAIL_SENDER_SMTP_HOST", "smtp.gmail.com"),
+			SMTPPort:    getEnvInt64("EMAIL_SENDER_SMTP_PORT", 587),
+			Password:    getEnvStr("EMAIL_SENDER_APP_PASSWORD", ""),
+		},
 	}
+
 }
 
 func (d *DataBase) DSN() string {

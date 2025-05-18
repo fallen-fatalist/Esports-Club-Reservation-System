@@ -41,7 +41,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     }
                 }
@@ -73,19 +73,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Booking created successfully",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     },
                     "400": {
                         "description": "Invalid request body",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     }
                 }
@@ -117,7 +117,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     }
                 }
@@ -149,7 +149,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     }
                 }
@@ -181,7 +181,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     }
                 }
@@ -213,7 +213,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     }
                 }
@@ -245,7 +245,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     }
                 }
@@ -283,13 +283,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid computer ID",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     }
                 }
@@ -318,7 +318,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     }
                 }
@@ -350,19 +350,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Computer created successfully",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     },
                     "400": {
                         "description": "Invalid request body",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     }
                 }
@@ -394,7 +394,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     }
                 }
@@ -429,19 +429,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid computer ID",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     },
                     "404": {
                         "description": "Computer not found",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     }
                 }
@@ -468,25 +468,25 @@ const docTemplate = `{
                     "204": {
                         "description": "Computer deleted successfully",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     },
                     "400": {
                         "description": "Invalid computer ID",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     },
                     "404": {
                         "description": "Computer not found",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     }
                 }
@@ -527,13 +527,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid computer ID",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     }
                 }
@@ -571,19 +571,221 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid computer ID",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     },
                     "404": {
                         "description": "Computer not found",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/server.JSONAnswer"
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    }
+                }
+            }
+        },
+        "/login": {
+            "post": {
+                "description": "Login user with email, login and password, returns JWT token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "User login",
+                "parameters": [
+                    {
+                        "description": "Login credentials",
+                        "name": "credentials",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.LoginUser"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "JWT token",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request, validation error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized, invalid credentials or blocked user",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/register": {
+            "post": {
+                "description": "Registers a user with email, login and password",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Register a new user",
+                "parameters": [
+                    {
+                        "description": "User registration data",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.RegisterUser"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "User created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Message"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request, validation error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "409": {
+                        "description": "User already exists",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/request-code": {
+            "post": {
+                "description": "Sends a verification code to the email provided in request body",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Send verification code to user's email",
+                "parameters": [
+                    {
+                        "description": "Verification code request",
+                        "name": "verificationRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.VerificationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Verification code sent",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/verify-email": {
+            "post": {
+                "description": "Verifies user's email using a verification code",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Verify email with code",
+                "parameters": [
+                    {
+                        "description": "Email verification request",
+                        "name": "verifyEmailRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.VerifyEmailRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Email verified successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request or verification error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "429": {
+                        "description": "Too many attempts",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
                         }
                     }
                 }
@@ -591,6 +793,62 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "dto.LoginUser": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "description": "required: true\nexample: user@example.com",
+                    "type": "string"
+                },
+                "login": {
+                    "description": "required: true\nexample: username123",
+                    "type": "string"
+                },
+                "password": {
+                    "description": "required: true\nexample: securePassword123",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.RegisterUser": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "description": "required: true\nexample: user@example.com",
+                    "type": "string"
+                },
+                "login": {
+                    "description": "required: true\nexample: username123",
+                    "type": "string"
+                },
+                "password": {
+                    "description": "required: true\nexample: securePassword123",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.VerificationRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "description": "required: true\nexample: user@example.com",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.VerifyEmailRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "required: true\nexample: 123456",
+                    "type": "string"
+                },
+                "email": {
+                    "description": "required: true\nexample: user@example.com",
+                    "type": "string"
+                }
+            }
+        },
         "entities.Booking": {
             "type": "object",
             "properties": {
@@ -692,12 +950,28 @@ const docTemplate = `{
                 }
             }
         },
-        "server.JSONAnswer": {
+        "handlers.JSONAnswer": {
             "type": "object",
             "properties": {
                 "id": {
                     "type": "integer"
                 },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "utils.HTTPError": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "utils.Message": {
+            "type": "object",
+            "properties": {
                 "message": {
                     "type": "string"
                 }
