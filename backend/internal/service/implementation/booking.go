@@ -10,18 +10,29 @@ import (
 	"log"
 	"log/slog"
 	"math/rand"
+	"sort"
 	"time"
 )
 
 type BookingService struct {
-	repository repository.BookingRepository
+	repository     repository.BookingRepository
+	computerNumber int
 }
 
-func NewBookingService(repository repository.BookingRepository) (*BookingService, error) {
+func NewBookingService(repository repository.BookingRepository, computerNumber int) (*BookingService, error) {
 	if repository == nil {
 		log.Fatal("Nil repository provided to booking service")
 	}
-	return &BookingService{repository: repository}, nil
+
+	service := &BookingService{
+		repository: repository,
+	}
+
+	if computerNumber > 0 {
+		service.computerNumber = computerNumber
+	}
+
+	return service, nil
 }
 
 func (s *BookingService) GetAllBookings() ([]*entities.Booking, error) {
@@ -71,15 +82,28 @@ func (s *BookingService) GetComputerBookings(id int64) ([]*entities.Booking, err
 		return nil, service.ErrUnhandledError
 	}
 
-	comp_bookings := make([]*entities.Booking, 0, len(bookings))
+	compBookings := make([]*entities.Booking, 0, len(bookings))
 
 	for _, booking := range bookings {
 		if booking.ComputerID == id {
-			comp_bookings = append(comp_bookings, booking)
+			compBookings = append(compBookings, booking)
 		}
 	}
 
-	return comp_bookings, nil
+	// TODO: use binary heap
+	sort.Slice(compBookings, func(i, j int) bool {
+		t1, err1 := time.Parse(time.RFC3339, compBookings[i].StartTime)
+		t2, err2 := time.Parse(time.RFC3339, compBookings[j].StartTime)
+
+		// Fall back to string comparison if parsing fails
+		if err1 != nil || err2 != nil {
+			return false
+		}
+
+		return t1.Before(t2)
+	})
+
+	return compBookings, nil
 }
 
 func (s *BookingService) GetActiveBookings() ([]*entities.Booking, error) {
@@ -113,6 +137,7 @@ func (s *BookingService) GetActiveBookings() ([]*entities.Booking, error) {
 			})
 		}
 	}
+
 	return pending_bookings, nil
 }
 
@@ -219,50 +244,27 @@ func (s *BookingService) GetCancelledBookings() ([]*entities.Booking, error) {
 
 }
 
+// TODO: optimize the GetComputersLeftOccupiedTime with bulk query
 func (s *BookingService) GetComputersLeftOccupiedTime() ([]*entities.ComputerOccupiedLeftTime, error) {
-	bookings, err := s.repository.GetAll()
-	if err != nil {
-		return nil, err
-	}
+	leftTimes := make([]*entities.ComputerOccupiedLeftTime, 0, s.computerNumber)
 
-	now := time.Now().UTC()
-	var leftSeconds int64
-	leftTimes := make([]*entities.ComputerOccupiedLeftTime, 0, len(bookings))
-
-	for _, booking := range bookings {
-		if booking.Status == "active" {
-			endTime, err := time.Parse(time.RFC3339, booking.EndTime)
-			if err != nil {
-				return nil, fmt.Errorf("invalid end_time format for booking %d: %w", booking.ID, err)
-			}
-
-			if endTime.After(now) {
-				leftDuration := endTime.Sub(now)
-				leftSeconds = int64(leftDuration.Seconds())
-			} else {
-				leftSeconds = 0
-				s.repository.Update(&entities.Booking{
-					ID:         booking.ID,
-					UserID:     booking.UserID,
-					ComputerID: booking.ComputerID,
-					PackageID:  booking.PackageID,
-					StartTime:  booking.StartTime,
-					EndTime:    booking.EndTime,
-					Status:     "finished",
-					CreatedAt:  booking.CreatedAt,
-				})
-			}
+	for idx := 0; idx < s.computerNumber; idx++ {
+		leftTime, err := s.GetComputerLeftOccupiedTime(int64(idx))
+		if err != nil {
+			slog.Error("Error getting computer left occupied time:", slog.Any("error", err))
+			continue
 		}
-
-		leftTimes = append(leftTimes, &entities.ComputerOccupiedLeftTime{
-			ComputerID:  booking.ComputerID,
-			LeftSeconds: leftSeconds,
-		})
+		leftTimes = append(leftTimes, leftTime)
 	}
 
 	return leftTimes, nil
 }
 
+/* This function calculates the remaining occupied time for a specific computer with the given id.
+* Total occupied time in seconds for continuous bookings for specific computer are calculated
+* If the current time less than next booking start time and difference not more than an hour, then this difference added to occupied time
+* If the booking active, the difference between current time and end time will be added
+ */
 func (s *BookingService) GetComputerLeftOccupiedTime(id int64) (*entities.ComputerOccupiedLeftTime, error) {
 	bookings, err := s.GetComputerBookings(id)
 	if err != nil {
@@ -276,30 +278,37 @@ func (s *BookingService) GetComputerLeftOccupiedTime(id int64) (*entities.Comput
 		LeftSeconds: 0,
 	}
 
+	// Sliding window, now times move to the end of every next active or pending booking
 	for _, booking := range bookings {
-		if booking.Status == "active" {
-			endTime, err := time.Parse(time.RFC3339, booking.EndTime)
-			if err != nil {
-				return nil, fmt.Errorf("invalid end_time format for booking %d: %w", booking.ID, err)
-			}
-
-			if endTime.After(now) {
-				leftDuration := endTime.Sub(now)
-				return &entities.ComputerOccupiedLeftTime{
-					ComputerID:  booking.ComputerID,
-					LeftSeconds: int64(leftDuration.Seconds()),
-				}, nil
-			} else {
-				return &leftTime, nil
-			}
+		startTime, err := time.Parse(time.RFC3339, booking.StartTime)
+		if err != nil {
+			slog.Error("Error parsing time while iterating Bookings:", slog.Any("error", err))
+			continue
 		}
+
+		endTime, err := time.Parse(time.RFC3339, booking.EndTime)
+		if err != nil {
+			slog.Error("Error parsing time while iterating Bookings:", slog.Any("error", err))
+			continue
+		}
+
+		// Before the booking in hour
+		if now.Before(startTime) && startTime.Sub(now).Hours() < 1 {
+			leftTime.LeftSeconds += int64(startTime.Sub(now).Seconds())
+			leftTime.LeftSeconds += int64(endTime.Sub(startTime).Seconds())
+			// In the middle of booking
+		} else if now.After(startTime) && now.Before(endTime) {
+			leftTime.LeftSeconds += int64(endTime.Sub(now).Seconds())
+		}
+
+		// Move the now pointer, to end time of the booking
+		now = endTime
 	}
 
-	// No active booking found
 	return &leftTime, nil
 }
 
-func (s *BookingService) RefreshBookings() {
+func (s *BookingService) RefreshStatus() {
 	s.repository.RefreshStatus()
 }
 
@@ -310,7 +319,7 @@ func (s *BookingService) GenerateBooking(ctx context.Context) {
 	userID := int64(rand.Intn(43) + 1)
 	computerID := int64(rand.Intn(40) + 1)
 
-	startTime := time.Now().UTC().Add(time.Duration(rand.Intn(31)+30) * time.Minute)
+	startTime := time.Now().UTC().Add(time.Duration(rand.Intn(30)+1) * time.Minute)
 	endTime := startTime.Add(time.Duration(rand.Intn(3)+1) * time.Hour)
 
 	var packageID int
