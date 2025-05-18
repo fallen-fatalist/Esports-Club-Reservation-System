@@ -207,24 +207,33 @@ func (r *BookingRepository) Delete(id int64) error {
 func (r *BookingRepository) RefreshStatus() {
 	now := time.Now().UTC()
 
-	// 1. Set 'finished' where end_time is in the past
+	// 1. Set 'active' where start_time is in the past
 	_, err := r.db.Exec(`
 		UPDATE bookings
+		SET status = 'active'
+		WHERE start_time <= $1 AND $1 < end_time AND status = 'pending'
+	`, now)
+	if err != nil {
+		slog.Error("error setting active bookings: %v", slog.Any("error", err))
+	}
+
+	// 2. Set 'finished' where end_time is in the past
+	_, err = r.db.Exec(`
+		UPDATE bookings
 		SET status = 'finished'
-		WHERE end_time <= $1 AND status IN ('pending', 'active')
+		WHERE end_time < $1 AND status = 'active'
 	`, now)
 	if err != nil {
 		slog.Error("error setting finished bookings: %v", slog.Any("error", err))
 	}
 
 	// 2. Set 'cancelled' for pending bookings that haven't started 15+ minutes after start_time
-	_, err = r.db.Exec(`
-		UPDATE bookings
-		SET status = 'cancelled'
-		WHERE start_time + interval '15 minutes' <= $1 AND status = 'pending'
-	`, now)
-	if err != nil {
-		slog.Error("error setting cancelled bookings: %v", err)
-	}
-
+	// _, err = r.db.Exec(`
+	// 	UPDATE bookings
+	// 	SET status = 'cancelled'
+	// 	WHERE start_time + interval '15 minutes' <= $1 AND status = 'pending'
+	// `, now)
+	// if err != nil {
+	// 	slog.Error("error setting cancelled bookings: %v", err)
+	// }
 }

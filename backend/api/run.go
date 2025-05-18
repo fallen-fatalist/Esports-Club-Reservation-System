@@ -52,13 +52,31 @@ func Run() {
 
 	userService, _ := implementation.NewUserService(userRepository, jwtManager, emailSender)
 	computerService, _ := implementation.NewComputerService(computerRepository)
-	bookingService, _ := implementation.NewBookingService(bookingRepository)
 	packageService, _ := implementation.NewPackageService(packageRepository)
 
+<<<<<<< HEAD
 	svc := service.NewService(computerService, userService, bookingService, packageService)
 
 	// workers
 	startWorkers(*svc, ctx)
+=======
+	// Fetch the number of computers
+	var computerNum int
+	computers, err := computerService.GetAllComputers()
+	if err == nil {
+		computerNum = len(computers)
+	}
+	bookingService, _ := implementation.NewBookingService(bookingRepository, computerNum)
+
+	svc := service.NewService(
+		computerService,
+		userService,
+		bookingService,
+		packageService,
+	)
+>>>>>>> d2baa29de07debb9e10b2af11cef6f0c1db7ad21
+
+	// Set the number of computers
 
 	mux := http.NewServeMux()
 	handlers := handlers.NewHandler(svc, logger, jwtManager)
@@ -74,6 +92,7 @@ func Run() {
 
 }
 
+<<<<<<< HEAD
 func startWorkers(svc service.Service, ctx context.Context) {
 	refresherTicker := time.NewTicker(1 * time.Minute)
 	defer refresherTicker.Stop()
@@ -86,4 +105,25 @@ func startWorkers(svc service.Service, ctx context.Context) {
 	cleanupTicker := time.NewTicker(time.Minute)
 	defer cleanupTicker.Stop()
 	go worker.StartUserCleanupWorker(ctx, svc.UserService)
+=======
+func turnOnTimers(service service.Service) {
+	refresherTicker := time.NewTicker(10 * time.Second)
+	go refresherCallback(refresherTicker, service.BookingService)
+
+	creatorTicker := time.NewTicker(10 * time.Minute)
+	go generatorCallback(creatorTicker, service.BookingService)
+}
+
+func refresherCallback(ticker *time.Ticker, service service.BookingService) {
+	for range ticker.C {
+		service.RefreshStatus()
+	}
+}
+
+func generatorCallback(ticker *time.Ticker, service service.BookingService) {
+	// Run in ticker
+	for range ticker.C {
+		service.GenerateBooking(context.Background())
+	}
+>>>>>>> d2baa29de07debb9e10b2af11cef6f0c1db7ad21
 }

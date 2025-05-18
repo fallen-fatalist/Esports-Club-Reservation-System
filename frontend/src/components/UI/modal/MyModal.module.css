@@ -11,6 +11,7 @@
 }
 
 .myModalContent {
+    position: relative;
     padding: 25px;
     background-color: white;
     border-radius: 16px;

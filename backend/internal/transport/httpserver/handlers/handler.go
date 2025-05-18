@@ -25,8 +25,10 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("/computers/{id}", h.HandleComputer)
 	mux.HandleFunc("/computers/status", h.HandleComputerStatuses)
 	mux.HandleFunc("/computers/{id}/status", h.HandleComputerStatus)
+	mux.HandleFunc("/computers/{id}/bookings", h.HandleComputerBookings)
 
 	/* Bookings */
+<<<<<<< HEAD
 	mux.HandleFunc("/bookings/{id}", h.HandleComputerBookings)
 	mux.HandleFunc("/bookings", auth.WithAuth(h.jwtMng, allRoles, h.HandleBookings))
 	mux.HandleFunc("/bookings/pending", auth.WithAuth(h.jwtMng, allRoles, h.HandlePendingBookings))
@@ -35,6 +37,15 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("/bookings/cancelled", auth.WithAuth(h.jwtMng, allRoles, h.HandleCancelledBookings))
 	mux.HandleFunc("/bookings/left", auth.WithAuth(h.jwtMng, allRoles, h.HandleComputersLeftTime))
 	mux.HandleFunc("/bookings/{id}/left", auth.WithAuth(h.jwtMng, allRoles, h.HandleComputerLeftTime))
+=======
+	mux.HandleFunc("/bookings", h.HandleBookings)
+	mux.HandleFunc("/bookings/pending", h.HandlePendingBookings)
+	mux.HandleFunc("/bookings/active", h.HandleActiveBookings)
+	mux.HandleFunc("/bookings/finished", h.HandleFinishedBookings)
+	mux.HandleFunc("/bookings/cancelled", h.HandleCancelledBookings)
+	mux.HandleFunc("/bookings/left", h.HandleComputersLeftTime)
+	mux.HandleFunc("/bookings/{id}/left", h.HandleComputerLeftTime)
+>>>>>>> d2baa29de07debb9e10b2af11cef6f0c1db7ad21
 
 	//mux.HandleFunc("/api/users", s.GetUsers)
 	// mux.Handle("/api/packages", s.GetAllPackages)

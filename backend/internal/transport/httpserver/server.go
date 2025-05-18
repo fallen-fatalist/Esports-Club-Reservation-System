@@ -32,7 +32,7 @@ func (s *Server) Start() error {
 	router.Handle("/api/", http.StripPrefix("/api", s.handler))
 
 	/* Swagger */
-	router.HandleFunc("/docs/", httpSwagger.WrapHandler)
+	router.HandleFunc("/api/docs/", httpSwagger.WrapHandler)
 
 	/* Middlewares attach */
 	RequestLoggerMW := middleware.NewRequestLoggerMW(s.logger)

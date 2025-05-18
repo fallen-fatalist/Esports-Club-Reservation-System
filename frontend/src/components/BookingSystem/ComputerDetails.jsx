@@ -26,11 +26,12 @@ const ComputerDetails = ({ computer, bookings, date }) => {
 
   useEffect(() => {
     const calculateTimeLeft = () => {
-      if (!bookings || !computer?.id) return;
+      if (!Array.isArray(bookings) || !computer?.id) return;
 
       const now = new Date();
       const activeBookings = bookings.filter((booking) => {
         if (
+          !booking ||
           booking.computer_id !== computer.id ||
           booking.status === "cancelled"
         )
@@ -43,8 +44,7 @@ const ComputerDetails = ({ computer, bookings, date }) => {
 
       if (activeBookings.length > 0) {
         const currentBooking = activeBookings.sort(
-          (a, b) =>
-            new Date(a.start_time) - new Date(b.start_time)
+          (a, b) => new Date(a.start_time) - new Date(b.start_time)
         )[0];
 
         const startTime = new Date(currentBooking.start_time);
@@ -70,29 +70,21 @@ const ComputerDetails = ({ computer, bookings, date }) => {
   if (!computer || !detailedComputer) return null;
 
   const selectedDate = new Date(date);
-  const computerBookings = bookings
-    .filter(
-      (b) =>
-        b.computer_id === computer.id &&
-        isSameDay(new Date(b.start_time), selectedDate) &&
-        b.status !== "cancelled"
-    )
-    .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+  const computerBookings = Array.isArray(bookings)
+      ? bookings
+          .filter(
+            (b) =>
+              b &&
+              b.computer_id === computer.id &&
+              isSameDay(new Date(b.start_time), selectedDate) &&
+              b.status !== "cancelled"
+          )
+          .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
+      : [];
 
   return (
     <div className="computer-details">
       <TimelineSchedule bookings={computerBookings} date={selectedDate} />
-      <h3>Computer Info</h3>
-      <div className="computer-specs">
-        <h4>Specifications</h4>
-        <ul className="specs-list">
-          {["cpu", "gpu", "ram", "monitor", "mouse", "keyboard", "headset", "mousepad"].map((spec) => (
-            <li key={spec}>
-              <strong>{spec.toUpperCase()}:</strong> {detailedComputer?.[spec] || "N/A"}
-            </li>
-          ))}
-        </ul>
-      </div>
 
       <div className="computer-schedule">
         {computerBookings.length > 0 ? (
@@ -119,7 +111,7 @@ const ComputerDetails = ({ computer, bookings, date }) => {
             </div>
           </div>
         ) : (
-          <p className="no-bookings">No bookings for this date</p>
+          <></>
         )}
 
         <div className="booking-list">
@@ -175,6 +167,18 @@ const ComputerDetails = ({ computer, bookings, date }) => {
             </div>
           )}
         </div>
+      </div>
+
+      <h3>Computer Specs</h3>
+      <div className="computer-specs">
+        <h4>Specifications</h4>
+        <ul className="specs-list">
+          {["cpu", "gpu", "ram", "monitor", "mouse", "keyboard", "headset", "mousepad"].map((spec) => (
+            <li key={spec}>
+              <strong>{spec.toUpperCase()}:</strong> {detailedComputer?.[spec] || "N/A"}
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
