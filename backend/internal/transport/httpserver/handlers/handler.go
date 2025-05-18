@@ -25,9 +25,9 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("/computers/{id}", h.HandleComputer)
 	mux.HandleFunc("/computers/status", h.HandleComputerStatuses)
 	mux.HandleFunc("/computers/{id}/status", h.HandleComputerStatus)
+	mux.HandleFunc("/computers/{id}/bookings", h.HandleComputerBookings)
 
 	/* Bookings */
-	mux.HandleFunc("/bookings/{id}", h.HandleComputerBookings)
 	mux.HandleFunc("/bookings", h.HandleBookings)
 	mux.HandleFunc("/bookings/pending", h.HandlePendingBookings)
 	mux.HandleFunc("/bookings/active", h.HandleActiveBookings)
