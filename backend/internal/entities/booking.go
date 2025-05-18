@@ -3,6 +3,7 @@ package entities
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 )
@@ -79,6 +80,19 @@ func (b *Booking) Validate() error {
 	}
 
 	return nil
+}
+
+func (b *Booking) Compare(secondBooking *Booking) int {
+	t1, err1 := time.Parse(time.RFC3339, b.StartTime)
+	t2, err2 := time.Parse(time.RFC3339, secondBooking.StartTime)
+
+	// If parsing fails, fall back to string comparison (not recommended)
+	if err1 != nil || err2 != nil {
+		slog.Error("Error parsing time while comparing Bookings:", slog.Any("error", err1))
+		return 0
+	}
+
+	return int(t1.Unix()) - int(t2.Unix())
 }
 
 // Errors

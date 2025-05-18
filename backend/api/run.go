@@ -32,7 +32,6 @@ func Run() {
 	slog.Info("Successfully connected to database")
 
 	// Repositories init
-
 	userRepository, _ := postgres.NewUserRepository(db)
 	computerRepository, _ := postgres.NewComputerRepository(db)
 	bookingRepository, _ := postgres.NewBookingRepository(db)
@@ -42,14 +41,24 @@ func Run() {
 	jwtManager := auth.NewJWTManager(cfg.JWTConfig.Secret, cfg.JWTConfig.Expiration)
 	userService, _ := implementation.NewUserService(userRepository, jwtManager)
 	computerService, _ := implementation.NewComputerService(computerRepository)
-	bookingService, _ := implementation.NewBookingService(bookingRepository)
 	packageService, _ := implementation.NewPackageService(packageRepository)
+
+	// Fetch the number of computers
+	var computerNum int
+	computers, err := computerService.GetAllComputers()
+	if err == nil {
+		computerNum = len(computers)
+	}
+	bookingService, _ := implementation.NewBookingService(bookingRepository, computerNum)
+
 	svc := service.NewService(
 		computerService,
 		userService,
 		bookingService,
 		packageService,
 	)
+
+	// Set the number of computers
 
 	mux := http.NewServeMux()
 	handlers := handlers.NewHandler(svc, logger, jwtManager)
@@ -68,38 +77,22 @@ func Run() {
 }
 
 func turnOnTimers(service service.Service) {
-	refresherTicker := time.NewTicker(1 * time.Minute)
-	defer refresherTicker.Stop()
-
+	refresherTicker := time.NewTicker(10 * time.Second)
 	go refresherCallback(refresherTicker, service.BookingService)
 
 	creatorTicker := time.NewTicker(10 * time.Minute)
-	defer creatorTicker.Stop()
-
 	go generatorCallback(creatorTicker, service.BookingService)
-
 }
 
 func refresherCallback(ticker *time.Ticker, service service.BookingService) {
 	for range ticker.C {
-		service.RefreshBookings()
+		service.RefreshStatus()
 	}
 }
 
 func generatorCallback(ticker *time.Ticker, service service.BookingService) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	// Run in ticker
 	for range ticker.C {
-		for range 10 {
-			select {
-			case <-ctx.Done():
-				cancel()
-				return
-			default:
-				service.GenerateBooking(ctx)
-			}
-		}
+		service.GenerateBooking(context.Background())
 	}
-
-	cancel()
 }

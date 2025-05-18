@@ -58,8 +58,8 @@ type BookingService interface {
 	GetCancelledBookings() ([]*entities.Booking, error)
 	GetComputersLeftOccupiedTime() ([]*entities.ComputerOccupiedLeftTime, error)
 	GetComputerLeftOccupiedTime(id int64) (*entities.ComputerOccupiedLeftTime, error)
-	RefreshBookings()
 	GenerateBooking(context.Context)
+	RefreshStatus()
 }
 
 type PackageService interface {
