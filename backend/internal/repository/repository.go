@@ -65,7 +65,7 @@ type BookingRepository interface {
 	Update(booking *entities.Booking) (int64, error)
 	Delete(int64) error
 	/* Very bad and stupid solution must be optimized to priority queue */
-	RefreshStatus()
+	RefreshBookings()
 }
 
 type PackageRepository interface {

@@ -58,3 +58,7 @@ type JSONAnswer struct {
 	// example: success message
 	Message string `json:"message"`
 }
+
+type TokenResponse struct {
+	Token string `json:"token"`
+}

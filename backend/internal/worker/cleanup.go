@@ -7,22 +7,17 @@ import (
 	"time"
 )
 
-func StartUserCleanupWorker(ctx context.Context, userService service.UserService) {
-	ticker := time.NewTicker(time.Minute)
-
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				ticker.Stop()
-				return
-			case <-ticker.C:
-				err := userService.DeleteUnverifiedUsers()
-				if err != nil {
-					log.Print(err)
-				}
+func StartUserCleanupWorker(ticker *time.Ticker, ctx context.Context, userService service.UserService) {
+	for range ticker.C {
+		select {
+		case <-ctx.Done():
+			ticker.Stop()
+			return
+		case <-ticker.C:
+			err := userService.DeleteUnverifiedUsers()
+			if err != nil {
+				log.Print(err)
 			}
 		}
-	}()
-
+	}
 }

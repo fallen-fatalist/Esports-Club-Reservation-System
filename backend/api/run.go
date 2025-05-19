@@ -54,18 +54,13 @@ func Run() {
 	computerService, _ := implementation.NewComputerService(computerRepository)
 	packageService, _ := implementation.NewPackageService(packageRepository)
 
-<<<<<<< HEAD
-	svc := service.NewService(computerService, userService, bookingService, packageService)
-
-	// workers
-	startWorkers(*svc, ctx)
-=======
 	// Fetch the number of computers
 	var computerNum int
 	computers, err := computerService.GetAllComputers()
 	if err == nil {
 		computerNum = len(computers)
 	}
+	// Set the number of computers
 	bookingService, _ := implementation.NewBookingService(bookingRepository, computerNum)
 
 	svc := service.NewService(
@@ -74,9 +69,9 @@ func Run() {
 		bookingService,
 		packageService,
 	)
->>>>>>> d2baa29de07debb9e10b2af11cef6f0c1db7ad21
 
-	// Set the number of computers
+	// workers
+	startWorkers(*svc, ctx)
 
 	mux := http.NewServeMux()
 	handlers := handlers.NewHandler(svc, logger, jwtManager)
@@ -92,38 +87,13 @@ func Run() {
 
 }
 
-<<<<<<< HEAD
 func startWorkers(svc service.Service, ctx context.Context) {
 	refresherTicker := time.NewTicker(1 * time.Minute)
-	defer refresherTicker.Stop()
 	go worker.RefresherCallback(refresherTicker, svc.BookingService)
 
 	creatorTicker := time.NewTicker(10 * time.Minute)
-	defer creatorTicker.Stop()
 	go worker.GeneratorCallback(creatorTicker, svc.BookingService)
 
 	cleanupTicker := time.NewTicker(time.Minute)
-	defer cleanupTicker.Stop()
-	go worker.StartUserCleanupWorker(ctx, svc.UserService)
-=======
-func turnOnTimers(service service.Service) {
-	refresherTicker := time.NewTicker(10 * time.Second)
-	go refresherCallback(refresherTicker, service.BookingService)
-
-	creatorTicker := time.NewTicker(10 * time.Minute)
-	go generatorCallback(creatorTicker, service.BookingService)
-}
-
-func refresherCallback(ticker *time.Ticker, service service.BookingService) {
-	for range ticker.C {
-		service.RefreshStatus()
-	}
-}
-
-func generatorCallback(ticker *time.Ticker, service service.BookingService) {
-	// Run in ticker
-	for range ticker.C {
-		service.GenerateBooking(context.Background())
-	}
->>>>>>> d2baa29de07debb9e10b2af11cef6f0c1db7ad21
+	go worker.StartUserCleanupWorker(cleanupTicker, ctx, svc.UserService)
 }

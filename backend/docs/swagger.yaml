@@ -194,6 +194,8 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/handlers.JSONAnswer'
+      security:
+      - BearerAuth: []
       summary: Create a new booking
       tags:
       - Bookings
@@ -525,7 +527,37 @@ paths:
       summary: Get all computer statuses
       tags:
       - Computers
-  /login:
+  /auth/activate:
+    post:
+      consumes:
+      - application/json
+      description: Sends a verification code to the email provided in request body
+      parameters:
+      - description: Verification code request
+        in: body
+        name: verificationRequest
+        required: true
+        schema:
+          $ref: '#/definitions/dto.VerificationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Verification code sent
+          schema:
+            $ref: '#/definitions/handlers.JSONAnswer'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      summary: Send verification code to user's email
+      tags:
+      - Auth
+  /auth/sign-in:
     post:
       consumes:
       - application/json
@@ -554,8 +586,8 @@ paths:
             $ref: '#/definitions/utils.HTTPError'
       summary: User login
       tags:
-      - auth
-  /register:
+      - Auth
+  /auth/sign-up:
     post:
       consumes:
       - application/json
@@ -588,38 +620,8 @@ paths:
             $ref: '#/definitions/utils.HTTPError'
       summary: Register a new user
       tags:
-      - auth
-  /request-code:
-    post:
-      consumes:
-      - application/json
-      description: Sends a verification code to the email provided in request body
-      parameters:
-      - description: Verification code request
-        in: body
-        name: verificationRequest
-        required: true
-        schema:
-          $ref: '#/definitions/dto.VerificationRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Verification code sent
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-        "400":
-          description: Invalid request
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-      summary: Send verification code to user's email
-      tags:
-      - auth
-  /verify-email:
+      - Auth
+  /auth/verify:
     post:
       consumes:
       - application/json
@@ -656,5 +658,5 @@ paths:
             $ref: '#/definitions/utils.HTTPError'
       summary: Verify email with code
       tags:
-      - auth
+      - Auth
 swagger: "2.0"

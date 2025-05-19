@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/service/implementation"
+	"esports_club_booking/internal/transport/dto"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -146,7 +147,7 @@ func (s *Handler) deleteComputer(w http.ResponseWriter, r *http.Request, id int6
 	err := s.service.ComputerService.DeleteComputer(id)
 	if err != nil {
 		if err == implementation.ErrComputerNotFound {
-			jsonPayload := JSONAnswer{
+			jsonPayload := dto.JSONEntityRelatedResponse{
 				Message: "Computer not found",
 				ID:      id,
 			}

@@ -19,7 +19,7 @@ import (
 // @Success		200	{array}		entities.Booking
 // @Failure		500	{object}	handlers.JSONAnswer	"Internal server error"
 // @Router			/api/bookings [get]
-func (s *Handler) getBookings(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) Bookings(w http.ResponseWriter, r *http.Request) {
 	bookings, err := s.service.BookingService.GetAllBookings()
 	if err != nil {
 		slog.Error("Error fetching bookings:", slog.String("error", err.Error()))
@@ -48,6 +48,7 @@ func (s *Handler) getBookings(w http.ResponseWriter, r *http.Request) {
 // @Summary		Create a new booking
 // @Description	Creates a new booking with the given details
 // @Tags			Bookings
+// @Security BearerAuth
 // @Accept			json
 // @Produce		json
 // @Param			booking	body		entities.Booking	true	"Booking details"
@@ -55,7 +56,7 @@ func (s *Handler) getBookings(w http.ResponseWriter, r *http.Request) {
 // @Failure		400		{object}	handlers.JSONAnswer	"Invalid request body"
 // @Failure		500		{object}	handlers.JSONAnswer	"Internal server error"
 // @Router			/api/bookings [post]
-func (s *Handler) postBookings(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) PostBooking(w http.ResponseWriter, r *http.Request) {
 
 	var booking entities.Booking
 
@@ -107,12 +108,10 @@ func (s *Handler) postBookings(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
-func (s *Handler) HandleBookings(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) BookingsOptions(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case http.MethodGet:
-		s.getBookings(w, r)
-	case http.MethodPost:
-		s.postBookings(w, r)
+	case http.MethodOptions:
+		w.Header().Set("Allow", "GET, POST, OPTIONS")
 	default:
 		// Handle Method Not Allowed
 		w.Header().Set("Allow", "GET, POST")
@@ -130,7 +129,7 @@ func (s *Handler) HandleBookings(w http.ResponseWriter, r *http.Request) {
 // @Failure		400	{object}	handlers.JSONAnswer	"Invalid computer ID"
 // @Failure		500	{object}	handlers.JSONAnswer	"Internal server error"
 // @Router			/api/computers/{id}/bookings [get]
-func (s *Handler) getComputerBookings(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) ComputerBookings(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
@@ -171,17 +170,6 @@ func (s *Handler) getComputerBookings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-}
-func (s *Handler) HandleComputerBookings(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		s.getComputerBookings(w, r)
-	default:
-		// Handle Method Not Allowed
-		w.Header().Set("Allow", "GET")
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-
-	}
 }
 
 // @Summary		Get finished bookings with time format "2006-01-02T15:04:05Z07:00"

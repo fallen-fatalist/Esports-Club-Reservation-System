@@ -47,6 +47,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Creates a new booking with the given details",
                 "consumes": [
                     "application/json"
@@ -589,7 +594,53 @@ const docTemplate = `{
                 }
             }
         },
-        "/login": {
+        "/auth/activate": {
+            "post": {
+                "description": "Sends a verification code to the email provided in request body",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Send verification code to user's email",
+                "parameters": [
+                    {
+                        "description": "Verification code request",
+                        "name": "verificationRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.VerificationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Verification code sent",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/sign-in": {
             "post": {
                 "description": "Login user with email, login and password, returns JWT token",
                 "consumes": [
@@ -599,7 +650,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "Auth"
                 ],
                 "summary": "User login",
                 "parameters": [
@@ -635,7 +686,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/register": {
+        "/auth/sign-up": {
             "post": {
                 "description": "Registers a user with email, login and password",
                 "consumes": [
@@ -645,7 +696,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "Auth"
                 ],
                 "summary": "Register a new user",
                 "parameters": [
@@ -687,53 +738,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/request-code": {
-            "post": {
-                "description": "Sends a verification code to the email provided in request body",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Send verification code to user's email",
-                "parameters": [
-                    {
-                        "description": "Verification code request",
-                        "name": "verificationRequest",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.VerificationRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Verification code sent",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.JSONAnswer"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request",
-                        "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
-                        }
-                    }
-                }
-            }
-        },
-        "/verify-email": {
+        "/auth/verify": {
             "post": {
                 "description": "Verifies user's email using a verification code",
                 "consumes": [
@@ -743,7 +748,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "Auth"
                 ],
                 "summary": "Verify email with code",
                 "parameters": [

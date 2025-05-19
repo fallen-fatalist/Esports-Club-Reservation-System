@@ -204,7 +204,7 @@ func (r *BookingRepository) Delete(id int64) error {
 	return nil
 }
 
-func (r *BookingRepository) RefreshStatus() {
+func (r *BookingRepository) RefreshBookings() {
 	now := time.Now().UTC()
 
 	// 1. Set 'active' where start_time is in the past

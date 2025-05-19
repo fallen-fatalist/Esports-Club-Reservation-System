@@ -308,8 +308,8 @@ func (s *BookingService) GetComputerLeftOccupiedTime(id int64) (*entities.Comput
 	return &leftTime, nil
 }
 
-func (s *BookingService) RefreshStatus() {
-	s.repository.RefreshStatus()
+func (s *BookingService) RefreshBookings() {
+	s.repository.RefreshBookings()
 }
 
 const eps = 0.0000000001
@@ -394,3 +394,4 @@ func (s *BookingService) hasBookingConflict(ctx context.Context, newBooking *ent
 
 	return false, nil
 }
+

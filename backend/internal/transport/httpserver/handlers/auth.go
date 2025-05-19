@@ -13,7 +13,7 @@ import (
 
 // @Summary		Register a new user
 // @Description	Registers a user with email, login and password
-// @Tags			auth
+// @Tags			Auth
 // @Accept			json
 // @Produce		json
 // @Param			user	body		dto.RegisterUser	true	"User registration data"
@@ -21,7 +21,7 @@ import (
 // @Failure		400		{object}	utils.HTTPError		"Bad request, validation error"
 // @Failure		409		{object}	utils.HTTPError		"User already exists"
 // @Failure		500		{object}	utils.HTTPError		"Internal server error"
-// @Router			/register [post]
+// @Router			/auth/sign-up [post]
 func (s *Handler) HandleRegistration(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
@@ -69,14 +69,14 @@ func (s *Handler) register(w http.ResponseWriter, r *http.Request) {
 
 // @Summary		User login
 // @Description	Login user with email, login and password, returns JWT token
-// @Tags			auth
+// @Tags			Auth
 // @Accept			json
 // @Produce		json
 // @Param			credentials	body		dto.LoginUser		true	"Login credentials"
 // @Success		200			{object}	utils.Message	"JWT token"
 // @Failure		400			{object}	utils.HTTPError		"Bad request, validation error"
 // @Failure		401			{object}	utils.HTTPError		"Unauthorized, invalid credentials or blocked user"
-// @Router			/login [post]
+// @Router			/auth/sign-in [post]
 func (s *Handler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
@@ -124,19 +124,19 @@ func (s *Handler) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, utils.Message{Message: token})
+	utils.WriteJSON(w, http.StatusOK, dto.TokenResponse{Token: token})
 }
 
 // @Summary		Send verification code to user's email
 // @Description	Sends a verification code to the email provided in request body
-// @Tags			auth
+// @Tags			Auth
 // @Accept			json
 // @Produce		json
 // @Param			verificationRequest	body		dto.VerificationRequest	true	"Verification code request"
 // @Success		200					{object}	JSONAnswer				"Verification code sent"
 // @Failure		400					{object}	utils.HTTPError			"Invalid request"
 // @Failure		500					{object}	utils.HTTPError			"Internal server error"
-// @Router			/request-code [post]
+// @Router			/auth/activate [post]
 func (h *Handler) HandleRequestCode(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
@@ -165,7 +165,7 @@ func (h *Handler) requestCode(w http.ResponseWriter, r *http.Request) {
 
 // @Summary		Verify email with code
 // @Description	Verifies user's email using a verification code
-// @Tags			auth
+// @Tags			Auth
 // @Accept			json
 // @Produce		json
 // @Param			verifyEmailRequest	body		dto.VerifyEmailRequest	true	"Email verification request"
@@ -174,7 +174,7 @@ func (h *Handler) requestCode(w http.ResponseWriter, r *http.Request) {
 // @Failure		404					{object}	utils.HTTPError			"User not found"
 // @Failure		429					{object}	utils.HTTPError			"Too many attempts"
 // @Failure		500					{object}	utils.HTTPError			"Internal server error"
-// @Router			/verify-email [post]
+// @Router			/auth/verify [post]
 func (h *Handler) HandleVerifyEmail(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
