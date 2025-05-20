@@ -69,6 +69,8 @@ definitions:
         type: integer
       package_id:
         type: integer
+      room:
+        type: string
       start_time:
         type: string
       status:
@@ -121,6 +123,21 @@ definitions:
       status:
         type: string
       updated_at:
+        type: string
+    type: object
+  entities.Package:
+    properties:
+      created_at:
+        type: string
+      end_time:
+        type: string
+      name:
+        type: string
+      price:
+        type: integer
+      room:
+        type: string
+      start_time:
         type: string
     type: object
   handlers.JSONAnswer:
@@ -527,6 +544,25 @@ paths:
       summary: Get all computer statuses
       tags:
       - Computers
+  /api/packages:
+    get:
+      description: Returns a list of all packages
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of computers
+          schema:
+            items:
+              $ref: '#/definitions/entities.Package'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.JSONAnswer'
+      summary: Get all packages
+      tags:
+      - Packages
   /auth/activate:
     post:
       consumes:

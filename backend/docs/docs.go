@@ -594,6 +594,35 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/packages": {
+            "get": {
+                "description": "Returns a list of all packages",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Packages"
+                ],
+                "summary": "Get all packages",
+                "responses": {
+                    "200": {
+                        "description": "List of computers",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entities.Package"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/activate": {
             "post": {
                 "description": "Sends a verification code to the email provided in request body",
@@ -872,6 +901,9 @@ const docTemplate = `{
                 "package_id": {
                     "type": "integer"
                 },
+                "room": {
+                    "type": "string"
+                },
                 "start_time": {
                     "type": "string"
                 },
@@ -951,6 +983,29 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "entities.Package": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "integer"
+                },
+                "room": {
+                    "type": "string"
+                },
+                "start_time": {
                     "type": "string"
                 }
             }

@@ -18,7 +18,11 @@ func NewPackageService(repository repository.PackageRepository) (*PackageService
 }
 
 func (s *PackageService) GetAllPackages() ([]*entities.Package, error) {
-	return nil, nil
+	packages, err := s.repository.GetAll()
+	if err != nil {
+		return nil, err
+	}
+	return packages, nil
 }
 
 func (s *PackageService) GetPackage(int64) (*entities.Package, error) {

@@ -27,6 +27,9 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("/computers/{id}/status", h.HandleComputerStatus)
 	mux.HandleFunc("/computers/{id}/bookings", h.ComputerBookings)
 
+	/* Packages */
+	mux.HandleFunc("GET /packages", h.Packages)
+
 	/* Bookings */
 	mux.HandleFunc("GET /bookings", h.Bookings)
 	mux.HandleFunc("POST /bookings", auth.WithAuth(h.jwtMng, allRoles, h.PostBooking))

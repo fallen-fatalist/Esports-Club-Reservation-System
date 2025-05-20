@@ -1,20 +1,20 @@
-CREATE TYPE computer_tier AS ENUM ('standard', 'vip');
+CREATE TYPE club_room AS ENUM ('Standard', 'VIP', 'Console');
 CREATE TYPE computer_status AS ENUM ('busy', 'available', 'pending', 'not working', 'under repair');
 
 CREATE TABLE computers (
     computer_id SERIAL PRIMARY KEY,
     status computer_status DEFAULT 'available',
-    tier computer_tier DEFAULT 'standard',
-    cpu TEXT NOT NULL,
-    gpu TEXT NOT NULL,
-    ram TEXT NOT NULL,
-    ssd TEXT NOT NULL,
-    hdd TEXT NOT NULL,
-    monitor TEXT NOT NULL,
-    keyboard TEXT NOT NULL,
-    headset TEXT NOT NULL,
-    mouse TEXT NOT NULL,
-    mousepad TEXT NOT NULL,
+    room club_room DEFAULT 'Standard',
+    cpu TEXT DEFAULT '',
+    gpu TEXT DEFAULT '',
+    ram TEXT DEFAULT '',
+    ssd TEXT DEFAULT '',
+    hdd TEXT DEFAULT '',
+    monitor TEXT DEFAULT '',
+    keyboard TEXT DEFAULT '',
+    headset TEXT DEFAULT '',
+    mouse TEXT DEFAULT '',
+    mousepad TEXT DEFAULT '',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

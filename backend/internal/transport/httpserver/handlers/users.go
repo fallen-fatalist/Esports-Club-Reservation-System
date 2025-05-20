@@ -21,20 +21,6 @@ func (s *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Handler) Packages(w http.ResponseWriter, r *http.Request) {
-	packages, err := s.service.PackageService.GetAllPackages()
-	if err != nil {
-		s.logger.Error("error fetching packages", slog.Any("error", err))
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(packages); err != nil {
-		s.logger.Error("error encoding packages JSON", slog.Any("error", err))
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-	}
-}
 
 func (s *Handler) AllBookings(w http.ResponseWriter, r *http.Request) {
 	bookings, err := s.service.BookingService.GetAllBookings()

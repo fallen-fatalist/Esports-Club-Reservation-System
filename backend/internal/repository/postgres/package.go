@@ -1,8 +1,9 @@
 package postgres
 
 import (
-	"esports_club_booking/internal/entities"
 	"database/sql"
+	"esports_club_booking/internal/entities"
+	"time"
 )
 
 type PackageRepository struct {
@@ -15,8 +16,47 @@ func NewPackageRepository(db *sql.DB) (*PackageRepository, error) {
 	}
 	return &PackageRepository{db}, nil
 }
+
+// INSERT INTO packages (package_id, package_name, room, price, startTime, endTime) VALUES
 func (r *PackageRepository) GetAll() ([]*entities.Package, error) {
-	return nil, nil
+	rows, err := r.db.Query(`
+        SELECT package_id, package_name, room, price, startTime, endTime, created_at 
+        FROM packages
+        ORDER BY price ASC
+    `)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var packages []*entities.Package
+
+	for rows.Next() {
+		var pkg entities.Package
+		var startTime, endTime sql.NullString
+		var createdAt time.Time
+
+		err := rows.Scan(&pkg.ID, &pkg.Name, &pkg.Room, &pkg.Price, &startTime, &endTime, &createdAt)
+		if err != nil {
+			return nil, err
+		}
+
+		if startTime.Valid {
+			pkg.StartTime = startTime.String
+		}
+		if endTime.Valid {
+			pkg.EndTime = endTime.String
+		}
+		pkg.CreatedAt = createdAt.Format(time.RFC3339)
+
+		packages = append(packages, &pkg)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return packages, nil
 }
 
 func (r *PackageRepository) GetByID(id int64) (*entities.Package, error) {

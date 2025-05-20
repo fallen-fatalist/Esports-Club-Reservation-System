@@ -8,6 +8,7 @@ import (
 
 type Computer struct {
 	ID        int64  `json:"id,omitempty"`
+	Room      string `json:"room"`
 	Status    string `json:"status"`
 	CPU       string `json:"cpu"`
 	GPU       string `json:"gpu"`
