@@ -1,12 +1,14 @@
 .inputTime {
     width: 100%;
-    text-align: left;
-    color: black;
-    background: transparent;
-    border: 1px solid black;
-    border-radius: 4px;
+    background: transparent;    
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
     padding: 5px;
     margin: 0;
     cursor: pointer;
-    font-family: 'Open Sans', sans-serif;
+    font-family: var(--font-family);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+    text-align: left;
+    transition: color var(--transition-normal);
 }

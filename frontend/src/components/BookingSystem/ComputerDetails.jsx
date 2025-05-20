@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import computerService from "../../services/computerService";
+import bookingService from "../../services/bookingService";
 import TimelineSchedule from "../UI/timeline/TimelineSchedule";
 
 const isSameDay = (date1, date2) =>
@@ -7,11 +8,40 @@ const isSameDay = (date1, date2) =>
   date1.getMonth() === date2.getMonth() &&
   date1.getDate() === date2.getDate();
 
+const formatTimeLeft = (seconds) => {
+  if (seconds === null || seconds === undefined || isNaN(seconds)) return "Not available";
+  seconds = Number(seconds);
+  
+  if (seconds === 0) return "Available now";
+  
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  
+  if (hours > 0) {
+    return `${hours} hour${hours !== 1 ? 's' : ''} ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+  } else {
+    return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+  }
+};
+
 const ComputerDetails = ({ computer, bookings, date }) => {
   const [detailedComputer, setDetailedComputer] = useState(null);
   const [timeLeft, setTimeLeft] = useState(null);
-  const [activeBooking, setActiveBooking] = useState(null);
-  const [bookingDuration, setBookingDuration] = useState(null);
+  const [loadingTimeLeft, setLoadingTimeLeft] = useState(false);
+  const [showSpecs, setShowSpecs] = useState(false);
+
+  const selectedDate = date ? new Date(date) : new Date();
+  const computerBookings = Array.isArray(bookings)
+    ? bookings
+        .filter(
+          (b) =>
+            b &&
+            b.computer_id === computer?.id &&
+            isSameDay(new Date(b.start_time), selectedDate) &&
+            b.status !== "cancelled"
+        )
+        .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
+    : [];
 
   useEffect(() => {
     if (computer?.id) {
@@ -25,67 +55,47 @@ const ComputerDetails = ({ computer, bookings, date }) => {
   }, [computer]);
 
   useEffect(() => {
-    const calculateTimeLeft = () => {
-      if (!Array.isArray(bookings) || !computer?.id) return;
+    const fetchTimeLeft = async () => {
+      if (!computer?.id) return;
 
-      const now = new Date();
-      const activeBookings = bookings.filter((booking) => {
-        if (
-          !booking ||
-          booking.computer_id !== computer.id ||
-          booking.status === "cancelled"
-        )
-          return false;
+      if (timeLeft === null) setLoadingTimeLeft(true);
+      
+      try {
+        const response = await bookingService.getLeftTimeByComputerId(computer.id);
+        const now = new Date();
+        const activeOrUpcomingBookings = computerBookings.filter(
+          (b) => new Date(b.end_time) > now
+        );
 
-        const start = new Date(booking.start_time);
-        const end = new Date(booking.end_time);
-        return now >= start && now <= end;
-      });
+        if (activeOrUpcomingBookings.length > 0 && response.secondsLeft === 0) {
+          const currentOrNextBooking = activeOrUpcomingBookings.sort(
+            (a, b) => new Date(a.start_time) - new Date(b.start_time)
+          )[0];
 
-      if (activeBookings.length > 0) {
-        const currentBooking = activeBookings.sort(
-          (a, b) => new Date(a.start_time) - new Date(b.start_time)
-        )[0];
-
-        const startTime = new Date(currentBooking.start_time);
-        const endTime = new Date(currentBooking.end_time);
-        const totalDurationMins = Math.floor((endTime - startTime) / 60000);
-        const remainingMins = Math.max(0, Math.floor((endTime - now) / 60000));
-
-        setActiveBooking(currentBooking);
-        setBookingDuration(totalDurationMins);
-        setTimeLeft(remainingMins);
-      } else {
-        setActiveBooking(null);
-        setBookingDuration(null);
-        setTimeLeft(null);
+          const bookingEnd = new Date(currentOrNextBooking.end_time);
+          const secondsUntilEnd = Math.max(0, Math.floor((bookingEnd - now) / 1000));
+          setTimeLeft(secondsUntilEnd);
+        } else {
+          setTimeLeft(response.secondsLeft);
+        }
+      } catch (error) {
+        console.error("Failed to fetch time left:", error);
+      } finally {
+        setLoadingTimeLeft(false); 
       }
     };
 
-    calculateTimeLeft();
-    const interval = setInterval(calculateTimeLeft, 60000);
+    fetchTimeLeft();
+    const interval = setInterval(fetchTimeLeft, 60000); 
     return () => clearInterval(interval);
-  }, [bookings, computer]);
+  }, [computer, computerBookings]);
 
   if (!computer || !detailedComputer) return null;
-
-  const selectedDate = new Date(date);
-  const computerBookings = Array.isArray(bookings)
-      ? bookings
-          .filter(
-            (b) =>
-              b &&
-              b.computer_id === computer.id &&
-              isSameDay(new Date(b.start_time), selectedDate) &&
-              b.status !== "cancelled"
-          )
-          .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
-      : [];
 
   return (
     <div className="computer-details">
       <TimelineSchedule bookings={computerBookings} date={selectedDate} />
-
+      <h3>Computer Info</h3>
       <div className="computer-schedule">
         {computerBookings.length > 0 ? (
           <div className="schedule-timeline">
@@ -114,6 +124,21 @@ const ComputerDetails = ({ computer, bookings, date }) => {
           <></>
         )}
 
+      <div className="computer-specs">
+        <h4 onClick={() => setShowSpecs(!showSpecs)} style={{ cursor: "pointer" }}>
+          Specifications {showSpecs ? "▲" : "▼"}
+        </h4>
+        {showSpecs && (
+          <ul className="specs-list">
+            {["cpu", "gpu", "ram", "monitor", "mouse", "keyboard", "headset", "mousepad"].map((spec) => (
+              <li key={spec}>
+                <strong>{spec.toUpperCase()}:</strong> {detailedComputer?.[spec] || "N/A"}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
         <div className="booking-list">
           <h4>Bookings</h4>
           {computerBookings.length > 0 ? (
@@ -139,47 +164,17 @@ const ComputerDetails = ({ computer, bookings, date }) => {
             <p className="no-bookings">No bookings for this date</p>
           )}
           
-          {timeLeft !== null ? (
-            <div className="time-left">
-              <h4>Time Left in Current Session</h4>
-              <p>{timeLeft} minutes remaining</p>
-              {activeBooking && bookingDuration && (
-                <div className="active-booking-info">
-                  <p>
-                    {new Date(activeBooking.start_time).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}{" "}
-                    -{" "}
-                    {new Date(activeBooking.end_time).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                  <p>Total booking duration: {bookingDuration} minutes</p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="no-active-session">
-              <h3>Time left:</h3>
-              <p>No active session</p>
-            </div>
-          )}
+          <div className="time-left">
+            <h4>Time Until Next Available Slot</h4>
+            {loadingTimeLeft ? (
+              <p>Loading...</p>
+            ) : (
+              <p>{formatTimeLeft(timeLeft)}</p>
+            )}
+          </div>
         </div>
       </div>
 
-      <h3>Computer Specs</h3>
-      <div className="computer-specs">
-        <h4>Specifications</h4>
-        <ul className="specs-list">
-          {["cpu", "gpu", "ram", "monitor", "mouse", "keyboard", "headset", "mousepad"].map((spec) => (
-            <li key={spec}>
-              <strong>{spec.toUpperCase()}:</strong> {detailedComputer?.[spec] || "N/A"}
-            </li>
-          ))}
-        </ul>
-      </div>
     </div>
   );
 };

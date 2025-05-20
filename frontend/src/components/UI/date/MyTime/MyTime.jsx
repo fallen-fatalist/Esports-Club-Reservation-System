@@ -4,6 +4,7 @@ const MyTime = ({ ...props }) => {
     return (
       <input
         type="time"
+        step="60" 
         {...props}
         className={classes.inputTime}
       />

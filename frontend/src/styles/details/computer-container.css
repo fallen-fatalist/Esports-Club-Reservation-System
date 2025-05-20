@@ -1,0 +1,29 @@
+.computers__container {
+    width: 75%;
+    margin: 0 auto;
+    padding: 1rem;
+    transition: background-color var(--transition-normal), border-color var(--transition-normal);
+}
+
+.icon__container {
+    width: 100%;
+    margin: 0 auto;
+}
+
+.icon__container h3 {
+    font-weight: 400;
+    font-size: var(--font-size-xl);
+    color: var(--color-text-secondary);
+    padding-left: 1rem;
+    padding-bottom: 2rem;
+    margin: 0 auto;
+    transition: color var(--transition-normal);
+}
+
+.computer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+    justify-items: center;
+    width: 100%;
+}

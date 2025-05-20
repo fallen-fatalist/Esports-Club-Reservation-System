@@ -1,0 +1,21 @@
+@media (max-width: 768px) {
+    .booking__container {
+        flex-direction: column;
+    }
+    
+    .reservation__container,
+    .computers__container {
+        width: 100%;
+        border: none;
+    }
+    
+    .content h1,
+    .login__header h1 {
+        width: 100%;
+        min-width: 0;
+    }
+    
+    .navbar__links {
+        gap: var(--space-md);
+    }
+}

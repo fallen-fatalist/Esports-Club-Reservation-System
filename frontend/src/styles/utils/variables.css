@@ -1,0 +1,76 @@
+:root {
+    --max-width: 1440px;
+    --font-family: 'Open Sans', sans-serif;
+    --font-size-sm: 14px;
+    --font-size-md: 16px;
+    --font-size-lg: 20px;
+    --font-size-xl: 28px;
+    --font-size-xxl: 50px;
+    --space-xs: 0.25rem;
+    --space-sm: 0.5rem;
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+    --space-xl: 2rem;
+    --space-xxl: 3rem;
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 12px;
+    --transition-fast: 0.2s ease;
+    --transition-normal: 0.3s ease;
+    --z-header: 100;
+    --z-modal: 1000;
+    --color-bg-primary: #ffffff;
+    --color-bg-secondary: #fafafa;
+    --color-bg-tertiary: #f9f9f9;
+    --color-bg: rgb(29, 43, 68);
+    --color-bg-light: rgb(33, 53, 88);
+    --color-text-primary: #333333;
+    --color-text-secondary: #555555;
+    --color-text-tertiary: #8b8b8b;
+    --color-text-bg : #ffffff;
+    --color-border: #3e3e3e;
+    --color-shadow: rgba(34, 60, 80, 0.2);
+    --color-accent: #45759d;
+    --color-success-bg: #ddffdd;
+    --color-success-text: #270;
+    --color-error-bg: #ffdddd;
+    --color-error-text: #d8000c;
+    --color-warning-bg: #fff3cd;
+    --color-info-bg: #d9edf7;
+    --color-info-text: #31708f;
+    --color-available: #2e7d32;
+    --color-busy: #c62828;
+    --color-busy-bg: #ffe6e6;
+    --color-unknown-bg: #fff3cd;
+    --color-border-specs: #333333;
+    --timeline-border: #e0e0e0;
+}
+
+[data-theme="dark"] {
+    --color-bg-primary: rgb(46, 46, 48);
+    --color-bg-secondary: rgb(62, 62, 63);
+    --color-bg-tertiary: transparent;
+    --color-bg: #4a6c8f;
+    --color-bg-ligh: #215385;
+    --color-text-primary: #e0e0e0;
+    --color-text-secondary: #9a9a9a;
+    --color-text-tertiary: #909090;
+    --color-border: #515151;
+    --color-shadow: rgba(0, 0, 0, 0.4);
+    --color-accent: #5a8fc5;
+    --color-success-bg: #164a2f;
+    --color-success-text: #5c835d;
+    --color-error-bg: #601212;
+    --color-error-text: #c57771;
+    --color-warning-bg: #332b00;
+    --color-info-bg: #07405d;
+    --color-info-text: #4fc3f7;
+    --color-available: #208f23;
+    --color-busy: #a44a44;
+    --color-busy-bg: #4f2121;
+    --color-unknown-bg: #332b00;
+    --color-border-specs: #595959;
+    --timeline-border: #464646;
+}
+
+/* change dark theme color palette and change custom css  */

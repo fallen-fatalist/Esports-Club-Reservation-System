@@ -1,0 +1,35 @@
+.booking-list {
+    margin-top: 1rem;
+}
+
+.booking-list h4 {
+    font-size: var(--font-size-lg);
+    margin-bottom: 0.5rem;
+    color: var(--color-text-secondary);
+    transition: color var(--transition-normal);
+}
+
+.booking-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.875rem;
+    transition: border-color var(--transition-normal);
+}
+
+.booking-item .booking-time {
+    color: var(--color-text-secondary);
+    transition: color var(--transition-normal);
+}
+
+.booking-item .booking-status {
+    color: var(--color-text-tertiary);
+    transition: color var(--transition-normal);
+}
+
+.no-bookings {
+    color: var(--color-text-tertiary);
+    font-style: italic;
+    transition: color var(--transition-normal);
+}

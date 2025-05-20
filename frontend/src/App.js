@@ -9,25 +9,35 @@ import AppRouter from './components/AppRouter';
 import { AuthContext } from './context/contextIndex';
 
 // Styles
-import './styles/App.css';
+import './styles/main.css';
 
 
 
 function App() {
   const [isAuth, setIsAuth] = useState(false);
+  const [isDarkTheme, setIsDarkTheme] = useState(() => {
+    return localStorage.getItem("theme") === "dark";
+  });
+
+  const toggleTheme = () => {
+    const newTheme = isDarkTheme ? "light" : "dark";
+    setIsDarkTheme(!isDarkTheme);
+    localStorage.setItem("theme", newTheme);
+  };
+
   useEffect(() => {
+    document.documentElement.setAttribute("data-theme", isDarkTheme ? "dark" : "light");
+
     const checkAuth = async () => {
-        // const response = await fetch("https://your-api.com/auth/status", {
-        //     credentials: "include"
-        // });
-
-        // if (response.ok) {
-        //     setIsAuth(true);
-        // }
+      // const response = await fetch("https://your-api.com/auth/status", {
+      //     credentials: "include"
+      // });
+      // if (response.ok) {
+      //     setIsAuth(true);
+      // }
     };
-
     checkAuth();
-  }, [])
+  }, [isDarkTheme]);
 
   return (
       <AuthContext.Provider value= {{
@@ -36,7 +46,7 @@ function App() {
       }}>
         <BrowserRouter> 
           <div className="App">
-            <Navbar/>
+            <Navbar toggleTheme={toggleTheme} isDarkTheme={isDarkTheme} />
             <AppRouter/>
           </div>
         </BrowserRouter> 

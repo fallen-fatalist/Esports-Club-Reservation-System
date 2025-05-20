@@ -12,7 +12,7 @@ const excludedStatuses = ['pending', 'under repair', 'not working', 'unknown'];
 
 const getCurrentTimeString = () => {
   const now = new Date();
-  now.setMinutes(now.getMinutes() + 1); 
+  now.setMinutes(now.getMinutes() + 1);
   const roundedMinutes = Math.ceil(now.getMinutes() / 5) * 5;
   now.setMinutes(roundedMinutes);
   now.setSeconds(0);
@@ -23,7 +23,7 @@ const getCurrentTimeString = () => {
   if (hours === '00' && parseInt(mins) < 5) {
     return `00:05`;
   }
-  
+
   return `${hours}:${mins}`;
 };
 
@@ -39,7 +39,7 @@ const Booking = () => {
     const day = String(now.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
-  
+
   const [date, setDate] = useState(getCurrentDate());
   const [time, setTime] = useState(getCurrentTimeString());
   const [duration, setDuration] = useState(60);
@@ -51,7 +51,6 @@ const Booking = () => {
   const [infoMessage, setInfoMessage] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalComputerId, setModalComputerId] = useState(null);
-  const [autoSelectCount, setAutoSelectCount] = useState(1);
   const [autoSelectCountInput, setAutoSelectCountInput] = useState("1");
 
   const { computers: fetchedComputers = [], loading, error } = useComputers();
@@ -60,16 +59,16 @@ const Booking = () => {
 
   const validateDateTime = useCallback(() => {
     const timeToUse = time || getCurrentTimeString();
-    const today = getCurrentDate(); 
+    const today = getCurrentDate();
 
     if (date < today) {
       setErrorMessage(`Cannot book in the past. Please select today's date (${today})`);
       return false;
     }
-    
+
     const bookingStart = dateUtils.parseDate(date, timeToUse);
     const nowPlusBuffer = new Date();
-    
+
     if (bookingStart <= nowPlusBuffer) {
       const futureTime = new Date(Date.now() + 1 * 60 * 1000);
       const hours = String(futureTime.getHours()).padStart(2, '0');
@@ -87,9 +86,7 @@ const Booking = () => {
     return true;
   }, [date, time, duration]);
 
-  
   const checkAvailability = useCallback(() => {
-
     if (!validateDateTime()) return;
     const timeToUse = time || getCurrentTimeString();
 
@@ -98,7 +95,7 @@ const Booking = () => {
       .map((c) => {
         const available = bookings.length > 0
           ? isComputerAvailable(c.id, bookings, date, timeToUse, duration)
-          : true; 
+          : true;
         return {
           ...c,
           status: available ? 'available' : 'busy',
@@ -112,14 +109,11 @@ const Booking = () => {
     setErrorMessage(null);
   }, [fetchedComputers, bookings, date, time, duration, validateDateTime]);
 
-
   useEffect(() => {
-
     if (fetchedComputers.length > 0) {
       checkAvailability();
     }
   }, [fetchedComputers, checkAvailability]);
-
 
   const handleBookMultipleComputers = async () => {
     if (selectedComputers.length === 0) {
@@ -242,12 +236,13 @@ const Booking = () => {
     }
   };
 
-  const handleAutoSelectComputers = (count = 1) => {
+  const handleAutoSelectComputers = () => {
+    const count = parseInt(autoSelectCountInput, 10) || 1;
     const available = filteredComputers.filter((c) => c.status === 'available');
 
     if (available.length === 0) {
       setErrorMessage("No available computers for auto-selection.");
-      setInfoMessage(null); // extra
+      setInfoMessage(null);
       return;
     }
 
@@ -255,7 +250,7 @@ const Booking = () => {
 
     if (count > available.length) {
       setInfoMessage(`Requested ${count}, but only ${available.length} available. All available computers have been selected.`);
-    } 
+    }
 
     const autoSelected = available.slice(0, adjustedCount).map((c) => c.id);
     setSelectedComputers(autoSelected);
@@ -291,8 +286,6 @@ const Booking = () => {
           selectedComputers={selectedComputers}
           handleBookMultipleComputers={handleBookMultipleComputers}
           setSelectedComputers={setSelectedComputers}
-          autoSelectCount={autoSelectCount}
-          setAutoSelectCount={setAutoSelectCount}
           handleAutoSelectComputers={handleAutoSelectComputers}
           autoSelectCountInput={autoSelectCountInput}
           setAutoSelectCountInput={setAutoSelectCountInput}

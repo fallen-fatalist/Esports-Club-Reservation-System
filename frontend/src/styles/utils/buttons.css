@@ -1,0 +1,75 @@
+.button__text {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-style: normal;
+    font-size: var(--font-size-lg);
+    text-align: center;
+}
+
+.auto-select-btn,
+.logout-btn {
+    padding: 6px 10px;
+    background-color: var(--color-bg-light);
+    color: var(--color-text-bg);
+    border: 1px solid var(--color-bg-light);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    box-sizing: border-box;
+    text-align: center;
+    transition: color var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.auto-select-btn:hover,
+.logout-btn:hover {
+    color: var(--color-text-bg);
+    border: 1px solid var(--color-bg);
+    background-color: var(--color-bg);
+}
+
+.login-btn,
+.register-btn {
+    padding: 6px 10px;
+    background-color: transparent;
+    color: var(--color-bg);
+    border: 1px solid var(--color-bg);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    box-sizing: border-box;
+    text-align: center;
+    transition: color var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.login-btn:hover,
+.register-btn:hover {
+    color: var(--color-text-bg);
+    border: 1px solid var(--color-bg);
+    background-color: var(--color-bg);
+}
+
+.details-button,
+.book-multiple-button, 
+.clear-selection-button {
+    padding: 6px 10px;
+    background-color: transparent;
+    color: var(--color-text-tertiary);
+    border: 1px solid var(--color-text-tertiary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    box-sizing: border-box;
+    text-align: center;
+    transition: color var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.book-multiple-button:hover, 
+.clear-selection-button:hover, 
+.details-button:hover {
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-text-primary);
+    background-color: var(--color-bg-tertiary);
+}
+
+.btn-txt {
+    font-style: normal;
+    font-size: 15px;
+}

@@ -1,0 +1,23 @@
+.confirmation__container {
+    color: var(--color-text-secondary);
+    text-align: center;
+    font-weight: bold;
+    transition: color var(--transition-normal);
+}
+
+.confirmation__container h3 {
+    font-style: normal;
+    font-weight: 400;
+    font-size: 26px;
+}
+
+.confirmation__container p {
+    font-style: normal;
+    font-weight: 400;
+    font-size: var(--font-size-md);
+}
+
+.booking-time {
+    color: var(--color-text-primary);
+    transition: color var(--transition-normal);
+}

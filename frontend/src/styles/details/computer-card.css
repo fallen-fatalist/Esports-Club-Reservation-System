@@ -1,0 +1,92 @@
+.computer-card {
+    background: var(--color-bg-tertiary);
+    padding: 1rem;
+    border-radius: var(--radius-lg);
+    box-shadow: 0px 5px 10px 2px var(--color-shadow);
+    transition: transform var(--transition-fast), border var(--transition-fast), background-color var(--transition-normal);
+    cursor: pointer;
+    width: 100%;
+    max-width: 250px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.computer-card:hover {
+    transform: scale(1.03);
+}
+
+.computer-card.selected {
+    outline: 2px solid var(--color-accent);
+}
+
+.computer-card.available {
+    background-color: var(--color-bg-secondary);
+}
+
+.computer-card.busy {
+    background-color: var(--color-busy-bg);
+}
+
+.computer-card.unknown {
+    background-color: var(--color-warning-bg);
+}
+
+.computer-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.computer-icon {
+    width: 30px;
+    height: 30px;
+    fill: var(--color-text-secondary);
+    transition: fill var(--transition-normal);
+}
+
+.computer-icon.busy {
+    fill: var(--color-busy);
+}
+
+.computer-number {
+    font-size: 1rem;
+    font-weight: bold;
+    color: var(--color-text-primary);
+    transition: color var(--transition-normal);
+}
+
+.computer-specs {
+    font-size: 0.9rem;
+    margin: 0.5rem 0;
+    width: 100%;
+}
+
+.spec-item {
+    margin-bottom: 0.3rem;
+    color: var(--color-text-secondary);
+    transition: color var(--transition-normal);
+}
+
+.computer-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 1rem;
+    gap: 10px;
+}
+
+.computer-status {
+    margin-top: auto;
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+.available-status {
+    color: var(--color-available);
+}
+
+.busy-status {
+    color: var(--color-busy);
+}

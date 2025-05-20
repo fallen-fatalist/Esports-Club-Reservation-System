@@ -1,47 +1,54 @@
-import React, { useContext } from "react"
-import {Link, useNavigate} from 'react-router-dom'
+import React, { useContext, useState, useEffect } from "react"
+import { Link, useNavigate } from 'react-router-dom'
 import { AuthContext } from "../context/contextIndex";
 import MyButton from "./UI/button/MyButton/MyButton";
+import sunnyOutline from "../images/SunOutlined.svg";
+import moonOutline from "../images/MoonOutlined.svg";
 
-const Navbar = (props) => {
-  const {isAuth, setIsAuth} = useContext(AuthContext)
-
-  const logout = () => {
-    setIsAuth(false)
-    navigate("/")
-  }
+const Navbar = ({ toggleTheme, isDarkTheme }) => {
+  const { isAuth, setIsAuth } = useContext(AuthContext)
   const navigate = useNavigate()
+
+  const handleThemeToggle = () => {
+    toggleTheme(); 
+  };
+
   return (
     <header className="header">
       <nav className="navbar" aria-label="Main Navigation">
         <Link to="/" className="navbar__logo">Logo</Link>
+          <button className="theme-toggle-btn" onClick={handleThemeToggle}>
+            <img
+              src={isDarkTheme ? sunnyOutline : moonOutline}
+              alt="Theme Toggle Icon"
+              className="theme-icon"
+            />
+          </button>
 
         <div className="navbar__links">
-          <Link to="/about">About</Link>
           <Link to="/booking">Booking</Link>
 
           {!isAuth && (
             <>
-              <MyButton onClick={() => navigate("/login")}>
+              <button className="login-btn" onClick={() => navigate("/login")}>
                 <span className="button__text">Login</span>
-              </MyButton>
-              <MyButton onClick={() => navigate("/register")}>
+              </button>
+              <button className="register-btn" onClick={() => navigate("/register")}>
                 <span className="button__text">Register</span>
-              </MyButton>
+              </button>
             </>
           )}
 
           {isAuth && (
-            <MyButton onClick={() => setIsAuth(false)}>
+            <button className="logout-btn" onClick={() => setIsAuth(false)}>
               <span className="button__text">Logout</span>
-            </MyButton>
+            </button>
           )}
+
         </div>
       </nav>
     </header>
-
-
-  )
+  );
 };
 
 export default Navbar;

@@ -20,7 +20,6 @@ const computerService = {
       throw error;
     }
   }
-  
 };
 
 

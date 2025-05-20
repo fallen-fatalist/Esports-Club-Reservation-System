@@ -1,7 +1,7 @@
 .schedule-container {
   font-family: Arial, sans-serif;
   padding: 20px;
-  background-color: #f8f8f8;
+  background-color: var(--color-bg-tertiary);
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
@@ -10,10 +10,10 @@
 .date-container {
   text-align: center;
   margin-bottom: 20px;
-  background-color: white;
+  background-color: var(--color-bg-primary);
   padding: 15px;
-  border-radius: 4px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 2px 10px var(--color-shadow);
 }
 
 .date-navigation {
@@ -26,35 +26,35 @@
 }
 
 .date-navigation button {
-  background-color: #9c2626;
-  color: white;
+  background-color: #5b1d1d;;
+  color: var(--color-text-bg);
   border: none;
   padding: 6px 10px;
-  border-radius: 4px;
-  font-size: 14px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color var(--transition-fast);
 }
 
 .date-navigation button:hover {
-  background-color: #7a1d1d;
+  background-color: #7a1d1d; 
 }
 
 .current-date {
-  font-size: 16px;
+  font-size: var(--font-size-md);
   font-weight: bold;
   padding: 0 8px;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .timeline-container {
   width: 100%;
   overflow-x: auto;
-  background-color: white;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
+  background-color: var(--color-bg-primary);
+  box-shadow: 0 2px 10px var(--color-shadow);
+  border-radius: var(--radius-sm);
   position: relative;
-  border: 1px solid #ddd;
+  border: 1px solid var(--timeline-border);
 }
 
 .timeline {
@@ -65,7 +65,7 @@
 
 .timeline-header {
   display: flex;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--timeline-border);
   width: 100%;
 }
 
@@ -80,10 +80,10 @@
   padding: 10px;
   text-align: center;
   font-weight: bold;
-  border-right: 1px solid #e0e0e0;
+  border-right: 1px solid var(--timeline-border);
   min-width: 60px;
-  font-size: 12px;
-  color: #666;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
 }
 
 .timeline-content {
@@ -92,13 +92,13 @@
 
 .user-timeline-row {
   display: flex;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--timeline-border);
   height: 48px;
 }
 
 .hour-cell {
   flex: 1;
-  border-right: 1px solid #e0e0e0;
+  border-right: 1px solid var(--timeline-border);
   min-width: 60px;
   min-height: 28px;
 }
@@ -107,23 +107,23 @@
   position: absolute;
   height: 26px;
   top: 10px;
-  background-color: #9c2626;
-  color: white;
+  background-color: #5b1d1d;;
+  color: var(--color-text-bg);
   padding: 5px;
-  border-radius: 3px;
-  font-size: 14px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
   z-index: 0;
   margin: 1px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition-fast);
 }
 
 .appointment:hover {
   transform: scale(1.03);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px var(--color-shadow);
   z-index: 5;
 }
 
@@ -137,14 +137,14 @@
 }
 
 .appointment-modal {
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  border-radius: 6px;
-  background-color: white;
+  box-shadow: 0 5px 15px var(--color-shadow);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-primary);
   width: 240px;
   pointer-events: none;
-  border: 1px solid #ddd;
-  z-index: 1000;
-  animation: fadeIn 0.2s ease;
+  border: 1px solid var(--timeline-border);
+  z-index: var(--z-modal);
+  animation: fadeIn var(--transition-fast);
   position: fixed;
   padding: 10px;
   min-width: 200px;
@@ -163,26 +163,26 @@
 
 .modal-content {
   padding: 12px;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
 }
 
 .modal-content h3 {
   margin-top: 0;
   margin-bottom: 8px;
-  color: #9c2626;
-  font-size: 16px;
-  border-bottom: 1px solid #eee;
+  color: var(--color-busy);
+  font-size: var(--font-size-md);
+  border-bottom: 1px solid var(--timeline-border);
   padding-bottom: 5px;
 }
 
 .modal-content p {
   margin: 4px 0;
-  font-size: 13px;
-  color: #555;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
 }
 
 .modal-content strong {
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .week-selector {
@@ -193,16 +193,16 @@
 }
 
 .day-button {
-  background-color: #fff;
+  background-color: var(--color-bg-primary);
   border: 1px solid #ccc;
   padding: 6px 10px;
-  font-size: 14px;
-  border-radius: 4px;
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 
 .day-button.active {
-  background-color: #9c2626;
-  color: white;
-  border-color: #9c2626;
+  background-color: var(--color-busy);
+  color: var(--color-text-bg);
+  border-color: var(--color-busy);
 }

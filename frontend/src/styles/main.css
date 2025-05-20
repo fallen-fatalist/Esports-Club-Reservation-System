@@ -1,0 +1,21 @@
+@import "section/header.css";
+@import "section/hero-section.css";
+@import "section/booking-section.css";
+
+@import "utils/authentication.css";
+@import "utils/buttons.css";
+@import "utils/theme-toggle.css";
+@import "utils/confirmation.css";
+@import "utils/variables.css";
+@import "utils/reset.css";
+@import "utils/layout.css";
+
+@import "details/reservation.css";
+@import "details/computer-container.css";
+@import "details/computer-card.css";
+@import "details/modal-details.css";
+@import "details/booking-list.css";
+@import "details/time-left.css";
+
+@import "media/phone.css";
+@import "media/tablet.css";

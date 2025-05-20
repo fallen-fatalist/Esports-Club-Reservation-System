@@ -1,12 +1,40 @@
 .inputDate {
     width: 100%;
     text-align: left;
-    color: black;
-    background: transparent;
-    border: 1px solid black;
-    border-radius: 4px;
+    border: 1px solid var(--color-border);
+    background: transparent;    
+    border-radius: var(--radius-sm);
     padding: 5px;
     margin: 0;
     cursor: pointer;
-    font-family: 'Open Sans', sans-serif;
+    font-family: var(--font-family);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+    transition: color var(--transition-normal);
+}
+
+.wrapper {
+  position: relative;
+}
+
+.fakeDateBtn {
+  background: white;
+  border: 1px solid #ccc;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.schedulePopup {
+  position: absolute;
+  z-index: 100;
+  top: 110%;
+  left: 0;
+  width: 800px;
+  max-height: 500px;
+  overflow: auto;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }

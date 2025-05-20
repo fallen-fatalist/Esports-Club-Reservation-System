@@ -1,0 +1,17 @@
+body {
+    font-family: var(--font-family);
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    transition: background-color var(--transition-normal), color var(--transition-normal);
+}
+
+#root {
+    display: flex;
+    justify-content: center;
+}
+
+.App {
+    max-width: var(--max-width);
+    width: 100%;
+    margin: 0 auto;
+}

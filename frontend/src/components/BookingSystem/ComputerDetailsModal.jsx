@@ -11,7 +11,23 @@ const ComputerDetailsModal = ({ visible, setVisible, selectedComputer, computers
     <MyModal visible={visible} setVisible={setVisible}>
       {computer && (
         <div className="booking-steps">
-          <img src={crossIcon} alt="Close" className="modal-close-icon" onClick={() => setVisible(false)}/>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="modal-close-icon"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          onClick={() => setVisible(false)}
+        >
+          <path
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeWidth="2"
+            d="M20 20L4 4m16 0L4 20"
+          />
+        </svg>
+
           <h3>Computer Details</h3>
           <BookingSummary computerId={selectedComputer} date={date} time={time} duration={duration} />
           <ComputerDetails computer={computer} bookings={bookings} date={date} />

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './TimelineSchedule.css';
+import Timedate from '../date/Timedate/Timedate';
 
 const TimelineSchedule = ({ bookings }) => {
   const today = new Date();
@@ -48,8 +49,13 @@ const TimelineSchedule = ({ bookings }) => {
   const formatTime = (hours, minutes) =>
     `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 
-  const groupBookingsIndividually = () =>
-    bookings
+  const groupBookingsIndividually = () => {
+    // Проверяем, что bookings существует и является массивом
+    if (!bookings || !Array.isArray(bookings)) {
+      return [];
+    }
+    
+    return bookings
       .filter((b) => new Date(b.start_time).toDateString() === selectedDate.toDateString())
       .map((booking, index) => {
         const start = new Date(booking.start_time);
@@ -73,6 +79,7 @@ const TimelineSchedule = ({ bookings }) => {
           },
         };
       });
+  };
 
   const calculateAppointmentStyle = (appointment) => {
     const hourWidth = 100 / 24;
@@ -122,35 +129,35 @@ const TimelineSchedule = ({ bookings }) => {
       ? individualBookings
       : [{ rowId: 'empty-row', userName: '', booking: null }];
 
+  const handleDateChange = (e) => {
+    const newDate = new Date(e.target.value);
+    if (!isNaN(newDate)) {
+      setSelectedDate(newDate);
+    }
+  };
+
   return (
     <div className="schedule-container">
       <div className="date-container">
         <div className="date-navigation">
-          <button
-            onClick={() =>
-              setSelectedDate(
-                (prev) => new Date(prev.getFullYear(), prev.getMonth(), prev.getDate() - 1)
-              )
-            }
-          >
+          <button onClick={() => setSelectedDate(prev => new Date(prev.getFullYear(), prev.getMonth(), prev.getDate() - 1))}>
             &larr;
           </button>
 
           <span className="current-date">{formatDate(selectedDate)}</span>
 
-          <button
-            onClick={() =>
-              setSelectedDate(
-                (prev) => new Date(prev.getFullYear(), prev.getMonth(), prev.getDate() + 1)
-              )
-            }
-          >
+          <button onClick={() => setSelectedDate(prev => new Date(prev.getFullYear(), prev.getMonth(), prev.getDate() + 1))}>
             &rarr;
           </button>
 
           <button className="today-button" onClick={() => setSelectedDate(normalizedToday)}>
             today
           </button>
+
+          <Timedate
+            value={selectedDate.toISOString().split('T')[0]}
+            onChange={handleDateChange}
+          />
         </div>
       </div>
 
@@ -210,22 +217,13 @@ const TimelineSchedule = ({ bookings }) => {
         >
           <div className="modal-content">
             <h3>{hoverInfo.appointment.title}</h3>
+            <p><strong>Role:</strong> user</p>
+            <p><em>admin (in development)</em></p>
+            <p><em>deposit (in development)</em></p>
             <p>
-              <strong>Role:</strong> user
+              <strong>Booking:</strong> {formatDate(hoverInfo.appointment.startTime)}, {formatTime(hoverInfo.appointment.startHour, hoverInfo.appointment.startMinute)} – {formatTime(hoverInfo.appointment.endTime.getHours(), hoverInfo.appointment.endTime.getMinutes())}
             </p>
-            <p>
-              <em>admin (in development)</em>
-            </p>
-            <p>
-              <em>deposit (in development)</em>
-            </p>
-            <p>
-              <strong>Booking:</strong> {formatDate(hoverInfo.appointment.startTime)}, {formatTime(hoverInfo.appointment.startHour, hoverInfo.appointment.startMinute)} –{' '}
-              {formatTime(hoverInfo.appointment.endTime.getHours(), hoverInfo.appointment.endTime.getMinutes())}
-            </p>
-            <p>
-              <strong>Computer:</strong> {hoverInfo.appointment.computerName}
-            </p>
+            <p><strong>Computer:</strong> {hoverInfo.appointment.computerName}</p>
           </div>
         </div>
       )}

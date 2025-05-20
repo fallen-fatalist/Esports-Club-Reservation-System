@@ -1,4 +1,3 @@
-// bookingService.js
 import axios from 'axios';
 
 const bookingService = {
@@ -60,23 +59,36 @@ const bookingService = {
       }
     },
     async getBookingsByComputerId(id) {
-        try {
-          const response = await axios.get(`/api/computer/${id}/bookings`);
-          return response.data;
-        } catch (error) {
-          console.error(`Error getting bookings for computer #${id}:`, error);
-          throw error;
-        }
-      },
-    async getLeftTimeByComputerId(id) {
-        try {
-          const response = await axios.get(`/api/bookings/${id}/left`);
-          return response.data;
-        } catch (error) {
-          console.error(`Error getting left time for computer #${id}:`, error);
-          throw error;
-        }
+      try {
+        const response = await axios.get(`/api/computer/${id}/bookings`);
+        return response.data;
+      } catch (error) {
+        console.error(`Error getting bookings for computer #${id}:`, error);
+        throw error;
       }
+    },
+    async getLeftTimeByComputerId(id) {
+      try {
+        const response = await axios.get(`/api/bookings/${id}/left`);
+        let secondsLeft = null;
+        
+        if (response.data && typeof response.data === 'object') {
+          secondsLeft = response.data.left_time;
+        } else if (typeof response.data === 'number') {
+          secondsLeft = response.data;
+        }
+        
+        console.log("Extracted seconds left:", secondsLeft);
+        
+        return {
+          secondsLeft: secondsLeft,
+          minutesLeft: secondsLeft !== null ? Math.floor(secondsLeft / 60) : null
+        };
+      } catch (error) {
+        console.error(`Error getting left time for computer #${id}:`, error);
+        throw error;
+      }
+    }
 };
 
 export default bookingService;
