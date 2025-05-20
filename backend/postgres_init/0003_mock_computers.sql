@@ -58,8 +58,8 @@ VALUES
 -- Consoles
 INSERT INTO computers (room, cpu)
 VALUES 
-    ('Console', 'Sony PlayStation V'),
-    ('Console', 'Sony PlayStation V'), 
-    ('Console', 'Sony PlayStation V'), 
-    ('Console', 'Sony PlayStation V'), 
-    ('Console', 'Sony PlayStation V');
+    ('Console', 'Sony PlayStation 5'),
+    ('Console', 'Sony PlayStation 5'), 
+    ('Console', 'Sony PlayStation 5'), 
+    ('Console', 'Sony PlayStation 5'), 
+    ('Console', 'Sony PlayStation 5');
