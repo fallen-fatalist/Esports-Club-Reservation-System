@@ -27,8 +27,6 @@ const ComputerDetailsModal = ({ visible, setVisible, selectedComputer, computers
             d="M20 20L4 4m16 0L4 20"
           />
         </svg>
-
-          <h3>Computer Details</h3>
           <BookingSummary computerId={selectedComputer} date={date} time={time} duration={duration} />
           <ComputerDetails computer={computer} bookings={bookings} date={date} />
         </div>

@@ -95,7 +95,6 @@ const ComputerDetails = ({ computer, bookings, date }) => {
   return (
     <div className="computer-details">
       <TimelineSchedule bookings={computerBookings} date={selectedDate} />
-      <h3>Computer Info</h3>
       <div className="computer-schedule">
         {computerBookings.length > 0 ? (
           <div className="schedule-timeline">
@@ -123,22 +122,6 @@ const ComputerDetails = ({ computer, bookings, date }) => {
         ) : (
           <></>
         )}
-
-      <div className="computer-specs">
-        <h4 onClick={() => setShowSpecs(!showSpecs)} style={{ cursor: "pointer" }}>
-          Specifications {showSpecs ? "▲" : "▼"}
-        </h4>
-        {showSpecs && (
-          <ul className="specs-list">
-            {["cpu", "gpu", "ram", "monitor", "mouse", "keyboard", "headset", "mousepad"].map((spec) => (
-              <li key={spec}>
-                <strong>{spec.toUpperCase()}:</strong> {detailedComputer?.[spec] || "N/A"}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
         <div className="booking-list">
           <h4>Bookings</h4>
           {computerBookings.length > 0 ? (
@@ -173,6 +156,20 @@ const ComputerDetails = ({ computer, bookings, date }) => {
             )}
           </div>
         </div>
+      <div className="computer-specs">
+        <h4 onClick={() => setShowSpecs(!showSpecs)} style={{ cursor: "pointer" }}>
+          Specifications {showSpecs ? "▲" : "▼"}
+        </h4>
+        {showSpecs && (
+          <ul className="specs-list">
+            {["cpu", "gpu", "ram", "monitor", "mouse", "keyboard", "headset", "mousepad"].map((spec) => (
+              <li key={spec}>
+                <strong>{spec.toUpperCase()}:</strong> {detailedComputer?.[spec] || "N/A"}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
       </div>
 
     </div>
