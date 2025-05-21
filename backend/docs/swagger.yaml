@@ -36,6 +36,11 @@ definitions:
           example: securePassword123
         type: string
     type: object
+  dto.TokenResponse:
+    properties:
+      token:
+        type: string
+    type: object
   dto.VerificationRequest:
     properties:
       email:
@@ -671,7 +676,7 @@ paths:
         "200":
           description: JWT token
           schema:
-            $ref: '#/definitions/utils.Message'
+            $ref: '#/definitions/dto.TokenResponse'
         "400":
           description: Bad request, validation error
           schema:

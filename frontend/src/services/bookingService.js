@@ -1,9 +1,9 @@
-import axios from 'axios';
+import { api } from './authService.js';
 
 const bookingService = {
     async getBookings() {
         try {
-            const response = await axios.get('/api/bookings');  
+            const response = await api.get('/api/bookings');  
             return response.data;
         } catch (error) {
             console.error('Error getting bookings', error);
@@ -15,14 +15,14 @@ const bookingService = {
         console.log('Request payload:', JSON.stringify(bookingData, null, 2));
         
         try {
-          const response = await axios.post('/api/bookings', bookingData);
+          const response = await api.post('/api/bookings', bookingData);
           return response.data;
         } catch (error) {
           if (error.response && error.response.status === 500) {
             console.log('Attempting fallback approaches...');
             
             try {
-              const altResponse = await axios.post('/api/booking', bookingData);
+              const altResponse = await api.post('/api/booking', bookingData);
               return altResponse.data;
             } catch (alt1Error) {
               console.log('Alternative endpoint 1 failed, trying next approach');
@@ -35,7 +35,7 @@ const bookingService = {
                   package_id: Number(bookingData.package_id)
                 };
                 
-                const modResponse = await axios.post('/api/bookings', modifiedData);
+                const modResponse = await api.post('/api/bookings', modifiedData);
                 return modResponse.data;
               } catch (modError) {
                 console.log('Modified data approach failed');
@@ -60,7 +60,7 @@ const bookingService = {
     },
     async getBookingsByComputerId(id) {
       try {
-        const response = await axios.get(`/api/computer/${id}/bookings`);
+        const response = await api.get(`/api/computer/${id}/bookings`);
         return response.data;
       } catch (error) {
         console.error(`Error getting bookings for computer #${id}:`, error);
@@ -77,7 +77,7 @@ const bookingService = {
           
           Hint: packages can be fetched through /api/packages
         */
-        const response = await axios.get(`/api/computers/${id}/remaining?packageID=1`);
+        const response = await api.get(`/api/computers/${id}/remaining?packageID=1`);
         let secondsLeft = null;
         
         if (response.data && typeof response.data === 'object') {

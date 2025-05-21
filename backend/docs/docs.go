@@ -777,7 +777,7 @@ const docTemplate = `{
                     "200": {
                         "description": "JWT token",
                         "schema": {
-                            "$ref": "#/definitions/utils.Message"
+                            "$ref": "#/definitions/dto.TokenResponse"
                         }
                     },
                     "400": {
@@ -937,6 +937,14 @@ const docTemplate = `{
                 },
                 "password": {
                     "description": "required: true\nexample: securePassword123",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.TokenResponse": {
+            "type": "object",
+            "properties": {
+                "token": {
                     "type": "string"
                 }
             }

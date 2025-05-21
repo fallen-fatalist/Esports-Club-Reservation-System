@@ -73,7 +73,7 @@ func (s *Handler) register(w http.ResponseWriter, r *http.Request) {
 // @Accept			json
 // @Produce		json
 // @Param			credentials	body		dto.LoginUser		true	"Login credentials"
-// @Success		200			{object}	utils.Message	"JWT token"
+// @Success		200			{object}	dto.TokenResponse	"JWT token"
 // @Failure		400			{object}	utils.HTTPError		"Bad request, validation error"
 // @Failure		401			{object}	utils.HTTPError		"Unauthorized, invalid credentials or blocked user"
 // @Router			/auth/sign-in [post]

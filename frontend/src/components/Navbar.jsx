@@ -4,6 +4,7 @@ import { AuthContext } from "../context/contextIndex";
 import MyButton from "./UI/button/MyButton/MyButton";
 import sunnyOutline from "../images/SunOutlined.svg";
 import moonOutline from "../images/MoonOutlined.svg";
+import { logout }  from "../services/authService";
 
 const Navbar = ({ toggleTheme, isDarkTheme }) => {
   const { isAuth, setIsAuth } = useContext(AuthContext)
@@ -40,7 +41,7 @@ const Navbar = ({ toggleTheme, isDarkTheme }) => {
           )}
 
           {isAuth && (
-            <button className="logout-btn" onClick={() => setIsAuth(false)}>
+            <button className="logout-btn" onClick={() => { setIsAuth(false); logout();}}>
               <span className="button__text">Logout</span>
             </button>
           )}

@@ -29,12 +29,16 @@ const Login = () => {
 
     try {
       const res = await signIn(form);
-      const token = res.data.message;
+      const token = res.data.token;
       
       // Устанавливаем куку на 7 дней
-      setCookie("token", token, 7);
-      setIsAuth(true);
-      navigate("/");
+      if (token) {
+        setCookie("token", token, 7);
+        setIsAuth(true);
+        navigate("/");
+      } else {
+        console.log("Failed to fetch token");
+      }
     } catch (err) {
       setError(err.response?.data?.error || "Login failed");
     }
