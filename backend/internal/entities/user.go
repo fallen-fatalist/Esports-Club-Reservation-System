@@ -1,5 +1,7 @@
 package entities
 
+import "errors"
+
 type User struct {
 	ID        int64  `json:"id"`
 	Login     string `json:"login"`
@@ -17,3 +19,9 @@ type UserCredentials struct {
 	Status         string
 	Role           string // если роль используется при авторизации
 }
+
+// Errors
+var (
+	ErrInvalidUserID = errors.New("invalid user id")
+	ErrUserNotFound  = errors.New("user not found")
+)

@@ -55,6 +55,7 @@ type BookingService interface {
 	GetAllBookings() ([]*entities.Booking, error)
 	CreateBooking(context.Context, *entities.Booking) (int64, error)
 	GetComputerBookings(id int64) ([]*entities.Booking, error)
+	UserBookings(id int64) ([]*entities.Booking, error)
 	GetActiveBookings() ([]*entities.Booking, error)
 	GetPendingBookings() ([]*entities.Booking, error)
 	GetFinishedBookings() ([]*entities.Booking, error)

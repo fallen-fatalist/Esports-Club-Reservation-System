@@ -395,3 +395,17 @@ func (s *BookingService) hasBookingConflict(ctx context.Context, newBooking *ent
 	return false, nil
 }
 
+func (s *BookingService) UserBookings(id int64) ([]*entities.Booking, error) {
+	if err := entities.ValidateID(id); err != nil {
+		return nil, entities.ErrInvalidUserID
+	}
+
+	bookings, err := s.repository.GetAllByUserID(id)
+	if err != nil {
+		return nil, err
+	} else if len(bookings) == 0 {
+		return nil, entities.ErrUserNotFound
+	}
+
+	return bookings, nil
+}

@@ -507,7 +507,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Computers"
+                    "Bookings"
                 ],
                 "summary": "Get bookings for a specific computer with time format \"2006-01-02T15:04:05Z07:00\"",
                 "parameters": [
@@ -616,6 +616,59 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{id}/bookings": {
+            "get": {
+                "description": "Returns a list of bookings for the specified user ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Get bookings for a specific user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of bookings for the user",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entities.Booking"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid user ID",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error or unhandled error",
                         "schema": {
                             "$ref": "#/definitions/handlers.JSONAnswer"
                         }
@@ -901,9 +954,6 @@ const docTemplate = `{
                 "package_id": {
                     "type": "integer"
                 },
-                "room": {
-                    "type": "string"
-                },
                 "start_time": {
                     "type": "string"
                 },
@@ -951,6 +1001,9 @@ const docTemplate = `{
                 "ram": {
                     "type": "string"
                 },
+                "room": {
+                    "type": "string"
+                },
                 "ssd": {
                     "type": "string"
                 },
@@ -995,6 +1048,9 @@ const docTemplate = `{
                 },
                 "end_time": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "name": {
                     "type": "string"

@@ -25,7 +25,6 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("/computers/{id}", h.HandleComputer)
 	mux.HandleFunc("/computers/status", h.HandleComputerStatuses)
 	mux.HandleFunc("/computers/{id}/status", h.HandleComputerStatus)
-	mux.HandleFunc("/computers/{id}/bookings", h.ComputerBookings)
 
 	/* Packages */
 	mux.HandleFunc("GET /packages", h.Packages)
@@ -41,6 +40,8 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("/bookings/cancelled", auth.WithAuth(h.jwtMng, allRoles, h.HandleCancelledBookings))
 	mux.HandleFunc("/bookings/left", h.HandleComputersLeftTime)
 	mux.HandleFunc("/bookings/{id}/left", h.HandleComputerLeftTime)
+	mux.HandleFunc("GET /computers/{id}/bookings", h.ComputerBookings)
+	mux.HandleFunc("GET /user/{id}/bookings", auth.WithAuth(h.jwtMng, allRoles, h.UserBookings))
 
 	//mux.HandleFunc("/api/users", s.GetUsers)
 	// mux.Handle("/api/packages", s.GetAllPackages)

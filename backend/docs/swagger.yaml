@@ -69,8 +69,6 @@ definitions:
         type: integer
       package_id:
         type: integer
-      room:
-        type: string
       start_time:
         type: string
       status:
@@ -102,6 +100,8 @@ definitions:
         type: string
       ram:
         type: string
+      room:
+        type: string
       ssd:
         type: string
       status:
@@ -131,6 +131,8 @@ definitions:
         type: string
       end_time:
         type: string
+      id:
+        type: integer
       name:
         type: string
       price:
@@ -489,7 +491,7 @@ paths:
             $ref: '#/definitions/handlers.JSONAnswer'
       summary: Get bookings for a specific computer with time format "2006-01-02T15:04:05Z07:00"
       tags:
-      - Computers
+      - Bookings
   /api/computers/{id}/status:
     get:
       consumes:
@@ -563,6 +565,41 @@ paths:
       summary: Get all packages
       tags:
       - Packages
+  /api/users/{id}/bookings:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of bookings for the specified user ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of bookings for the user
+          schema:
+            items:
+              $ref: '#/definitions/entities.Booking'
+            type: array
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/handlers.JSONAnswer'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/handlers.JSONAnswer'
+        "500":
+          description: Internal server error or unhandled error
+          schema:
+            $ref: '#/definitions/handlers.JSONAnswer'
+      summary: Get bookings for a specific user
+      tags:
+      - Bookings
   /auth/activate:
     post:
       consumes:

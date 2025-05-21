@@ -121,7 +121,7 @@ func (s *Handler) BookingsOptions(w http.ResponseWriter, r *http.Request) {
 
 // @Summary		Get bookings for a specific computer with time format "2006-01-02T15:04:05Z07:00"
 // @Description	Returns a list of bookings for the specified computer ID
-// @Tags			Computers
+// @Tags			Bookings
 // @Accept			json
 // @Produce		json
 // @Param			id	path		int64				true	"Computer ID"
@@ -369,5 +369,75 @@ func (s *Handler) HandleComputersLeftTime(w http.ResponseWriter, r *http.Request
 	default:
 		w.Header().Set("Allow", "GET")
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+// @Summary		Get bookings for a specific user
+// @Description	Returns a list of bookings for the specified user ID
+// @Tags			Bookings
+// @Security BearerAuth
+// @Accept			json
+// @Produce		json
+// @Param			id	path		int64				true	"User ID"
+// @Success		200	{array}		entities.Booking	"List of bookings for the user"
+// @Failure		400	{object}	handlers.JSONAnswer	"Invalid user ID"
+// @Failure		404	{object}	handlers.JSONAnswer	"User not found"
+// @Failure		500	{object}	handlers.JSONAnswer	"Internal server error or unhandled error"
+// @Router			/api/users/{id}/bookings [get]
+func (s *Handler) UserBookings(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		jsonPayload := JSONAnswer{
+			Message: "Invalid user ID",
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(jsonPayload); err != nil {
+			slog.Error("Error encoding JSON:", slog.Any("error", err))
+			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+			return
+		}
+		return
+	}
+
+	bookings, err := s.service.BookingService.UserBookings(id)
+	if err != nil {
+		switch err {
+		case entities.ErrUserNotFound:
+			jsonPayload := JSONAnswer{
+				Message: "User not found",
+			}
+			w.WriteHeader(http.StatusNotFound)
+			w.Header().Set("Content-Type", "application/json")
+			if err := json.NewEncoder(w).Encode(jsonPayload); err != nil {
+				slog.Error("Error encoding JSON:", slog.Any("error", err))
+				http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+				return
+			}
+			return
+		case entities.ErrInvalidUserID:
+			jsonPayload := JSONAnswer{
+				Message: "Invalid user ID",
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			w.Header().Set("Content-Type", "application/json")
+			if err := json.NewEncoder(w).Encode(jsonPayload); err != nil {
+				slog.Error("Error encoding JSON:", slog.Any("error", err))
+				http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+				return
+			}
+
+		}
+		slog.Error("Error fetching bookings:", slog.Any("error", err))
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(bookings); err != nil {
+		slog.Error("Error encoding JSON:", slog.Any("error", err))
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
 	}
 }

@@ -3,6 +3,7 @@ CREATE TABLE packages (
     package_name TEXT,
     room club_room DEFAULT 'Standard',
     price INT NOT NULL,
+    duration INT,
     startTime TIME,
     endTime TIME,
     created_at TIMESTAMPTZ DEFAULT NOW()

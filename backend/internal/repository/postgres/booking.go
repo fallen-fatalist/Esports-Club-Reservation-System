@@ -62,6 +62,49 @@ func (r *BookingRepository) GetAll() ([]*entities.Booking, error) {
 	return bookings, nil
 }
 
+func (r *BookingRepository) GetAllByUserID(id int64) ([]*entities.Booking, error) {
+	query := `
+		SELECT 
+			booking_id, user_id, computer_id, package_id,
+			start_time, end_time, status, created_at
+		FROM bookings
+		WHERE user_id = $1
+		ORDER BY start_time ASC;
+	`
+
+	rows, err := r.db.Query(query, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var bookings []*entities.Booking
+
+	for rows.Next() {
+		var b entities.Booking
+		err := rows.Scan(
+			&b.ID,
+			&b.UserID,
+			&b.ComputerID,
+			&b.PackageID,
+			&b.StartTime,
+			&b.EndTime,
+			&b.Status,
+			&b.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		bookings = append(bookings, &b)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return bookings, nil
+}
+
 func (r *BookingRepository) GetByID(id int64) (*entities.Booking, error) {
 	var booking entities.Booking
 	var startTime time.Time
