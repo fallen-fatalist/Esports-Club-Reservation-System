@@ -3,31 +3,59 @@ import MyInput from "../components/UI/input/MyInput";
 import MyButton from "../components/UI/button/MyButton/MyButton";
 import { AuthContext } from "../context/contextIndex";
 import { useNavigate } from "react-router-dom";
+import { signUp, activate, verifyEmail } from "../services/authService";
 
 const Register = () => {
-    const { setIsAuth } = useContext(AuthContext);
-    const navigate = useNavigate();
+  const { setIsAuth } = useContext(AuthContext);
+  const navigate = useNavigate();
 
-    const [error, setError] = useState("");
-  
-    const handleRegister = (event) => {
+  const [step, setStep] = useState(1);
+  const [error, setError] = useState("");
+  const [form, setForm] = useState({
+    email: "",
+    login: "",
+    password: "",
+    confirmPassword: "",
+    code: ""
+  });
+
+  const handleRegister = async (event) => {
     event.preventDefault();
+    setError("");
 
-    const email = event.target[0].value;
-    const username = event.target[1].value;
-    const password = event.target[2].value;
-    const confirmPassword = event.target[3].value;
+    const { email, login, password, confirmPassword } = form;
 
     if (password !== confirmPassword) {
-        setError("Passwords do not match");
-        return; 
+      setError("Passwords do not match");
+      return;
     }
-    const user = { email, username, password };
-    localStorage.setItem("user", JSON.stringify(user));
 
-    setIsAuth(true);
-    navigate("/");
-  }
+    try {
+      await signUp({ email, login, password });
+      await activate(email);
+      setStep(2);
+    } catch (err) {
+      setError(err.response?.data?.error || "Registration error");
+    }
+  };
+
+  const handleVerify = async (event) => {
+    event.preventDefault();
+    try {
+      await verifyEmail({ email: form.email, code: form.code });
+      alert("Email verified! Now you can log in.");
+      navigate("/login");
+    } catch (err) {
+      setError(err.response?.data?.error || "Verification failed");
+    }
+  };
+
+  const handleChange = (e) => {
+    setForm((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
+  };
 
   return (
     <section className="authorization">
@@ -36,25 +64,27 @@ const Register = () => {
       </header>
       <div className="auth__container">
         <div className="login__email">
-          <form onSubmit={handleRegister}>
-            <MyInput type="text" placeholder="Enter email" />
-            <MyInput type="text" placeholder="Create username" />
-            <MyInput type="password" placeholder="Create password" />
-            <MyInput type="password" placeholder="Confirm password" />
-            {error && (
-              <div className="error-message">
-                <p>{error}</p>
-              </div>
-            )}
-            <MyButton>Register</MyButton>
-          </form>
-        </div>
-        <div className="login__telegram">
-          {/* Здесь можно будет сделать вход через Telegram */}
+          {step === 1 ? (
+            <form onSubmit={handleRegister}>
+              <MyInput name="email" type="text" placeholder="Enter email" value={form.email} onChange={handleChange} />
+              <MyInput name="login" type="text" placeholder="Create username" value={form.login} onChange={handleChange} />
+              <MyInput name="password" type="password" placeholder="Create password" value={form.password} onChange={handleChange} />
+              <MyInput name="confirmPassword" type="password" placeholder="Confirm password" value={form.confirmPassword} onChange={handleChange} />
+              {error && <div className="error-message"><p>{error}</p></div>}
+              <MyButton>Register</MyButton>
+            </form>
+          ) : (
+            <form onSubmit={handleVerify}>
+              <p>Enter verification code sent to your email:</p>
+              <MyInput name="code" type="text" placeholder="Verification code" value={form.code} onChange={handleChange} />
+              {error && <div className="error-message"><p>{error}</p></div>}
+              <MyButton>Verify</MyButton>
+            </form>
+          )}
         </div>
       </div>
     </section>
-  )
+  );
 };
 
 export default Register;

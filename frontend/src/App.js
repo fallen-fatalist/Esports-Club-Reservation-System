@@ -1,7 +1,6 @@
-import React, {useState, useEffect} from 'react';
-import { 
-  BrowserRouter, 
-} from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter } from 'react-router-dom';
+import { getCookie } from './components/utils/cookies.js';  
 
 // Components
 import Navbar from './components/Navbar';
@@ -10,8 +9,6 @@ import { AuthContext } from './context/contextIndex';
 
 // Styles
 import './styles/main.css';
-
-
 
 function App() {
   const [isAuth, setIsAuth] = useState(false);
@@ -28,29 +25,22 @@ function App() {
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", isDarkTheme ? "dark" : "light");
 
-    const checkAuth = async () => {
-      // const response = await fetch("https://your-api.com/auth/status", {
-      //     credentials: "include"
-      // });
-      // if (response.ok) {
-      //     setIsAuth(true);
-      // }
-    };
-    checkAuth();
+    // Проверка токена (используем getCookie вместо Cookies.get)
+    const token = getCookie("token");  // <- Вот тут исправлено!
+    if (token) {
+      setIsAuth(true);
+    }
   }, [isDarkTheme]);
 
   return (
-      <AuthContext.Provider value= {{
-        isAuth,
-        setIsAuth
-      }}>
-        <BrowserRouter> 
-          <div className="App">
-            <Navbar toggleTheme={toggleTheme} isDarkTheme={isDarkTheme} />
-            <AppRouter/>
-          </div>
-        </BrowserRouter> 
-      </AuthContext.Provider>
+    <AuthContext.Provider value={{ isAuth, setIsAuth }}>
+      <BrowserRouter>
+        <div className="App">
+          <Navbar toggleTheme={toggleTheme} isDarkTheme={isDarkTheme} />
+          <AppRouter />
+        </div>
+      </BrowserRouter>
+    </AuthContext.Provider>
   );
 }
 
