@@ -129,6 +129,8 @@ definitions:
     properties:
       created_at:
         type: string
+      duration:
+        type: integer
       end_time:
         type: string
       id:
@@ -218,35 +220,6 @@ paths:
       summary: Create a new booking
       tags:
       - Bookings
-  /api/bookings/{id}/left:
-    get:
-      consumes:
-      - application/json
-      description: Returns the left time for the specified computer ID
-      parameters:
-      - description: Computer ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Left time for the computer
-          schema:
-            $ref: '#/definitions/entities.ComputerOccupiedLeftTime'
-        "400":
-          description: Invalid computer ID
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-      summary: Get the left time for a specific computer in seconds
-      tags:
-      - Bookings
   /api/bookings/active:
     get:
       consumes:
@@ -287,27 +260,6 @@ paths:
           schema:
             $ref: '#/definitions/handlers.JSONAnswer'
       summary: Get cancelled bookings with time format "2006-01-02T15:04:05Z07:00"
-      tags:
-      - Bookings
-  /api/bookings/computers-left-time:
-    get:
-      consumes:
-      - application/json
-      description: Returns a list of computers left time
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of computers left time
-          schema:
-            items:
-              $ref: '#/definitions/entities.ComputerOccupiedLeftTime'
-            type: array
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-      summary: Get computers left time in seconds
       tags:
       - Bookings
   /api/bookings/finished:
@@ -492,6 +444,42 @@ paths:
       summary: Get bookings for a specific computer with time format "2006-01-02T15:04:05Z07:00"
       tags:
       - Bookings
+  /api/computers/{id}/remaining:
+    get:
+      consumes:
+      - application/json
+      description: Returns the remaining time (in seconds) that a specific computer
+        will be occupied before it becomes available for a new booking with the given
+        package duration.
+      parameters:
+      - description: ID of the computer to check availability for
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID of the package whose duration will be used in the calculation
+        in: query
+        name: packageID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Remaining time the computer is occupied
+          schema:
+            $ref: '#/definitions/entities.ComputerOccupiedLeftTime'
+        "400":
+          description: Invalid computer ID or package ID
+          schema:
+            $ref: '#/definitions/handlers.JSONAnswer'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.JSONAnswer'
+      summary: Get remaining occupied time for a computer
+      tags:
+      - Bookings
   /api/computers/{id}/status:
     get:
       consumes:
@@ -525,6 +513,39 @@ paths:
       summary: Get the status of a specific computer
       tags:
       - Computers
+  /api/computers/remaining:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of computers with the remaining time (in seconds)
+        each will be occupied before becoming available for booking with the specified
+        package.
+      parameters:
+      - description: ID of the package used to calculate remaining occupied time
+        in: query
+        name: packageID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of computers and their remaining occupied time
+          schema:
+            items:
+              $ref: '#/definitions/entities.ComputerOccupiedLeftTime'
+            type: array
+        "400":
+          description: Invalid package ID
+          schema:
+            $ref: '#/definitions/handlers.JSONAnswer'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.JSONAnswer'
+      summary: Get remaining occupied time for all computers
+      tags:
+      - Bookings
   /api/computers/statuses:
     get:
       consumes:
@@ -597,6 +618,8 @@ paths:
           description: Internal server error or unhandled error
           schema:
             $ref: '#/definitions/handlers.JSONAnswer'
+      security:
+      - BearerAuth: []
       summary: Get bookings for a specific user
       tags:
       - Bookings

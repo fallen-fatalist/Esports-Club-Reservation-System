@@ -33,7 +33,7 @@ func (r *UserRepository) GetAll() ([]*entities.User, error) {
 	var users []*entities.User
 
 	for rows.Next() {
-		var user *entities.User
+		user := &entities.User{}
 
 		err = rows.Scan(
 			&user.ID,

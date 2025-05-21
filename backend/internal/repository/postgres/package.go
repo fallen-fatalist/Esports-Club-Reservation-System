@@ -20,9 +20,9 @@ func NewPackageRepository(db *sql.DB) (*PackageRepository, error) {
 // INSERT INTO packages (package_id, package_name, room, price, startTime, endTime) VALUES
 func (r *PackageRepository) GetAll() ([]*entities.Package, error) {
 	rows, err := r.db.Query(`
-        SELECT package_id, package_name, room, price, startTime, endTime, created_at 
+        SELECT package_id, package_name, room, price, duration, startTime, endTime, created_at 
         FROM packages
-        ORDER BY price ASC
+        ORDER BY package_id ASC
     `)
 	if err != nil {
 		return nil, err
@@ -36,7 +36,7 @@ func (r *PackageRepository) GetAll() ([]*entities.Package, error) {
 		var startTime, endTime sql.NullString
 		var createdAt time.Time
 
-		err := rows.Scan(&pkg.ID, &pkg.Name, &pkg.Room, &pkg.Price, &startTime, &endTime, &createdAt)
+		err := rows.Scan(&pkg.ID, &pkg.Name, &pkg.Room, &pkg.Price, &pkg.Duration, &startTime, &endTime, &createdAt)
 		if err != nil {
 			return nil, err
 		}

@@ -69,7 +69,15 @@ const bookingService = {
     },
     async getLeftTimeByComputerId(id) {
       try {
-        const response = await axios.get(`/api/bookings/${id}/left`);
+        /* 
+          MUST DO: Package should be selected in frontend
+          then its ID entered as parameter to the request 
+          to get the remaining time for that package 
+          to be available for specific computer
+          
+          Hint: packages can be fetched through /api/packages
+        */
+        const response = await axios.get(`/api/computers/${id}/remaining?packageID=1`);
         let secondsLeft = null;
         
         if (response.data && typeof response.data === 'object') {

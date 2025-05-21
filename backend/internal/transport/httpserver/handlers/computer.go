@@ -174,7 +174,7 @@ func (s *Handler) HandleComputer(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		slog.Error("Error parsing computer ID:", slog.Any("error", err))
+		slog.Error("parsing computer ID:", slog.Any("error", err))
 		http.Error(w, "Invalid computer ID", http.StatusBadRequest)
 		return
 	}
@@ -240,7 +240,7 @@ func (s *Handler) HandleComputerStatus(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		slog.Error("Error parsing computer ID:", slog.Any("error", err))
+		slog.Error("parsing computer ID:", slog.Any("error", err))
 		http.Error(w, "Invalid computer ID", http.StatusBadRequest)
 		return
 	}

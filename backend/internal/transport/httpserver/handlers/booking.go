@@ -306,26 +306,40 @@ func (s *Handler) HandleCancelledBookings(w http.ResponseWriter, r *http.Request
 	}
 }
 
-// @Summary		Get the left time for a specific computer in seconds
-// @Description	Returns the left time for the specified computer ID
+// @Summary		Get remaining occupied time for a computer
+// @Description	Returns the remaining time (in seconds) that a specific computer will be occupied before it becomes available for a new booking with the given package duration.
 // @Tags			Bookings
 // @Accept			json
 // @Produce		json
-// @Param			id	path		int64								true	"Computer ID"
-// @Success		200	{object}	entities.ComputerOccupiedLeftTime	"Left time for the computer"
-// @Failure		400	{object}	handlers.JSONAnswer					"Invalid computer ID"
-// @Failure		500	{object}	handlers.JSONAnswer					"Internal server error"
-// @Router			/api/bookings/{id}/left [get]
-func (s *Handler) HandleComputerLeftTime(w http.ResponseWriter, r *http.Request) {
+// @Param			id			path		int64								true	"ID of the computer to check availability for"
+// @Param			packageID	query		int64								true	"ID of the package whose duration will be used in the calculation"
+// @Success		200			{object}	entities.ComputerOccupiedLeftTime	"Remaining time the computer is occupied"
+// @Failure		400			{object}	handlers.JSONAnswer					"Invalid computer ID or package ID"
+// @Failure		500			{object}	handlers.JSONAnswer					"Internal server error"
+// @Router			/api/computers/{id}/remaining [get]
+func (s *Handler) HandleComputerRemaining(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		idStr := r.PathValue("id")
-		id, err := strconv.ParseInt(idStr, 10, 64)
+		computerIDStr := r.PathValue("id")
+		computerID, err := strconv.ParseInt(computerIDStr, 10, 64)
 		if err != nil {
 			http.Error(w, "Invalid computer ID", http.StatusBadRequest)
 			return
 		}
-		computerLeftTime, err := s.service.BookingService.GetComputerLeftOccupiedTime(id)
+
+		packageIDStr := r.URL.Query().Get("packageID")
+		if packageIDStr == "" {
+			http.Error(w, "Missing packageID parameter", http.StatusBadRequest)
+			return
+		}
+
+		packageID, err := strconv.ParseInt(packageIDStr, 10, 64)
+		if err != nil {
+			http.Error(w, "Invalid packageID parameter", http.StatusBadRequest)
+			return
+		}
+
+		computerLeftTime, err := s.service.BookingService.GetComputerLeftOccupiedTime(computerID, packageID)
 		if err != nil {
 			slog.Error("Error fetching computer left time:", slog.Any("error", err))
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -343,18 +357,32 @@ func (s *Handler) HandleComputerLeftTime(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// @Summary		Get computers left time in seconds
-// @Description	Returns a list of computers left time
+// @Summary		Get remaining occupied time for all computers
+// @Description	Returns a list of computers with the remaining time (in seconds) each will be occupied before becoming available for booking with the specified package.
 // @Tags			Bookings
 // @Accept			json
 // @Produce		json
-// @Success		200	{array}		entities.ComputerOccupiedLeftTime	"List of computers left time"
-// @Failure		500	{object}	handlers.JSONAnswer					"Internal server error"
-// @Router			/api/bookings/computers-left-time [get]
-func (s *Handler) HandleComputersLeftTime(w http.ResponseWriter, r *http.Request) {
+// @Param			packageID	query		int64								true	"ID of the package used to calculate remaining occupied time"
+// @Success		200			{array}		entities.ComputerOccupiedLeftTime	"List of computers and their remaining occupied time"
+// @Failure		400			{object}	handlers.JSONAnswer					"Invalid package ID"
+// @Failure		500			{object}	handlers.JSONAnswer					"Internal server error"
+// @Router			/api/computers/remaining [get]
+func (s *Handler) ComputersRemaining(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		computersLeftTime, err := s.service.BookingService.GetComputersLeftOccupiedTime()
+		packageIDStr := r.URL.Query().Get("packageID")
+		if packageIDStr == "" {
+			http.Error(w, "Missing packageID parameter", http.StatusBadRequest)
+			return
+		}
+
+		packageID, err := strconv.ParseInt(packageIDStr, 10, 64)
+		if err != nil {
+			http.Error(w, "Invalid packageID parameter", http.StatusBadRequest)
+			return
+		}
+
+		computersLeftTime, err := s.service.BookingService.GetComputersLeftOccupiedTime(packageID)
 		if err != nil {
 			slog.Error("Error fetching computers left time:", slog.Any("error", err))
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -387,6 +415,7 @@ func (s *Handler) HandleComputersLeftTime(w http.ResponseWriter, r *http.Request
 func (s *Handler) UserBookings(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
+
 	if err != nil {
 		jsonPayload := JSONAnswer{
 			Message: "Invalid user ID",

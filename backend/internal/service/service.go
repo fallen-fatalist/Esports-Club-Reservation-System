@@ -60,14 +60,15 @@ type BookingService interface {
 	GetPendingBookings() ([]*entities.Booking, error)
 	GetFinishedBookings() ([]*entities.Booking, error)
 	GetCancelledBookings() ([]*entities.Booking, error)
-	GetComputersLeftOccupiedTime() ([]*entities.ComputerOccupiedLeftTime, error)
-	GetComputerLeftOccupiedTime(id int64) (*entities.ComputerOccupiedLeftTime, error)
+	GetComputersLeftOccupiedTime(packageID int64) ([]*entities.ComputerOccupiedLeftTime, error)
+	GetComputerLeftOccupiedTime(computerID int64, packageID int64) (*entities.ComputerOccupiedLeftTime, error)
 	GenerateBooking(context.Context)
 	RefreshBookings()
 }
 
 type PackageService interface {
-	GetAllPackages() ([]*entities.Package, error)
+	Packages() ([]*entities.Package, error)
+	PackagesMap() map[int64]*entities.Package
 	GetPackage(id int64) (*entities.Package, error)
 	CreatePackage(*entities.Package) (int64, error)
 	UpdatePackage(*entities.Package) (int64, error)

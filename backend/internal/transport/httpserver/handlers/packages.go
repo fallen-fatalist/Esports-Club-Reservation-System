@@ -14,7 +14,7 @@ import (
 // @Failure		500	{object}	handlers.JSONAnswer	"Internal server error"
 // @Router			/api/packages [get]
 func (s *Handler) Packages(w http.ResponseWriter, r *http.Request) {
-	packages, err := s.service.PackageService.GetAllPackages()
+	packages, err := s.service.PackageService.Packages()
 	if err != nil {
 		s.logger.Error("error fetching packages", slog.Any("error", err))
 		http.Error(w, "Internal server error", http.StatusInternalServerError)

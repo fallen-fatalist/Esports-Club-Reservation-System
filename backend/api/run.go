@@ -48,7 +48,8 @@ func Run() {
 
 	// Services init
 	jwtManager := auth.NewJWTManager(cfg.JWT.Secret, cfg.JWT.Expiration)
-	emailSender := email.NewEmailSender(cfg.EmailSender.FromAddress, cfg.EmailSender.Password, cfg.EmailSender.SMTPHost, int(cfg.EmailSender.SMTPPort))
+	emailSender := email.NewEmailSender(cfg.EmailSender.FromAddress, cfg.EmailSender.Password,
+		cfg.EmailSender.SMTPHost, int(cfg.EmailSender.SMTPPort))
 
 	userService, _ := implementation.NewUserService(userRepository, jwtManager, emailSender)
 	computerService, _ := implementation.NewComputerService(computerRepository)
@@ -61,7 +62,7 @@ func Run() {
 		computerNum = len(computers)
 	}
 	// Set the number of computers
-	bookingService, _ := implementation.NewBookingService(bookingRepository, computerNum)
+	bookingService, _ := implementation.NewBookingService(bookingRepository, packageService, computerNum)
 
 	svc := service.NewService(
 		computerService,

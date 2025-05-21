@@ -16,16 +16,20 @@ import (
 
 type BookingService struct {
 	repository     repository.BookingRepository
+	packageService service.PackageService
 	computerNumber int
 }
 
-func NewBookingService(repository repository.BookingRepository, computerNumber int) (*BookingService, error) {
+func NewBookingService(repository repository.BookingRepository, packageService service.PackageService, computerNumber int) (*BookingService, error) {
 	if repository == nil {
 		log.Fatal("Nil repository provided to booking service")
+	} else if packageService == nil {
+		log.Fatal("Nil package service provided to booking service")
 	}
 
 	service := &BookingService{
-		repository: repository,
+		repository:     repository,
+		packageService: packageService,
 	}
 
 	if computerNumber > 0 {
@@ -245,11 +249,11 @@ func (s *BookingService) GetCancelledBookings() ([]*entities.Booking, error) {
 }
 
 // TODO: optimize the GetComputersLeftOccupiedTime with bulk query
-func (s *BookingService) GetComputersLeftOccupiedTime() ([]*entities.ComputerOccupiedLeftTime, error) {
+func (s *BookingService) GetComputersLeftOccupiedTime(packageID int64) ([]*entities.ComputerOccupiedLeftTime, error) {
 	leftTimes := make([]*entities.ComputerOccupiedLeftTime, 0, s.computerNumber)
 
 	for idx := 0; idx < s.computerNumber; idx++ {
-		leftTime, err := s.GetComputerLeftOccupiedTime(int64(idx))
+		leftTime, err := s.GetComputerLeftOccupiedTime(int64(idx), packageID)
 		if err != nil {
 			slog.Error("Error getting computer left occupied time:", slog.Any("error", err))
 			continue
@@ -260,13 +264,18 @@ func (s *BookingService) GetComputersLeftOccupiedTime() ([]*entities.ComputerOcc
 	return leftTimes, nil
 }
 
-/* This function calculates the remaining occupied time for a specific computer with the given id.
+/* This function calculates the remaining occupied time for a specific computer with the given id
+* For the specific time package(not Day, Night, Morning)
 * Total occupied time in seconds for continuous bookings for specific computer are calculated
 * If the current time less than next booking start time and difference not more than an hour, then this difference added to occupied time
 * If the booking active, the difference between current time and end time will be added
  */
-func (s *BookingService) GetComputerLeftOccupiedTime(id int64) (*entities.ComputerOccupiedLeftTime, error) {
-	bookings, err := s.GetComputerBookings(id)
+func (s *BookingService) GetComputerLeftOccupiedTime(computerID int64, packageID int64) (*entities.ComputerOccupiedLeftTime, error) {
+	if packageID == 0 {
+		return nil, entities.ErrPackageIDNotSpecified
+	}
+
+	bookings, err := s.GetComputerBookings(computerID)
 	if err != nil {
 		return nil, err
 	}
@@ -274,11 +283,21 @@ func (s *BookingService) GetComputerLeftOccupiedTime(id int64) (*entities.Comput
 	now := time.Now().UTC()
 
 	leftTime := entities.ComputerOccupiedLeftTime{
-		ComputerID:  id,
+		ComputerID:  computerID,
 		LeftSeconds: 0,
 	}
 
-	// Sliding window, now times move to the end of every next active or pending booking
+	packageMap := s.packageService.PackagesMap()
+	if packageMap == nil {
+		slog.Error("Error while fetching package map")
+		return nil, err
+	}
+
+	clubPackage := packageMap[packageID]
+	if clubPackage == nil {
+		return nil, entities.ErrPackageNotFound
+	}
+
 	for _, booking := range bookings {
 		startTime, err := time.Parse(time.RFC3339, booking.StartTime)
 		if err != nil {
@@ -292,8 +311,9 @@ func (s *BookingService) GetComputerLeftOccupiedTime(id int64) (*entities.Comput
 			continue
 		}
 
-		// Before the booking in hour
-		if now.Before(startTime) && startTime.Sub(now).Hours() < 1 {
+		// Before the booking in duration time of the selected package
+
+		if now.Before(startTime) && startTime.Sub(now).Hours() < float64(clubPackage.Duration) {
 			leftTime.LeftSeconds += int64(startTime.Sub(now).Seconds())
 			leftTime.LeftSeconds += int64(endTime.Sub(startTime).Seconds())
 			// In the middle of booking

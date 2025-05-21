@@ -160,38 +160,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/bookings/computers-left-time": {
-            "get": {
-                "description": "Returns a list of computers left time",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Bookings"
-                ],
-                "summary": "Get computers left time in seconds",
-                "responses": {
-                    "200": {
-                        "description": "List of computers left time",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/entities.ComputerOccupiedLeftTime"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.JSONAnswer"
-                        }
-                    }
-                }
-            }
-        },
         "/api/bookings/finished": {
             "get": {
                 "description": "Returns a list of finished bookings",
@@ -245,50 +213,6 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/entities.Booking"
                             }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.JSONAnswer"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/bookings/{id}/left": {
-            "get": {
-                "description": "Returns the left time for the specified computer ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Bookings"
-                ],
-                "summary": "Get the left time for a specific computer in seconds",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Computer ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Left time for the computer",
-                        "schema": {
-                            "$ref": "#/definitions/entities.ComputerOccupiedLeftTime"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid computer ID",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     },
                     "500": {
@@ -360,6 +284,53 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/computers/remaining": {
+            "get": {
+                "description": "Returns a list of computers with the remaining time (in seconds) each will be occupied before becoming available for booking with the specified package.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Get remaining occupied time for all computers",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID of the package used to calculate remaining occupied time",
+                        "name": "packageID",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of computers and their remaining occupied time",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entities.ComputerOccupiedLeftTime"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid package ID",
                         "schema": {
                             "$ref": "#/definitions/handlers.JSONAnswer"
                         }
@@ -544,6 +515,57 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/computers/{id}/remaining": {
+            "get": {
+                "description": "Returns the remaining time (in seconds) that a specific computer will be occupied before it becomes available for a new booking with the given package duration.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Get remaining occupied time for a computer",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID of the computer to check availability for",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID of the package whose duration will be used in the calculation",
+                        "name": "packageID",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Remaining time the computer is occupied",
+                        "schema": {
+                            "$ref": "#/definitions/entities.ComputerOccupiedLeftTime"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid computer ID or package ID",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    }
+                }
+            }
+        },
         "/api/computers/{id}/status": {
             "get": {
                 "description": "Returns the status of the specified computer ID",
@@ -625,6 +647,11 @@ const docTemplate = `{
         },
         "/api/users/{id}/bookings": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Returns a list of bookings for the specified user ID",
                 "consumes": [
                     "application/json"
@@ -1045,6 +1072,9 @@ const docTemplate = `{
             "properties": {
                 "created_at": {
                     "type": "string"
+                },
+                "duration": {
+                    "type": "integer"
                 },
                 "end_time": {
                     "type": "string"
