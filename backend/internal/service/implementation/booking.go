@@ -423,8 +423,6 @@ func (s *BookingService) UserBookings(id int64) ([]*entities.Booking, error) {
 	bookings, err := s.repository.GetAllByUserID(id)
 	if err != nil {
 		return nil, err
-	} else if len(bookings) == 0 {
-		return nil, entities.ErrUserNotFound
 	}
 
 	return bookings, nil

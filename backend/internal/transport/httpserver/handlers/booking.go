@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"esports_club_booking/internal/auth"
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/service"
 	"log/slog"
@@ -66,6 +67,21 @@ func (s *Handler) PostBooking(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
+
+	userIDStr, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	if err != nil {
+		slog.Error("Error parsing user ID from token:", slog.Any("error", err))
+		http.Error(w, "Invalid user ID in token", http.StatusBadRequest)
+		return
+	}
+
+	booking.UserID = userID
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -406,31 +422,26 @@ func (s *Handler) ComputersRemaining(w http.ResponseWriter, r *http.Request) {
 // @Security BearerAuth
 // @Accept			json
 // @Produce		json
-// @Param			id	path		int64				true	"User ID"
 // @Success		200	{array}		entities.Booking	"List of bookings for the user"
 // @Failure		400	{object}	handlers.JSONAnswer	"Invalid user ID"
 // @Failure		404	{object}	handlers.JSONAnswer	"User not found"
 // @Failure		500	{object}	handlers.JSONAnswer	"Internal server error or unhandled error"
-// @Router			/api/users/{id}/bookings [get]
+// @Router			/api/users//bookings [get]
 func (s *Handler) UserBookings(w http.ResponseWriter, r *http.Request) {
-	idStr := r.PathValue("id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
-
-	if err != nil {
-		jsonPayload := JSONAnswer{
-			Message: "Invalid user ID",
-		}
-		w.WriteHeader(http.StatusBadRequest)
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(jsonPayload); err != nil {
-			slog.Error("Error encoding JSON:", slog.Any("error", err))
-			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-			return
-		}
+	userIDStr, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	bookings, err := s.service.BookingService.UserBookings(id)
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	if err != nil {
+		slog.Error("Error parsing user ID from token:", slog.Any("error", err))
+		http.Error(w, "Invalid user ID in token", http.StatusBadRequest)
+		return
+	}
+
+	bookings, err := s.service.BookingService.UserBookings(userID)
 	if err != nil {
 		switch err {
 		case entities.ErrUserNotFound:
