@@ -18,7 +18,15 @@ const Navbar = () => {
   return (
     <header className="header">
       <nav className="navbar" aria-label="Main Navigation">
-        <Link to="/" className="navbar__logo">eReserve</Link>
+        {/* <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className="logo-icon">
+          <g fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2 21h15m4 0h1"/>
+            <path d="M2 16.4V3.6a.6.6 0 0 1 .6-.6h18.8a.6.6 0 0 1 .6.6v12.8a.6.6 0 0 1-.6.6H2.6a.6.6 0 0 1-.6-.6Z"/>
+          </g>
+        </svg> */}
+        <Link to="/" className="navbar__logo">
+          eReserve
+        </Link>
           <button className="theme-toggle-btn" onClick={handleThemeToggle}>
             <img
               src={isDarkTheme ? sunnyOutline : moonOutline}
@@ -29,7 +37,7 @@ const Navbar = () => {
 
         <div className="navbar__links">
           <Link to="/booking">Booking</Link>
-          {/* <Link to="/profile">Profile</Link> */}
+          <Link to="/profile">Profile</Link>
 
           {!isAuth && (
             <>

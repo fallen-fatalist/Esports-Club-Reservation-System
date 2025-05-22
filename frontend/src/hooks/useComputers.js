@@ -19,6 +19,7 @@ const useComputers = () => {
 
         const formatted = computersData.map(comp => ({
           id: comp.id,
+          room: comp.room,
           status: comp.status?.trim().toLowerCase() || 'unknown',
           name: comp.name || `Computer #${comp.id}`,
           cpu: comp.cpu,
@@ -51,8 +52,19 @@ const useComputers = () => {
       const response = await computerService.getComputers();
       const formatted = (response.data || []).map(comp => ({
         id: comp.id,
+        room: comp.room,
         status: comp.status?.trim().toLowerCase() || 'unknown',
         name: comp.name || `Computer #${comp.id}`,
+        cpu: comp.cpu,
+        gpu: comp.gpu,
+        ram: comp.ram,
+        ssd: comp.ssd,
+        hdd: comp.hdd,
+        monitor: comp.monitor,
+        mouse: comp.mouse,
+        keyboard: comp.keyboard,
+        headset: comp.headset,
+        mousepad: comp.mousepad
       }));
       setComputers(formatted);
     } catch (err) {

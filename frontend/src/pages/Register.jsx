@@ -71,14 +71,14 @@ const Register = () => {
               <MyInput name="password" type="password" placeholder="Create password" value={form.password} onChange={handleChange} />
               <MyInput name="confirmPassword" type="password" placeholder="Confirm password" value={form.confirmPassword} onChange={handleChange} />
               {error && <div className="error-message"><p>{error}</p></div>}
-              <MyButton>Register</MyButton>
+              <button className="auth-btn">Register</button>
             </form>
           ) : (
             <form onSubmit={handleVerify}>
               <p>Enter verification code sent to your email:</p>
               <MyInput name="code" type="text" placeholder="Verification code" value={form.code} onChange={handleChange} />
               {error && <div className="error-message"><p>{error}</p></div>}
-              <MyButton>Verify</MyButton>
+              <button className="auth-btn">Verify</button>
             </form>
           )}
         </div>

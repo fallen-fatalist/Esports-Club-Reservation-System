@@ -1,20 +1,49 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Timedate from "../UI/date/Timedate/Timedate";
 import MyTime from "../UI/date/MyTime/MyTime";
 import MyDropdown from "../UI/dropdown/MyDropdown/MyDropdown";
 import Message from "./Message";
+import packageService from "../../services/packageService";
 
 const BookingForm = ({
   date, setDate,
   time, setTime,
-  duration, setDuration,
+  selectedPackage, setSelectedPackage, 
   errorMessage,
   infoMessage, bookingSuccess,
   selectedComputers, handleBookMultipleComputers,
   setSelectedComputers, handleAutoSelectComputers,
   autoSelectCountInput, setAutoSelectCountInput,
-  availableComputersCount
+  availableComputersCount,
+  currentRoom = "Standard" 
 }) => {
+  const [packages, setPackages] = useState([]);
+  const [packagesLoading, setPackagesLoading] = useState(true);
+  const [packagesError, setPackagesError] = useState(null);
+
+  useEffect(() => {
+    const fetchPackages = async () => {
+      try {
+        setPackagesLoading(true);
+        const fetchedPackages = await packageService.getPackages();
+        setPackages(fetchedPackages);
+        
+        if (!selectedPackage && fetchedPackages.length > 0) {
+          const defaultPackage = fetchedPackages.find(pkg => pkg.room === currentRoom) || fetchedPackages[0];
+          setSelectedPackage(defaultPackage.id);
+        }
+      } catch (error) {
+        console.error('Error fetching packages:', error);
+        setPackagesError('Failed to load packages');
+      } finally {
+        setPackagesLoading(false);
+      }
+    };
+
+    fetchPackages();
+  }, [currentRoom, selectedPackage, setSelectedPackage]);
+
+  const filteredPackages = packages.filter(pkg => pkg.room === currentRoom);
 
   const parseValidCount = () => {
     const parsed = parseInt(autoSelectCountInput);
@@ -26,6 +55,10 @@ const BookingForm = ({
   const handleAutoSelectClick = () => {
     const count = parseValidCount();
     handleAutoSelectComputers(count);
+  };
+
+  const formatPackageOption = (pkg) => {
+    return `${pkg.name} - ${pkg.duration}h - ${pkg.price}₸`;
   };
 
   return (
@@ -42,11 +75,27 @@ const BookingForm = ({
           <MyTime value={time} onChange={(e) => setTime(e.target.value)} />
         </div>
         <div className="reservation__duration">
-          <MyDropdown value={duration} onChange={(e) => setDuration(Number(e.target.value))}>
-            <option value="60">1 hour</option>
-            <option value="120">2 hours</option>
-            <option value="180">3 hours</option>
-          </MyDropdown>
+          {packagesLoading ? (
+            <MyDropdown disabled>
+              <option>Loading packages...</option>
+            </MyDropdown>
+          ) : packagesError ? (
+            <MyDropdown disabled>
+              <option>Error loading packages</option>
+            </MyDropdown>
+          ) : (
+            <MyDropdown 
+              value={selectedPackage} 
+              onChange={(e) => setSelectedPackage(Number(e.target.value))}
+            >
+              <option value="">Select package</option>
+              {filteredPackages.map((pkg) => (
+                <option key={pkg.id} value={pkg.id}>
+                  {formatPackageOption(pkg)}
+                </option>
+              ))}
+            </MyDropdown>
+          )}
         </div>
       </div>
 
@@ -83,6 +132,7 @@ const BookingForm = ({
         </button>
       </div>
 
+      {packagesError && <Message message={packagesError} type="error" />}
       {errorMessage && <Message message={errorMessage} type="error" />}
       {infoMessage && <Message message={infoMessage} type="info" />}
       {bookingSuccess && (
