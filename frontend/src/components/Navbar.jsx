@@ -1,12 +1,13 @@
-import React, { useContext, useState, useEffect } from "react"
+import React, { useContext   } from "react"
 import { Link, useNavigate } from 'react-router-dom'
 import { AuthContext } from "../context/contextIndex";
-import MyButton from "./UI/button/MyButton/MyButton";
 import sunnyOutline from "../images/SunOutlined.svg";
 import moonOutline from "../images/MoonOutlined.svg";
 import { logout }  from "../services/authService";
+import { ThemeContext } from "../context/ThemeContext";
 
-const Navbar = ({ toggleTheme, isDarkTheme }) => {
+const Navbar = () => {
+  const { isDarkTheme, toggleTheme } = useContext(ThemeContext);
   const { isAuth, setIsAuth } = useContext(AuthContext)
   const navigate = useNavigate()
 
@@ -17,7 +18,7 @@ const Navbar = ({ toggleTheme, isDarkTheme }) => {
   return (
     <header className="header">
       <nav className="navbar" aria-label="Main Navigation">
-        <Link to="/" className="navbar__logo">Logo</Link>
+        <Link to="/" className="navbar__logo">eReserve</Link>
           <button className="theme-toggle-btn" onClick={handleThemeToggle}>
             <img
               src={isDarkTheme ? sunnyOutline : moonOutline}
@@ -28,6 +29,7 @@ const Navbar = ({ toggleTheme, isDarkTheme }) => {
 
         <div className="navbar__links">
           <Link to="/booking">Booking</Link>
+          {/* <Link to="/profile">Profile</Link> */}
 
           {!isAuth && (
             <>
@@ -53,3 +55,5 @@ const Navbar = ({ toggleTheme, isDarkTheme }) => {
 };
 
 export default Navbar;
+
+
