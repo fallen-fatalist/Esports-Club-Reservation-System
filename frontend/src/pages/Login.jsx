@@ -1,11 +1,18 @@
 import React, { useContext, useState } from "react";
 import MyInput from "../components/UI/input/MyInput";
+import MyButton from "../components/UI/button/MyButton/MyButton";
 import { AuthContext } from "../context/contextIndex";
 import { useNavigate } from "react-router-dom";
 import { signIn } from "../services/authService";
 
+const setCookie = (name, value, days) => {
+  const date = new Date();
+  date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${date.toUTCString()}; path=/`;
+};
+
 const Login = () => {
-  const { login } = useContext(AuthContext);
+  const { setIsAuth } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [form, setForm] = useState({ email: "", login: "", password: "" });
@@ -24,10 +31,11 @@ const Login = () => {
       const token = res.data.token;
       
       if (token) {
-        login(token); 
+        setCookie("token", token, 7);
+        setIsAuth(true);
         navigate("/");
       } else {
-        setError("Failed to receive authentication token");
+        console.log("Failed to fetch token");
       }
     } catch (err) {
       setError(err.response?.data?.error || "Login failed");
@@ -42,29 +50,23 @@ const Login = () => {
       <div className="auth__container">
         <div className="login__email">
           <form onSubmit={handleLogin}>
-            <MyInput
-              name="email"
-              type="email"
-              placeholder="Enter email"
-              value={form.email}
-              onChange={handleChange}
-              required
+            <MyInput 
+              name="email" 
+              type="text" 
+              placeholder="Enter email" 
+              onChange={handleChange} 
             />
-            <MyInput
-              name="login"
-              type="text"
-              placeholder="Enter login"
-              value={form.login}
-              onChange={handleChange}
-              required
+            <MyInput 
+              name="login" 
+              type="text" 
+              placeholder="Enter login" 
+              onChange={handleChange} 
             />
-            <MyInput
-              name="password"
-              type="password"
-              placeholder="Enter password"
-              value={form.password}
-              onChange={handleChange}
-              required
+            <MyInput 
+              name="password" 
+              type="password" 
+              placeholder="Enter password" 
+              onChange={handleChange} 
             />
             {error && (
               <div className="error-message">
