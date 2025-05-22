@@ -42,6 +42,9 @@ type (
 )
 
 func NewConfig() *Config {
+	if getEnvStr("EMAIL_SENDER_APP_PASSWORD", "") == "" {
+		panic("envs are not loading")
+	}
 	return &Config{
 		Server: Server{
 			Port: getEnvStr("PORT", "8080"),
@@ -64,7 +67,6 @@ func NewConfig() *Config {
 			Password:    getEnvStr("EMAIL_SENDER_APP_PASSWORD", ""),
 		},
 	}
-
 }
 
 func (d *DataBase) DSN() string {

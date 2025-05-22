@@ -3,12 +3,14 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"esports_club_booking/internal/auth"
 	"esports_club_booking/internal/service"
 	"esports_club_booking/internal/transport/dto"
 	"esports_club_booking/internal/utils"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 )
 
 // @Summary		Register a new user
@@ -124,6 +126,21 @@ func (s *Handler) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	exp, err := auth.ExtractExpiration(token)
+	if err != nil {
+		exp = time.Time{}
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "jwt_token",
+		Value:    token,
+		Expires:  exp,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+		Path:     "/",
+	})
+
 	utils.WriteJSON(w, http.StatusOK, dto.TokenResponse{Token: token})
 }
 
@@ -154,13 +171,16 @@ func (h *Handler) requestCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.service.UserService.SendVerificationCode(req); err != nil {
+		if errors.Is(err, service.ErrSentCodeAlready) {
+			http.Error(w, "code already sent,wait for new attempt", http.StatusBadRequest)
+			return
+		}
 		h.logger.Error("failed to send verification code", slog.Any("error", err))
 		http.Error(w, "failed to send code", http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(JSONAnswer{Message: "verification code sent"})
+	utils.WriteJSON(w, http.StatusOK, JSONAnswer{Message: "verification code sent"})
 }
 
 // @Summary		Verify email with code
@@ -196,7 +216,7 @@ func (h *Handler) verifyEmail(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err == nil:
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(JSONAnswer{Message: "email verified"})
+		utils.WriteJSON(w, http.StatusOK, JSONAnswer{Message: "email verified"})
 		return
 	case errors.Is(err, service.ErrNoNeedVerification):
 		h.logger.Warn("verification not needed", slog.Any("error", err))

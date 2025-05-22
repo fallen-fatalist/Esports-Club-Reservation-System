@@ -90,6 +90,11 @@ func (s *UserService) SendVerificationCode(req dto.VerificationRequest) error {
 	}
 	code := fmt.Sprintf("%06d", rand.Intn(1000000))
 	expiresAt := time.Now().Add(15 * time.Minute)
+
+	if _, err := s.repo.GetVerificationByEmail(req.Email); err == nil {
+		return fmt.Errorf("%s: %w", op, service.ErrSentCodeAlready)
+	}
+
 	if err := s.repo.SaveEmailVerification(req.Email, code, expiresAt); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}

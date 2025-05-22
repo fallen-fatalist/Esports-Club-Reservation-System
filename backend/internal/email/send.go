@@ -19,7 +19,7 @@ func NewEmailSender(from, password, smtpHost string, smtpPort int) EmailSender {
 
 func (e EmailSender) SendEmail(to, subject, body string) error {
 	message := gomail.NewMessage()
-
+	fmt.Println(e.from, e.password)
 	message.SetHeader("From", e.from)
 	message.SetHeader("To", to)
 	message.SetHeader("Subject", subject)
