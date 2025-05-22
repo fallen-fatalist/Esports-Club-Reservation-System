@@ -42,6 +42,7 @@ func (w *NotificationSender) RunBookingNotification(ticker *time.Ticker) {
 			}
 
 			if err := w.BookingSvc.BookingNotified(booking); err != nil {
+				w.logger.Warn("booking notified", "error", err, "id", booking.UserID)
 				continue
 			}
 

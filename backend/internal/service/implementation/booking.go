@@ -77,6 +77,7 @@ func (s *BookingService) CreateBooking(ctx context.Context, booking *entities.Bo
 
 func (s *BookingService) BookingNotified(booking *entities.Booking) error {
 	booking.IsNotified = true
+
 	_, err := s.repository.Update(booking)
 	return err
 }
@@ -181,6 +182,9 @@ func (s *BookingService) GetPendingBookings() ([]*entities.Booking, error) {
 				CreatedAt:  booking.CreatedAt,
 				IsNotified: booking.IsNotified,
 			})
+
+			booking.IsNotified = true
+			s.repository.Update(booking)
 		}
 	}
 	return pending_bookings, nil
