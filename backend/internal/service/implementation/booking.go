@@ -3,15 +3,16 @@ package implementation
 import (
 	"context"
 	"errors"
-	"esports_club_booking/internal/entities"
-	"esports_club_booking/internal/repository"
-	"esports_club_booking/internal/service"
 	"fmt"
 	"log"
 	"log/slog"
 	"math/rand"
 	"sort"
 	"time"
+
+	"esports_club_booking/internal/entities"
+	"esports_club_booking/internal/repository"
+	"esports_club_booking/internal/service"
 )
 
 type BookingService struct {
@@ -45,7 +46,6 @@ func (s *BookingService) GetAllBookings() ([]*entities.Booking, error) {
 	} else {
 		return bookings, nil
 	}
-
 }
 
 func (s *BookingService) CreateBooking(ctx context.Context, booking *entities.Booking) (int64, error) {
@@ -73,6 +73,12 @@ func (s *BookingService) CreateBooking(ctx context.Context, booking *entities.Bo
 	} else {
 		return id, nil
 	}
+}
+
+func (s *BookingService) BookingNotified(booking *entities.Booking) error {
+	booking.IsNotified = true
+	_, err := s.repository.Update(booking)
+	return err
 }
 
 func (s *BookingService) GetComputerBookings(id int64) ([]*entities.Booking, error) {
@@ -173,6 +179,7 @@ func (s *BookingService) GetPendingBookings() ([]*entities.Booking, error) {
 				EndTime:    endTime.Format(time.RFC3339),
 				Status:     booking.Status,
 				CreatedAt:  booking.CreatedAt,
+				IsNotified: booking.IsNotified,
 			})
 		}
 	}
@@ -245,7 +252,6 @@ func (s *BookingService) GetCancelledBookings() ([]*entities.Booking, error) {
 		}
 	}
 	return cancelled_bookings, nil
-
 }
 
 // TODO: optimize the GetComputersLeftOccupiedTime with bulk query
@@ -335,7 +341,7 @@ func (s *BookingService) RefreshBookings() {
 const eps = 0.0000000001
 
 func (s *BookingService) GenerateBooking(ctx context.Context) {
-	var retryNum = 0
+	retryNum := 0
 	userID := int64(rand.Intn(43) + 1)
 	computerID := int64(rand.Intn(40) + 1)
 
@@ -373,7 +379,6 @@ func (s *BookingService) GenerateBooking(ctx context.Context) {
 			return
 		} else {
 			s.GenerateBooking(ctx)
-
 		}
 		// If incorrect values while validation should retry
 

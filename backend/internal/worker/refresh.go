@@ -2,8 +2,9 @@ package worker
 
 import (
 	"context"
-	"esports_club_booking/internal/service"
 	"time"
+
+	"esports_club_booking/internal/service"
 )
 
 func RefresherCallback(ticker *time.Ticker, service service.BookingService) {

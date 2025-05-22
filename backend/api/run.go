@@ -2,6 +2,13 @@ package api
 
 import (
 	"context"
+	"fmt"
+	"log"
+	"log/slog"
+	"net/http"
+	"os"
+	"time"
+
 	"esports_club_booking/internal/auth"
 	"esports_club_booking/internal/config"
 	"esports_club_booking/internal/email"
@@ -11,12 +18,6 @@ import (
 	"esports_club_booking/internal/transport/httpserver"
 	"esports_club_booking/internal/transport/httpserver/handlers"
 	"esports_club_booking/internal/worker"
-	"fmt"
-	"log"
-	"log/slog"
-	"net/http"
-	"os"
-	"time"
 )
 
 func Run() {
@@ -85,7 +86,6 @@ func Run() {
 		logger.Error("Failed to start server", slog.Any("error", err))
 		return
 	}
-
 }
 
 func startWorkers(svc service.Service, ctx context.Context) {
