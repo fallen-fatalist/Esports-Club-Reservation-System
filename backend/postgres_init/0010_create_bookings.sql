@@ -10,5 +10,6 @@ CREATE TABLE bookings (
     start_time TIMESTAMPTZ NOT NULL,
     end_time TIMESTAMPTZ NOT NULL,
     status booking_status DEFAULT 'pending',
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    is_notified BOOLEAN DEFAULT false
 );

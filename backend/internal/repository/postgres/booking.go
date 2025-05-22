@@ -3,10 +3,11 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"esports_club_booking/internal/entities"
 	"fmt"
 	"log/slog"
 	"time"
+
+	"esports_club_booking/internal/entities"
 )
 
 type BookingRepository struct {
@@ -23,7 +24,7 @@ func NewBookingRepository(db *sql.DB) (*BookingRepository, error) {
 
 func (r *BookingRepository) GetAll() ([]*entities.Booking, error) {
 	query := `
-		SELECT booking_id, user_id, computer_id, package_id, start_time, end_time, status, created_at 
+		SELECT booking_id, user_id, computer_id, package_id, start_time, end_time, status, created_at, is_notified
 		FROM bookings 
 	`
 
@@ -47,8 +48,8 @@ func (r *BookingRepository) GetAll() ([]*entities.Booking, error) {
 			&booking.EndTime,
 			&booking.Status,
 			&booking.CreatedAt,
+			&booking.IsNotified,
 		)
-
 		if err != nil {
 			return nil, err
 		}
@@ -66,7 +67,7 @@ func (r *BookingRepository) GetAllByUserID(id int64) ([]*entities.Booking, error
 	query := `
 		SELECT 
 			booking_id, user_id, computer_id, package_id,
-			start_time, end_time, status, created_at
+			start_time, end_time, status, created_at, is_notified
 		FROM bookings
 		WHERE user_id = $1
 		ORDER BY start_time ASC;
@@ -91,6 +92,7 @@ func (r *BookingRepository) GetAllByUserID(id int64) ([]*entities.Booking, error
 			&b.EndTime,
 			&b.Status,
 			&b.CreatedAt,
+			&b.IsNotified,
 		)
 		if err != nil {
 			return nil, err
@@ -113,7 +115,7 @@ func (r *BookingRepository) GetByID(id int64) (*entities.Booking, error) {
 
 	// Try fetching from pending_bookings
 	queryPending := `
-		SELECT booking_id, user_id, computer_id, package_id, start_time, end_time, status, created_at
+		SELECT booking_id, user_id, computer_id, package_id, start_time, end_time, status, created_at, is_notified
 		FROM bookings
 		WHERE booking_id = $1
 	`
@@ -127,8 +129,8 @@ func (r *BookingRepository) GetByID(id int64) (*entities.Booking, error) {
 		&endTime,
 		&booking.Status,
 		&createdAt,
+		&booking.IsNotified,
 	)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch booking from bookings: %w", err)
 	}
@@ -172,7 +174,6 @@ func (r *BookingRepository) Create(ctx context.Context, booking *entities.Bookin
 		endTime,
 		booking.Status,
 	).Scan(&id)
-
 	if err != nil {
 		return 0, err
 	}
@@ -201,8 +202,9 @@ func (r *BookingRepository) Update(booking *entities.Booking) (int64, error) {
 			package_id = $3,
 			start_time = $4,
 			end_time = $5,
-			status = $6
-		WHERE booking_id = $7
+			status = $6,
+			is_notified = $7
+		WHERE booking_id = $8
 	`
 
 	result, err := r.db.Exec(
@@ -213,6 +215,7 @@ func (r *BookingRepository) Update(booking *entities.Booking) (int64, error) {
 		startTime,
 		endTime,
 		booking.Status,
+		booking.IsNotified,
 		booking.ID,
 	)
 	if err != nil {
