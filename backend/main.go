@@ -10,5 +10,5 @@ import (
 // @host			localhost:8080
 // @BasePath		/api
 func main() {
-	// api.Run()
+	api.Run()
 }
