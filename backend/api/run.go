@@ -64,6 +64,7 @@ func Run() {
 	}
 	// Set the number of computers
 	bookingService, _ := implementation.NewBookingService(bookingRepository, packageService, computerNum)
+	fmt.Println(userService, computerService, packageService, bookingService)
 
 	svc := service.NewService(
 		computerService,
@@ -73,7 +74,7 @@ func Run() {
 	)
 
 	// workers
-	startWorkers(*svc, ctx)
+	startWorkers(*svc, ctx, emailSender, logger)
 
 	mux := http.NewServeMux()
 	handlers := handlers.NewHandler(svc, logger, jwtManager)
@@ -88,7 +89,7 @@ func Run() {
 	}
 }
 
-func startWorkers(svc service.Service, ctx context.Context) {
+func startWorkers(svc service.Service, ctx context.Context, emailSender email.EmailSender, logger *slog.Logger) {
 	refresherTicker := time.NewTicker(1 * time.Minute)
 	go worker.RefresherCallback(refresherTicker, svc.BookingService)
 
@@ -97,4 +98,8 @@ func startWorkers(svc service.Service, ctx context.Context) {
 
 	cleanupTicker := time.NewTicker(time.Minute)
 	go worker.StartUserCleanupWorker(cleanupTicker, ctx, svc.UserService)
+
+	notificationTicker := time.NewTicker(30 * time.Second)
+	notificationWorker := worker.NewNotificationSender(svc.BookingService, svc.UserService, emailSender, logger)
+	go notificationWorker.RunBookingNotification(notificationTicker)
 }
