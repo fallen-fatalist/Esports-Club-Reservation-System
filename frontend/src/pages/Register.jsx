@@ -1,6 +1,5 @@
 import React, { useContext, useState } from "react";
 import MyInput from "../components/UI/input/MyInput";
-import MyButton from "../components/UI/button/MyButton/MyButton";
 import MyModal from "../components/UI/modal/MyModal";
 import { AuthContext } from "../context/contextIndex";
 import { useNavigate } from "react-router-dom";

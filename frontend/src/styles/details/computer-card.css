@@ -90,3 +90,37 @@
 .busy-status {
     color: var(--color-busy);
 }
+
+.ps5-card .computer-header {
+    justify-content: center;
+    margin-bottom: 0.75rem;
+}
+
+.ps5-card .computer-number {
+    font-size: 1rem;
+    font-weight: bold;
+    color: var(--color-text-primary);
+    transition: color var(--transition-normal);
+}
+
+.ps5-info {
+    font-size: 0.9rem;
+    margin: 0.5rem 0;
+    width: 100%;
+    text-align: center;
+}
+
+.ps5-label {
+    margin-bottom: 0.3rem;
+    color: var(--color-text-secondary);
+    transition: color var(--transition-normal);
+}
+
+.ps5-icon {
+  font-size: 24px;
+  vertical-align: middle;
+  margin-right: 6px;
+  color: var(--color-text-secondary);
+  transition: color var(--transition-normal);
+}
+

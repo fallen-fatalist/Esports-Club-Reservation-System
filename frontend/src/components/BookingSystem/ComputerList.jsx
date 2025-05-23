@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { ReactComponent as ComputerIcon } from '../../images/computer.svg';
 import MyButton from "../UI/button/MyButton/MyButton";
+import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 
-const groupByRoom = (computers) => {
+const groupByRoom = (computers, selectedRoom = null) => {
   const roomOrder = ['Standard', 'VIP', 'Console'];
 
   const grouped = computers.reduce((acc, comp) => {
@@ -13,12 +14,21 @@ const groupByRoom = (computers) => {
   }, {});
 
   const sortedGrouped = {};
+
+  if (selectedRoom && grouped[selectedRoom]) {
+    sortedGrouped[selectedRoom] = grouped[selectedRoom];
+  }
+
   roomOrder.forEach(room => {
-    if (grouped[room]) sortedGrouped[room] = grouped[room];
+    if (grouped[room] && room !== selectedRoom) {
+      sortedGrouped[room] = grouped[room];
+    }
   });
 
   Object.keys(grouped).forEach(room => {
-    if (!roomOrder.includes(room)) sortedGrouped[room] = grouped[room];
+    if (!roomOrder.includes(room) && room !== selectedRoom) {
+      sortedGrouped[room] = grouped[room];
+    }
   });
 
   return sortedGrouped;
@@ -36,64 +46,97 @@ const getRoomClass = (room) => ({
   'Console': 'console-room'
 }[room] || 'default-room');
 
-const ComputerCard = ({ comp, selectedComputers, onComputerClick, onViewDetails, onBook }) => (
-  <div
-    className={`computer-card ${comp.status || 'available'} ${
-      selectedComputers.includes(comp.id) ? 'selected' : ''
-    }`}
-    onClick={() => onComputerClick(comp.id)}
-  >
-    <div className="computer-header">
-      <ComputerIcon className={`computer-icon ${comp.status === 'busy' ? 'busy' : ''}`} />
-      <span className="computer-number">№{comp.id}</span>
-    </div>
+const isPS5 = (comp) => {
+  return comp.type === 'ps5' || 
+         comp.name?.toLowerCase().includes('ps5') || 
+         comp.model?.toLowerCase().includes('ps5') ||
+         comp.room === 'Console';
+};
 
-    <div className="computer-specs">
-      <div className="spec-item"><span>CPU:</span> {comp.cpu || 'N/A'}</div>
-      <div className="spec-item"><span>GPU:</span> {comp.gpu || 'N/A'}</div>
-      <div className="spec-item"><span>RAM:</span> {comp.ram || 'N/A'}</div>
-    </div>
+const ComputerCard = ({ comp, selectedComputers, onComputerClick, onViewDetails, onBook }) => {
+  const itemIsPS5 = isPS5(comp);
+  
+  return (
+    <div
+      className={`computer-card ${comp.status || 'available'} ${
+        selectedComputers.includes(comp.id) ? 'selected' : ''
+      } ${itemIsPS5 ? 'ps5-card' : ''}`}
+      onClick={() => onComputerClick(comp.id)}
+    >
+      <div className="computer-header">
+        {!itemIsPS5 && (
+          <ComputerIcon className={`computer-icon ${comp.status === 'busy' ? 'busy' : ''}`} />
+        )}
+        <span className="computer-number">
+          {itemIsPS5 ? (
+            <>
+            <SportsEsportsIcon
+              className={`ps5-icon ${comp.status === 'busy' ? 'busy' : ''}`}
+            />
+               №{comp.id}
+            </>
+          ) : (
+            `№${comp.id}`
+          )}
+        </span>
+      </div>
 
-    <div className="computer-actions">
-      <button className="details-button" onClick={(e) => {
-        e.stopPropagation(); 
-        onViewDetails(comp.id);
-      }}>
-        <span className="btn-txt">Details</span>
-      </button>
-
-      {comp.status === 'available' && onBook && (
-        <MyButton className="book-button" onClick={(e) => {
-          e.stopPropagation(); 
-          onBook(comp.id);
-        }}>
-          <span className="btn-txt">Book</span>
-        </MyButton>
-      )}
-    </div>
-
-    <div className="computer-status">
-      {comp.status?.trim() ? (
-        comp.status === 'busy' ? (
-          <span className="busy-status">Busy</span>
-        ) : (
-          <span className="available-status">Available</span>
-        )
+      {itemIsPS5 ? (
+        <div className="ps5-info">
+          {comp.description && (
+            <div className="ps5-description">{comp.description}</div>
+          )}
+        </div>
       ) : (
-        <span className="na-status">N/A</span>
+        <div className="computer-specs">
+          <div className="spec-item"><span>CPU:</span> {comp.cpu || 'N/A'}</div>
+          <div className="spec-item"><span>GPU:</span> {comp.gpu || 'N/A'}</div>
+          <div className="spec-item"><span>RAM:</span> {comp.ram || 'N/A'}</div>
+        </div>
       )}
+
+      <div className="computer-actions">
+        <button className="details-button" onClick={(e) => {
+          e.stopPropagation(); 
+          onViewDetails(comp.id);
+        }}>
+          <span className="btn-txt">Details</span>
+        </button>
+
+        {comp.status === 'available' && onBook && (
+          <MyButton className="book-button" onClick={(e) => {
+            e.stopPropagation(); 
+            onBook(comp.id);
+          }}>
+            <span className="btn-txt">Book</span>
+          </MyButton>
+        )}
+      </div>
+
+      <div className="computer-status">
+        {comp.status?.trim() ? (
+          comp.status === 'busy' ? (
+            <span className="busy-status">Busy</span>
+          ) : (
+            <span className="available-status">Available</span>
+          )
+        ) : (
+          <span className="na-status">N/A</span>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const ComputerList = ({
   computers,
   onComputerClick,
   onViewDetails,
   selectedComputers = [],
-  onBook
+  onBook,
+  selectedRoom = null 
 }) => {
-  const groupedComputers = groupByRoom(computers);
+  const groupedComputers = groupByRoom(computers, selectedRoom);
   const [collapsedRooms, setCollapsedRooms] = useState({});
 
   const toggleRoom = (room) => {
@@ -108,9 +151,11 @@ const ComputerList = ({
       <h3>Select computer(s) to book</h3>
 
       {Object.keys(groupedComputers).map(room => (
-        <div key={room} className={`room-section ${getRoomClass(room)}`}>
+        <div key={room} className={`room-section ${getRoomClass(room)} ${selectedRoom === room ? 'selected-room' : ''}`}>
           <div className="room-header" onClick={() => toggleRoom(room)} style={{ cursor: "pointer" }}>
-            <h4 className="room-title">{getRoomDisplayName(room)}</h4>
+            <h4 className="room-title">
+              {getRoomDisplayName(room)}
+            </h4>
             <span className="toggle-icon">
               {collapsedRooms[room] ? '▼' : '▲'}
             </span>
