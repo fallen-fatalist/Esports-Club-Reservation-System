@@ -30,7 +30,7 @@ func NewNotificationSender(bookingSvc service.BookingService, userSvc service.Us
 // Run this method in a goroutine.
 func (w *NotificationSender) RunBookingNotification(ticker *time.Ticker) {
 	for range ticker.C {
-		bookings, err := w.BookingSvc.GetPendingBookings()
+		bookings, err := w.BookingSvc.GetBookingsBeforeStartTime()
 		if err != nil {
 			w.logger.Warn("get active bookings", "error", err)
 			continue
