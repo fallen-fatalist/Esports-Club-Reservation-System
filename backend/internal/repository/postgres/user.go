@@ -59,7 +59,28 @@ func (r *UserRepository) GetAll() ([]*entities.User, error) {
 }
 
 func (r *UserRepository) GetByID(id int64) (*entities.User, error) {
-	return nil, nil
+	query := `
+		SELECT user_id, login, email, status, role, balance, created_at
+		FROM users
+		WHERE user_id = $1
+	`
+	var user entities.User
+	err := r.db.QueryRow(query, id).Scan(
+		&user.ID,
+		&user.Login,
+		&user.Email,
+		&user.Status,
+		&user.Role,
+		&user.Balance,
+		&user.CreatedAt,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, service.ErrUserNotFound
+		}
+		return nil, fmt.Errorf("repository.GetByID: failed to get user: %w", err)
+	}
+	return &user, nil
 }
 
 func (r *UserRepository) GetCredentialsByEmail(email string) (entities.UserCredentials, error) {
