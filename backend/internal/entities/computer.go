@@ -51,12 +51,9 @@ func (s Status) IsValid() bool {
 	}
 }
 
-var (
-	ErrInvalidStatus = errors.New("invalid status for computer provided")
-)
+var ErrInvalidStatus = errors.New("invalid status for computer provided")
 
 func (computer *Computer) Validate() error {
-
 	allowedStatuses := map[string]bool{
 		"available":    true,
 		"pending":      true,

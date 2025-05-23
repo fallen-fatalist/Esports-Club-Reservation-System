@@ -3,12 +3,13 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"esports_club_booking/internal/service"
-	"esports_club_booking/internal/transport/dto"
-	"esports_club_booking/internal/utils"
 	"fmt"
 	"log/slog"
 	"net/http"
+
+	"esports_club_booking/internal/service"
+	"esports_club_booking/internal/transport/dto"
+	"esports_club_booking/internal/utils"
 )
 
 // @Summary		Register a new user

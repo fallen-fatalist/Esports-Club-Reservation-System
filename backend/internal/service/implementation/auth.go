@@ -2,14 +2,15 @@ package implementation
 
 import (
 	"errors"
-	"esports_club_booking/internal/auth"
-	"esports_club_booking/internal/entities"
-	"esports_club_booking/internal/service"
-	"esports_club_booking/internal/transport/dto"
 	"fmt"
 	"math/rand"
 	"strconv"
 	"time"
+
+	"esports_club_booking/internal/auth"
+	"esports_club_booking/internal/entities"
+	"esports_club_booking/internal/service"
+	"esports_club_booking/internal/transport/dto"
 )
 
 func (s *UserService) Register(userDTO dto.RegisterUser) (int64, error) {
@@ -64,7 +65,7 @@ func (s *UserService) Login(userDTO dto.LoginUser) (string, error) {
 	if user.Status == "blocked" || user.Status == "unverified" {
 		return "", service.ErrUserBlockedOrUnverified
 	}
-	//generate jwt token and sign it (auth.CreateJWT already signs it for you)
+	// generate jwt token and sign it (auth.CreateJWT already signs it for you)
 	userIDstr := strconv.Itoa(user.ID)
 	tokenString, err := s.jwt.CreateToken(userIDstr, user.Role)
 	if err != nil {

@@ -1,10 +1,11 @@
 package handlers
 
 import (
-	"esports_club_booking/internal/auth"
-	"esports_club_booking/internal/service"
 	"log/slog"
 	"net/http"
+
+	"esports_club_booking/internal/auth"
+	"esports_club_booking/internal/service"
 )
 
 var allRoles []string = []string{"client", "admin", "analyst", "manager"}
@@ -44,17 +45,16 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("/computers/remaining", h.ComputersRemaining)
 	mux.HandleFunc("/computers/{id}/remaining", h.HandleComputerRemaining)
 
-	//mux.HandleFunc("/api/users", s.GetUsers)
+	// mux.HandleFunc("/api/users", s.GetUsers)
 	// mux.Handle("/api/packages", s.GetAllPackages)
 	// mux.Handle("/api/bookings/pending", http.HandlerFunc(PendingBookings))
 	// mux.Handle("/api/bookings/finished", http.HandlerFunc(FinishedBookings))
 
-	//User & Auth
+	// User & Auth
 	mux.HandleFunc("/auth/sign-up", h.HandleRegistration)
 	mux.HandleFunc("/auth/sign-in", h.HandleLogin)
 	mux.HandleFunc("/auth/activate", h.HandleRequestCode)
 	mux.HandleFunc("/auth/verify", h.HandleVerifyEmail)
-
 }
 
 type JSONAnswer struct {

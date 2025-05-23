@@ -1,10 +1,9 @@
 package httpserver
 
 import (
+	"log/slog"
 	"net/http"
 	"time"
-
-	"log/slog"
 
 	"esports_club_booking/internal/transport/httpserver/middleware"
 
@@ -26,6 +25,7 @@ func NewServer(handler http.Handler, logger *slog.Logger, adress string) *Server
 		address: adress,
 	}
 }
+
 func (s *Server) Start() error {
 	router := http.NewServeMux()
 	// add prefix /api to all handlers and strip prefix right before it goes to mux

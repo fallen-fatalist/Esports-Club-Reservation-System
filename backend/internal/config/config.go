@@ -64,7 +64,6 @@ func NewConfig() *Config {
 			Password:    getEnvStr("EMAIL_SENDER_APP_PASSWORD", ""),
 		},
 	}
-
 }
 
 func (d *DataBase) DSN() string {

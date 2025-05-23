@@ -2,12 +2,13 @@ package handlers
 
 import (
 	"encoding/json"
-	"esports_club_booking/internal/entities"
-	"esports_club_booking/internal/service/implementation"
-	"esports_club_booking/internal/transport/dto"
 	"log/slog"
 	"net/http"
 	"strconv"
+
+	"esports_club_booking/internal/entities"
+	"esports_club_booking/internal/service/implementation"
+	"esports_club_booking/internal/transport/dto"
 )
 
 // @Summary		Get all computers
@@ -31,7 +32,6 @@ func (s *Handler) getComputers(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 		return
 	}
-
 }
 
 // @Summary		Create a new computer
@@ -130,7 +130,6 @@ func (s *Handler) getComputer(w http.ResponseWriter, r *http.Request, id int64) 
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 		return
 	}
-
 }
 
 // @Summary		Delete a specific computer
@@ -189,7 +188,6 @@ func (s *Handler) HandleComputer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 
 	}
-
 }
 
 // @Summary		Get all computer statuses

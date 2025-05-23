@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"database/sql"
+
 	"esports_club_booking/internal/entities"
 )
 

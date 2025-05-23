@@ -2,9 +2,10 @@ package postgres
 
 import (
 	"database/sql"
+	"fmt"
+
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/service"
-	"fmt"
 )
 
 type UserRepository struct {
@@ -18,6 +19,7 @@ func NewUserRepository(db *sql.DB) (*UserRepository, error) {
 
 	panic("Empty database provided to User repository constructor")
 }
+
 func (r *UserRepository) GetAll() ([]*entities.User, error) {
 	query := `
 		SELECT user_id, login, email, status, role, balance, created_at 
@@ -44,7 +46,6 @@ func (r *UserRepository) GetAll() ([]*entities.User, error) {
 			&user.Balance,
 			&user.CreatedAt,
 		)
-
 		if err != nil {
 			return nil, err
 		}
@@ -120,7 +121,6 @@ func (r *UserRepository) Create(user *entities.User, hashedPassword string) (int
 		user.Role,
 		user.Balance,
 	).Scan(&user.ID)
-
 	if err != nil {
 		return -1, fmt.Errorf("repository.Create: failed to insert user: %w", err)
 	}

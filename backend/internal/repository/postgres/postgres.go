@@ -3,9 +3,10 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"esports_club_booking/internal/config"
 	"log/slog"
 	"time"
+
+	"esports_club_booking/internal/config"
 
 	_ "github.com/lib/pq"
 )

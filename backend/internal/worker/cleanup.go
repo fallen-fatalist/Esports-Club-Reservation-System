@@ -2,9 +2,10 @@ package worker
 
 import (
 	"context"
-	"esports_club_booking/internal/service"
 	"log"
 	"time"
+
+	"esports_club_booking/internal/service"
 )
 
 func StartUserCleanupWorker(ticker *time.Ticker, ctx context.Context, userService service.UserService) {

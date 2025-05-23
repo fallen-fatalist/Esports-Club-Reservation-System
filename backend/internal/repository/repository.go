@@ -2,9 +2,10 @@ package repository
 
 import (
 	"context"
+	"time"
+
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/repository/postgres"
-	"time"
 )
 
 type Repository struct {
@@ -17,7 +18,6 @@ func NewRepository(
 	userRepository UserRepository,
 	computerRepository ComputerRepository,
 	bookingRepository BookingRepository,
-
 ) (*Repository, error) {
 	if userRepository == nil {
 		panic("User repository is nil")

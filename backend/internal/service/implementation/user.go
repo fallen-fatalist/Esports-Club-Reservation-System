@@ -1,11 +1,12 @@
 package implementation
 
 import (
+	"log"
+
 	"esports_club_booking/internal/auth"
 	"esports_club_booking/internal/email"
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/repository"
-	"log"
 )
 
 type UserService struct {

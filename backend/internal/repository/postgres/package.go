@@ -2,8 +2,9 @@ package postgres
 
 import (
 	"database/sql"
-	"esports_club_booking/internal/entities"
 	"time"
+
+	"esports_club_booking/internal/entities"
 )
 
 type PackageRepository struct {
@@ -101,7 +102,6 @@ func (r *ComputerRepository) GetAllPackages() ([]entities.User, error) {
 			&user.Balance,
 			&user.CreatedAt,
 		)
-
 		if err != nil {
 			return nil, err
 		}
@@ -139,7 +139,6 @@ func (r *ComputerRepository) GetPackages() ([]entities.Package, error) {
 			&package_.EndTime,
 			&package_.CreatedAt,
 		)
-
 		if err != nil {
 			return nil, err
 		}

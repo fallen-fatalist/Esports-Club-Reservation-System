@@ -2,9 +2,10 @@ package postgres
 
 import (
 	"database/sql"
-	"esports_club_booking/internal/service"
 	"fmt"
 	"time"
+
+	"esports_club_booking/internal/service"
 )
 
 func (r *UserRepository) SaveEmailVerification(email, code string, expiresAt time.Time) error {
@@ -20,7 +21,6 @@ func (r *UserRepository) SaveEmailVerification(email, code string, expiresAt tim
               last_attempt  = NULL,
               blocked_until = NULL
     `, email, code, expiresAt)
-
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}

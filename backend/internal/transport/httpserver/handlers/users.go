@@ -21,7 +21,6 @@ func (s *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 func (s *Handler) AllBookings(w http.ResponseWriter, r *http.Request) {
 	bookings, err := s.service.BookingService.GetAllBookings()
 	if err != nil {

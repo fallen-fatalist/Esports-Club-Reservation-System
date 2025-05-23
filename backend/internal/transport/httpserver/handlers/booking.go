@@ -3,13 +3,14 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"esports_club_booking/internal/auth"
-	"esports_club_booking/internal/entities"
-	"esports_club_booking/internal/service"
 	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
+
+	"esports_club_booking/internal/auth"
+	"esports_club_booking/internal/entities"
+	"esports_club_booking/internal/service"
 )
 
 // @Summary		Get all bookings with time format "2006-01-02T15:04:05Z07:00"
@@ -58,7 +59,6 @@ func (s *Handler) Bookings(w http.ResponseWriter, r *http.Request) {
 // @Failure		500		{object}	handlers.JSONAnswer	"Internal server error"
 // @Router			/api/bookings [post]
 func (s *Handler) PostBooking(w http.ResponseWriter, r *http.Request) {
-
 	var booking entities.Booking
 
 	// Parse the JSON body into the struct
@@ -122,8 +122,8 @@ func (s *Handler) PostBooking(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 		return
 	}
-
 }
+
 func (s *Handler) BookingsOptions(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodOptions:
@@ -185,7 +185,6 @@ func (s *Handler) ComputerBookings(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 		return
 	}
-
 }
 
 // @Summary		Get finished bookings with time format "2006-01-02T15:04:05Z07:00"
@@ -209,8 +208,8 @@ func (s *Handler) getFinishedBookings(w http.ResponseWriter, r *http.Request) {
 		slog.Error("Error encoding JSON:", err)
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
-
 }
+
 func (s *Handler) HandleFinishedBookings(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -275,7 +274,6 @@ func (s *Handler) getActiveBookings(w http.ResponseWriter, r *http.Request) {
 		slog.Error("Error encoding JSON:", err)
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
-
 }
 
 func (s *Handler) HandleActiveBookings(w http.ResponseWriter, r *http.Request) {
@@ -309,7 +307,6 @@ func (s *Handler) getCancelledBookings(w http.ResponseWriter, r *http.Request) {
 		slog.Error("Error encoding JSON:", err)
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
-
 }
 
 func (s *Handler) HandleCancelledBookings(w http.ResponseWriter, r *http.Request) {

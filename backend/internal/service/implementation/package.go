@@ -1,10 +1,11 @@
 package implementation
 
 import (
-	"esports_club_booking/internal/entities"
-	"esports_club_booking/internal/repository"
 	"log"
 	"log/slog"
+
+	"esports_club_booking/internal/entities"
+	"esports_club_booking/internal/repository"
 )
 
 type PackageService struct {
