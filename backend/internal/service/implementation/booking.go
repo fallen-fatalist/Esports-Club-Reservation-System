@@ -338,6 +338,37 @@ func (s *BookingService) GetComputerLeftOccupiedTime(computerID int64, packageID
 	return &leftTime, nil
 }
 
+func (s *BookingService) GetBookingsBeforeStartTime() ([]*entities.Booking, error) {
+	bookings, err := s.repository.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now().UTC()
+	lowerBound := now.Add(-30 * time.Second)
+	upperBound := now.Add(15*time.Minute + 30*time.Second)
+
+	pendingBookings := make([]*entities.Booking, 0)
+
+	for _, booking := range bookings {
+		if booking.Status != "pending" || booking.IsNotified {
+			continue
+		}
+
+		startTime, err := time.Parse(time.RFC3339, booking.StartTime)
+		if err != nil {
+			return nil, fmt.Errorf("invalid start_time: %w", err)
+		}
+
+		// Check if startTime is within the 15-minute ±30s window
+		if startTime.After(lowerBound) && startTime.Before(upperBound) {
+			pendingBookings = append(pendingBookings, booking)
+		}
+	}
+
+	return pendingBookings, nil
+}
+
 func (s *BookingService) RefreshBookings() {
 	s.repository.RefreshBookings()
 }

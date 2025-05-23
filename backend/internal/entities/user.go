@@ -22,6 +22,8 @@ type UserCredentials struct {
 
 // Errors
 var (
-	ErrInvalidUserID = errors.New("invalid user id")
-	ErrUserNotFound  = errors.New("user not found")
+	ErrInvalidUserID      = errors.New("invalid user id")
+	ErrUserNotFound       = errors.New("user not found")
+	ErrFailedToGetUser    = errors.New("failed to get user")
+	ErrFailedToInsertUser = errors.New("failed to insert user")
 )

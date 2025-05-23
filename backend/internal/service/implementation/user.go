@@ -31,7 +31,15 @@ func (s *UserService) GetUser(id int64) (*entities.User, error) {
 		return nil, err
 	}
 
-	return nil, nil
+	user, err := s.repo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, entities.ErrUserNotFound
+	}
+
+	return user, nil
 }
 
 func (s *UserService) CreateUser(user *entities.User) (int64, error) {
