@@ -76,4 +76,10 @@ type PackageService interface {
 	DeletePackage(int64) error
 }
 
+type PaymentService interface {
+	PayBooking(context.Context, *entities.Booking) (string, error)
+	CancelPayment(context.Context, *entities.Booking) error
+	Deposit(context.Context, *entities.User) (string, error)
+}
+
 var ErrUnhandledError = errors.New("unhandled error occured, please ask an admin to fix")
