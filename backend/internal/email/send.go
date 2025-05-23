@@ -1,6 +1,7 @@
 package email
 
 import (
+	"crypto/tls"
 	"fmt"
 
 	"gopkg.in/gomail.v2"
@@ -19,15 +20,30 @@ func NewEmailSender(from, password, smtpHost string, smtpPort int) EmailSender {
 
 func (e EmailSender) SendEmail(to, subject, body string) error {
 	message := gomail.NewMessage()
-
 	message.SetHeader("From", e.from)
 	message.SetHeader("To", to)
 	message.SetHeader("Subject", subject)
 	message.SetBody("text/plain", body)
 
 	dialer := gomail.NewDialer(e.smtpHost, e.smtpPort, e.from, e.password)
-	if err := dialer.DialAndSend(message); err != nil {
-		return fmt.Errorf("gomail.DialAndSend: %w", err)
+
+	// Gmail-specific settings
+	dialer.TLSConfig = &tls.Config{
+		ServerName: e.smtpHost, // Critical for Gmail
 	}
+	dialer.SSL = false // Force STARTTLS (port 587 behavior)
+
+	// Test connection first
+	s, err := dialer.Dial()
+	if err != nil {
+		return fmt.Errorf("SMTP Dial failed: %v", err)
+	}
+	defer s.Close()
+
+	// Now send
+	if err := gomail.Send(s, message); err != nil {
+		return fmt.Errorf("SMTP Send failed: %v", err)
+	}
+
 	return nil
 }

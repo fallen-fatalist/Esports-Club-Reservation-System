@@ -52,6 +52,12 @@ func Run() {
 	emailSender := email.NewEmailSender(cfg.EmailSender.FromAddress, cfg.EmailSender.Password,
 		cfg.EmailSender.SMTPHost, int(cfg.EmailSender.SMTPPort))
 
+	fmt.Println(cfg.EmailSender.FromAddress, cfg.EmailSender.Password)
+
+	err = emailSender.SendEmail("ommirkulr@gmail.com", "Test Subject", "Test Body")
+	if err != nil {
+		fmt.Println("Error sending email:", err)
+	}
 	userService, _ := implementation.NewUserService(userRepository, jwtManager, emailSender)
 	computerService, _ := implementation.NewComputerService(computerRepository)
 	packageService, _ := implementation.NewPackageService(packageRepository)
@@ -73,7 +79,9 @@ func Run() {
 	)
 
 	// workers
-	startWorkers(*svc, ctx)
+	startWorkers(*svc, emailSender, ctx, logger)
+
+	emailSender.SendEmail("ommirkulr@mgail.com", "Test Subject", "Test Body")
 
 	mux := http.NewServeMux()
 	handlers := handlers.NewHandler(svc, logger, jwtManager)
@@ -88,7 +96,7 @@ func Run() {
 	}
 }
 
-func startWorkers(svc service.Service, ctx context.Context) {
+func startWorkers(svc service.Service, emailSender email.EmailSender, ctx context.Context, logger *slog.Logger) {
 	refresherTicker := time.NewTicker(1 * time.Minute)
 	go worker.RefresherCallback(refresherTicker, svc.BookingService)
 
@@ -97,4 +105,8 @@ func startWorkers(svc service.Service, ctx context.Context) {
 
 	cleanupTicker := time.NewTicker(time.Minute)
 	go worker.StartUserCleanupWorker(cleanupTicker, ctx, svc.UserService)
+
+	notificationTicker := time.NewTicker(30 * time.Second)
+	notificationWorker := worker.NewNotificationSender(svc.BookingService, svc.UserService, emailSender, logger)
+	go notificationWorker.RunBookingNotification(notificationTicker)
 }

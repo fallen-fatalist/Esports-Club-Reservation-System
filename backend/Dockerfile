@@ -1,4 +1,4 @@
-FROM golang:alpine as builder
+FROM golang:alpine AS builder
 
 WORKDIR /app
 
@@ -6,7 +6,7 @@ COPY . /app
 
 RUN go build -o /app/bin/booking-service /app
 
-FROM alpine:latest as runner
+FROM alpine:latest AS runner
 
 WORKDIR /app 
 
