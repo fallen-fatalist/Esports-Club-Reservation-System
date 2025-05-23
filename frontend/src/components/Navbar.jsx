@@ -5,6 +5,9 @@ import sunnyOutline from "../images/SunOutlined.svg";
 import moonOutline from "../images/MoonOutlined.svg";
 import { logout }  from "../services/authService";
 import { ThemeContext } from "../context/ThemeContext";
+import LogoutIcon from '@mui/icons-material/Logout';
+import LoginIcon from '@mui/icons-material/Login';
+
 
 const Navbar = () => {
   const { isDarkTheme, toggleTheme } = useContext(ThemeContext);
@@ -37,25 +40,23 @@ const Navbar = () => {
 
         <div className="navbar__links">
           <Link to="/booking">Booking</Link>
-          <Link to="/profile">Profile</Link>
+          {isAuth && <Link to="/profile">Profile</Link>}
 
           {!isAuth && (
             <>
-              <button className="login-btn" onClick={() => navigate("/login")}>
-                <span className="button__text">Login</span>
+              <button className="login-btn icon-only" onClick={() => navigate("/login")} title="Login">
+                <LoginIcon />
               </button>
               <button className="register-btn" onClick={() => navigate("/register")}>
                 <span className="button__text">Register</span>
               </button>
             </>
           )}
-
           {isAuth && (
-            <button className="logout-btn" onClick={() => { setIsAuth(false); logout();}}>
-              <span className="button__text">Logout</span>
+            <button className="logout-btn icon-only" onClick={() => { setIsAuth(false); logout();}} title="Logout">
+              <LogoutIcon />
             </button>
           )}
-
         </div>
       </nav>
     </header>

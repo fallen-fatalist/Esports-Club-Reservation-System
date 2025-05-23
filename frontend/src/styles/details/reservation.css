@@ -38,11 +38,19 @@
     width: 100%;
 }
 
+.reservation__time,
+.reservation__room,
+.reservation__duration {
+    flex: 1 1 30%;
+    min-width: 140px;
+}
+
 .time__duration {
     display: flex;
     gap: 10px;
     width: 100%;
     justify-content: center;
+    flex-wrap: wrap;
 }
 
 .auto-selection {

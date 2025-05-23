@@ -1,6 +1,5 @@
 import React, { useContext, useState } from "react";
 import MyInput from "../components/UI/input/MyInput";
-import MyButton from "../components/UI/button/MyButton/MyButton";
 import { AuthContext } from "../context/contextIndex";
 import { useNavigate } from "react-router-dom";
 import { signIn } from "../services/authService";
