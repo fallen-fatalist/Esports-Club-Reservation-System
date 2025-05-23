@@ -18,4 +18,17 @@
     .navbar__links {
         gap: var(--space-md);
     }
+
+        .computer-card.ps5-card {
+        max-width: 200px;
+    }
+    
+    .ps5-card .computer-number {
+        font-size: 1rem;
+    }
+    
+    .ps5-label {
+        font-size: 0.9rem;
+    }
 }
+

@@ -54,6 +54,7 @@ const Booking = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalComputerId, setModalComputerId] = useState(null);
   const [autoSelectCountInput, setAutoSelectCountInput] = useState("1");
+  const [currentRoom, setCurrentRoom] = useState("Standard"); // Добавляем состояние для текущего зала
 
   const { computers: fetchedComputers = [], loading, error } = useComputers();
   const { bookings, refetchBookings } = useBookings();
@@ -66,7 +67,9 @@ const Booking = () => {
         setPackages(fetchedPackages);
         
         if (!selectedPackage && fetchedPackages.length > 0) {
-          setSelectedPackage(fetchedPackages[0].id);
+          // Ищем пакет для текущего зала
+          const roomPackage = fetchedPackages.find(pkg => pkg.room === currentRoom);
+          setSelectedPackage(roomPackage ? roomPackage.id : fetchedPackages[0].id);
         }
       } catch (error) {
         console.error('Error loading packages:', error);
@@ -75,7 +78,7 @@ const Booking = () => {
     };
 
     loadPackages();
-  }, [selectedPackage]);
+  }, [selectedPackage, currentRoom]);
 
   const getCurrentPackageDuration = useCallback(() => {
     if (!selectedPackage || packages.length === 0) return 60;
@@ -275,10 +278,12 @@ const Booking = () => {
   };
 
   const handleAutoSelectComputers = (count) => {
-    const available = filteredComputers.filter((c) => c.status === 'available');
+    // Фильтруем компьютеры только из выбранного зала
+    const roomComputers = filteredComputers.filter((c) => c.room === currentRoom);
+    const available = roomComputers.filter((c) => c.status === 'available');
 
     if (available.length === 0) {
-      setErrorMessage("No available computers for auto-selection.");
+      setErrorMessage(`No available computers in ${currentRoom} room for auto-selection.`);
       setInfoMessage(null);
       return;
     }
@@ -286,7 +291,7 @@ const Booking = () => {
     const adjustedCount = Math.min(count, available.length);
 
     if (count > available.length) {
-      setInfoMessage(`Requested ${count}, but only ${available.length} available. All available computers have been selected.`);
+      setInfoMessage(`Requested ${count}, but only ${available.length} available in ${currentRoom} room. All available computers have been selected.`);
     }
 
     const autoSelected = available.slice(0, adjustedCount).map((c) => c.id);
@@ -301,6 +306,12 @@ const Booking = () => {
 
   const getFilteredComputersForDisplay = () => {
     return filteredComputers.filter(c => isDisplayableStatus(c.status));
+  };
+
+  const getAvailableComputersCount = () => {
+    return getFilteredComputersForDisplay()
+      .filter(c => c.status === 'available' && c.room === currentRoom)
+      .length;
   };
 
   if (loading) return <div className="loading-message">Loading computers...</div>;
@@ -326,7 +337,9 @@ const Booking = () => {
           handleAutoSelectComputers={handleAutoSelectComputers}
           autoSelectCountInput={autoSelectCountInput}
           setAutoSelectCountInput={setAutoSelectCountInput}
-          availableComputersCount={getFilteredComputersForDisplay().filter(c => c.status === 'available').length}
+          availableComputersCount={getAvailableComputersCount()}
+          currentRoom={currentRoom}
+          setCurrentRoom={setCurrentRoom}
         />
 
         <div className="computers__container">
@@ -336,6 +349,7 @@ const Booking = () => {
             onViewDetails={handleViewComputerDetails}
             selectedComputers={selectedComputers}
             onBook={handleBookComputer}
+            selectedRoom={currentRoom}
           />
           {isFiltered && getFilteredComputersForDisplay().length === 0 && (
             <p className="no-computers-message">No available computers for selected time</p>

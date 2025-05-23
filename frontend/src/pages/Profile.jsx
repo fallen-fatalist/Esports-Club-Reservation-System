@@ -62,7 +62,7 @@ const Profile = () => {
       try {
         setLoading(true);
         const [bookingsData, computersData, packagesData] = await Promise.all([
-          bookingService.getBookings(),
+          bookingService.getUserBookings(),
           computerService.getComputers(),
           packageService.getPackages()
         ]);

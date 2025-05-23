@@ -79,7 +79,7 @@ func (r *BookingRepository) GetAllByUserID(id int64) ([]*entities.Booking, error
 	}
 	defer rows.Close()
 
-	var bookings []*entities.Booking
+	bookings := []*entities.Booking{}
 
 	for rows.Next() {
 		var b entities.Booking
