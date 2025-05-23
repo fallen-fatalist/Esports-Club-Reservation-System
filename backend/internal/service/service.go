@@ -29,6 +29,7 @@ func NewService(
 }
 
 type ComputerService interface {
+	ComputersMap() map[int64]*entities.Computer
 	GetAllComputers() ([]*entities.Computer, error)
 	GetComputer(id int64) (*entities.Computer, error)
 	CreateComputer(*entities.Computer) (int64, error)
@@ -52,6 +53,7 @@ type UserService interface {
 }
 
 type BookingService interface {
+	// BookingNotified(*entities.Booking)
 	GetAllBookings() ([]*entities.Booking, error)
 	CreateBooking(context.Context, *entities.Booking) (int64, error)
 	GetComputerBookings(id int64) ([]*entities.Booking, error)

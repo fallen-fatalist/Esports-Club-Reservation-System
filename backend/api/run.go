@@ -55,14 +55,8 @@ func Run() {
 	computerService, _ := implementation.NewComputerService(computerRepository)
 	packageService, _ := implementation.NewPackageService(packageRepository)
 
-	// Fetch the number of computers
-	var computerNum int
-	computers, err := computerService.GetAllComputers()
-	if err == nil {
-		computerNum = len(computers)
-	}
 	// Set the number of computers
-	bookingService, _ := implementation.NewBookingService(bookingRepository, packageService, computerNum)
+	bookingService, _ := implementation.NewBookingService(bookingRepository, computerService, packageService)
 
 	svc := service.NewService(
 		computerService,
