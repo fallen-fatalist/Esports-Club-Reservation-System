@@ -70,6 +70,7 @@ func Run() {
 	}
 	// Set the number of computers
 	bookingService, _ := implementation.NewBookingService(bookingRepository, packageService, computerNum)
+	fmt.Println(userService, computerService, packageService, bookingService)
 
 	svc := service.NewService(
 		computerService,
@@ -79,9 +80,7 @@ func Run() {
 	)
 
 	// workers
-	startWorkers(*svc, emailSender, ctx, logger)
-
-	emailSender.SendEmail("ommirkulr@mgail.com", "Test Subject", "Test Body")
+	startWorkers(*svc, ctx, emailSender, logger)
 
 	mux := http.NewServeMux()
 	handlers := handlers.NewHandler(svc, logger, jwtManager)
@@ -96,7 +95,7 @@ func Run() {
 	}
 }
 
-func startWorkers(svc service.Service, emailSender email.EmailSender, ctx context.Context, logger *slog.Logger) {
+func startWorkers(svc service.Service, ctx context.Context, emailSender email.EmailSender, logger *slog.Logger) {
 	refresherTicker := time.NewTicker(1 * time.Minute)
 	go worker.RefresherCallback(refresherTicker, svc.BookingService)
 

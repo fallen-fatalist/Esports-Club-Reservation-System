@@ -17,8 +17,8 @@ type NotificationSender struct {
 	logger *slog.Logger
 }
 
-func NewNotificationSender(bookingSvc service.BookingService, userSvc service.UserService, emailSender email.EmailSender, logger *slog.Logger) *NotificationSender {
-	return &NotificationSender{
+func NewNotificationSender(bookingSvc service.BookingService, userSvc service.UserService, emailSender email.EmailSender, logger *slog.Logger) NotificationSender {
+	return NotificationSender{
 		BookingSvc:  bookingSvc,
 		UserSvc:     userSvc,
 		EmailSender: emailSender,
