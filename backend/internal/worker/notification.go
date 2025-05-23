@@ -10,17 +10,15 @@ import (
 )
 
 type NotificationSender struct {
-	BookingSvc  service.BookingService
-	UserSvc     service.UserService
+	Svc         service.Service
 	EmailSender email.EmailSender
 	// TelegramSender telegram.Sender -- further implementation
 	logger *slog.Logger
 }
 
-func NewNotificationSender(bookingSvc service.BookingService, userSvc service.UserService, emailSender email.EmailSender, logger *slog.Logger) NotificationSender {
+func NewNotificationSender(svc service.Service, emailSender email.EmailSender, logger *slog.Logger) NotificationSender {
 	return NotificationSender{
-		BookingSvc:  bookingSvc,
-		UserSvc:     userSvc,
+		Svc:         svc,
 		EmailSender: emailSender,
 		logger:      logger,
 	}
@@ -28,9 +26,9 @@ func NewNotificationSender(bookingSvc service.BookingService, userSvc service.Us
 
 // RunBookingNotification starts worker that sends notification 15 mins prior to the booking.
 // Run this method in a goroutine.
-func (w *NotificationSender) RunBookingNotification(ticker *time.Ticker) {
+func (w NotificationSender) RunBookingNotification(ticker *time.Ticker) {
 	for range ticker.C {
-		bookings, err := w.BookingSvc.GetBookingsBeforeStartTime()
+		bookings, err := w.Svc.BookingService.GetBookingsBeforeStartTime()
 		if err != nil {
 			w.logger.Warn("get active bookings", "error", err)
 			continue
@@ -41,21 +39,27 @@ func (w *NotificationSender) RunBookingNotification(ticker *time.Ticker) {
 				continue
 			}
 
-			if err := w.BookingSvc.BookingNotified(booking); err != nil {
+			if err := w.Svc.BookingService.BookingNotified(booking); err != nil {
 				w.logger.Warn("booking notified", "error", err, "id", booking.UserID)
 				continue
 			}
 
-			user, err := w.UserSvc.GetUser(booking.UserID)
+			user, err := w.Svc.UserService.GetUser(booking.UserID)
 			if err != nil {
 				w.logger.Warn("get user by id", "error", err, "id", booking.UserID)
+				continue
+			}
+
+			msg, err := humanMsg(booking.StartTime)
+			if err != nil {
+				w.logger.Warn("human msg", "error", err, "id", booking.UserID)
 				continue
 			}
 
 			err = w.EmailSender.SendEmail(
 				user.Email,
 				"Booking reminder",
-				fmt.Sprintf("15 minutes left before your booking at %s", booking.StartTime),
+				msg,
 			)
 			if err != nil {
 				w.logger.Warn("send email", "email", user.Email, "error", err)
@@ -64,4 +68,33 @@ func (w *NotificationSender) RunBookingNotification(ticker *time.Ticker) {
 		}
 
 	}
+}
+
+func humanMsg(startRFC string) (string, error) {
+	// 1) Parse the stored RFC3339 timestamp
+	start, err := time.Parse(time.RFC3339, startRFC)
+	if err != nil {
+		return "", err
+	}
+
+	// 2) Convert to local (or any) time zone
+	//    e.g. Asia/Almaty is +05:00
+	loc, err := time.LoadLocation("Asia/Almaty")
+	if err != nil {
+		return "", err
+	}
+	start = start.In(loc)
+
+	// 3) Compute minutes left
+	diff := time.Until(start)
+	mins := int(diff.Minutes())
+	if mins < 0 {
+		mins = 0
+	}
+
+	// 4) Format the time nicely, e.g. "Jan 2, 2006 at 3:04 PM"
+	pretty := start.Format("Jan 2, 2006 at 3:04 PM")
+
+	// 5) Build the message
+	return fmt.Sprintf("%d minutes left before your booking at %s", mins, pretty), nil
 }

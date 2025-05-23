@@ -52,12 +52,6 @@ func Run() {
 	emailSender := email.NewEmailSender(cfg.EmailSender.FromAddress, cfg.EmailSender.Password,
 		cfg.EmailSender.SMTPHost, int(cfg.EmailSender.SMTPPort))
 
-	fmt.Println(cfg.EmailSender.FromAddress, cfg.EmailSender.Password)
-
-	err = emailSender.SendEmail("ommirkulr@gmail.com", "Test Subject", "Test Body")
-	if err != nil {
-		fmt.Println("Error sending email:", err)
-	}
 	userService, _ := implementation.NewUserService(userRepository, jwtManager, emailSender)
 	computerService, _ := implementation.NewComputerService(computerRepository)
 	packageService, _ := implementation.NewPackageService(packageRepository)
@@ -70,7 +64,6 @@ func Run() {
 	}
 	// Set the number of computers
 	bookingService, _ := implementation.NewBookingService(bookingRepository, packageService, computerNum)
-	fmt.Println(userService, computerService, packageService, bookingService)
 
 	svc := service.NewService(
 		computerService,
@@ -106,6 +99,6 @@ func startWorkers(svc service.Service, ctx context.Context, emailSender email.Em
 	go worker.StartUserCleanupWorker(cleanupTicker, ctx, svc.UserService)
 
 	notificationTicker := time.NewTicker(30 * time.Second)
-	notificationWorker := worker.NewNotificationSender(svc.BookingService, svc.UserService, emailSender, logger)
+	notificationWorker := worker.NewNotificationSender(svc, emailSender, logger)
 	go notificationWorker.RunBookingNotification(notificationTicker)
 }

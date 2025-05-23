@@ -58,7 +58,7 @@ func (r *UserRepository) GetAll() ([]*entities.User, error) {
 	return users, nil
 }
 
-func (r *UserRepository) GetByID(int64) (*entities.User, error) {
+func (r *UserRepository) GetByID(id int64) (*entities.User, error) {
 	return nil, nil
 }
 
