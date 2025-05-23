@@ -97,7 +97,7 @@ func (r *UserRepository) GetCredentialsByEmail(email string) (entities.UserCrede
 		if err == sql.ErrNoRows {
 			return uc, service.ErrUserNotFound
 		}
-		return uc, fmt.Errorf("repository.GetCredentialsByEmail: failed to get user: %w", err)
+		return uc, entities.ErrFailedToGetUser
 	}
 	return uc, nil
 }
@@ -122,7 +122,7 @@ func (r *UserRepository) GetByEmail(email string) (entities.User, error) {
 		if err == sql.ErrNoRows {
 			return user, service.ErrUserNotFound
 		}
-		return user, fmt.Errorf("repository.GetByEmail: failed to get user: %w", err)
+		return user, entities.ErrFailedToGetUser
 	}
 	return user, nil
 }
@@ -143,7 +143,7 @@ func (r *UserRepository) Create(user *entities.User, hashedPassword string) (int
 	).Scan(&user.ID)
 
 	if err != nil {
-		return -1, fmt.Errorf("repository.Create: failed to insert user: %w", err)
+		return -1, entities.ErrFailedToInsertUser
 	}
 
 	return user.ID, nil
