@@ -71,30 +71,20 @@ func (w NotificationSender) RunBookingNotification(ticker *time.Ticker) {
 }
 
 func humanMsg(startRFC string) (string, error) {
-	// 1) Parse the stored RFC3339 timestamp
 	start, err := time.Parse(time.RFC3339, startRFC)
 	if err != nil {
 		return "", err
 	}
 
-	// 2) Convert to local (or any) time zone
-	//    e.g. Asia/Almaty is +05:00
-	loc, err := time.LoadLocation("Asia/Almaty")
-	if err != nil {
-		return "", err
-	}
-	start = start.In(loc)
+	// Use fixed offset instead of location
+	start = start.Add(6 * time.Hour) // +06:00 for Almaty
 
-	// 3) Compute minutes left
 	diff := time.Until(start)
 	mins := int(diff.Minutes())
 	if mins < 0 {
 		mins = 0
 	}
 
-	// 4) Format the time nicely, e.g. "Jan 2, 2006 at 3:04 PM"
-	pretty := start.Format("Jan 2, 2006 at 3:04 PM")
-
-	// 5) Build the message
-	return fmt.Sprintf("%d minutes left before your booking at %s", mins, pretty), nil
+	return fmt.Sprintf("%d minutes left before your booking at %s",
+		mins, start.Format("Jan 2, 2006 at 3:04 PM")), nil
 }
