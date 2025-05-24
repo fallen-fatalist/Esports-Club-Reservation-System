@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -16,6 +17,12 @@ func (s *UserService) Register(userDTO dto.RegisterUser) (int64, error) {
 	// check if user already exists
 	const op = "service.RegisterUser"
 	_, err := s.repo.GetByEmail(userDTO.Email)
+	if err == nil {
+		return -1, service.ErrUserAlreadyExists
+	} else if !errors.Is(err, service.ErrUserNotFound) {
+		return -1, fmt.Errorf("%s: failed to check existing user: %w", op, err)
+	}
+	_, err = s.repo.GetByLogin(userDTO.Login)
 	if err == nil {
 		return -1, service.ErrUserAlreadyExists
 	} else if !errors.Is(err, service.ErrUserNotFound) {
@@ -48,15 +55,25 @@ func (s *UserService) Register(userDTO dto.RegisterUser) (int64, error) {
 
 func (s *UserService) Login(userDTO dto.LoginUser) (string, error) {
 	const op = "service.LoginUser"
+
 	// look up the user from database to take the  password
 	// get user by email from the database in order to get password
-	user, err := s.repo.GetCredentialsByEmail(userDTO.Email)
+	var user entities.UserCredentials
+	var err error
+
+	if strings.Contains(userDTO.Identifier, "@") {
+		user, err = s.repo.GetCredentialsByEmail(userDTO.Identifier)
+	} else {
+		user, err = s.repo.GetCredentialsByLogin(userDTO.Identifier)
+	}
+
 	if err != nil {
 		if errors.Is(err, service.ErrUserNotFound) {
-			return "", errors.New("invalid email or password")
+			return "", service.ErrInvalidCredentials
 		}
 		return "", fmt.Errorf("%s: failed to fetch user: %w", op, err)
 	}
+
 	// compare passwords from request and database
 	if !auth.VerifyPassword(user.HashedPassword, userDTO.Password) {
 		return "", errors.New("invalid email or password")

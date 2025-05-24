@@ -40,24 +40,24 @@ func (s *Handler) register(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-
-	if userPayload.Email == "" {
-		utils.WriteError(w, http.StatusBadRequest, errors.New("empty email"))
-		return
-	}
-	if userPayload.Login == "" {
-		utils.WriteError(w, http.StatusBadRequest, errors.New("empty login"))
-		return
-	}
-	if userPayload.Password == "" {
-		utils.WriteError(w, http.StatusBadRequest, errors.New("empty password"))
-		return
-	}
+	fmt.Println("here shit happens")
+	// if userPayload.Email == "" {
+	// 	utils.WriteError(w, http.StatusBadRequest, errors.New("empty email"))
+	// 	return
+	// }
+	// if userPayload.Login == "" {
+	// 	utils.WriteError(w, http.StatusBadRequest, errors.New("empty login"))
+	// 	return
+	// }
+	// if userPayload.Password == "" {
+	// 	utils.WriteError(w, http.StatusBadRequest, errors.New("empty password"))
+	// 	return
+	// }
 
 	userId, err := s.service.UserService.Register(userPayload)
 	if err != nil {
 		if errors.Is(err, service.ErrUserAlreadyExists) {
-			utils.WriteError(w, http.StatusConflict, errors.New("user with this email already exists"))
+			utils.WriteError(w, http.StatusConflict, errors.New("user with this email or login already exists"))
 			return
 		}
 		s.logger.Error("failed to create user", slog.Any("error", err))
@@ -96,29 +96,16 @@ func (s *Handler) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if userPayload.Login == "" {
-		utils.WriteError(w, http.StatusBadRequest, errors.New("empty login"))
-		return
-	}
-	if userPayload.Email == "" {
-		utils.WriteError(w, http.StatusBadRequest, errors.New("empty email"))
-		return
-	}
-	if userPayload.Password == "" {
-		utils.WriteError(w, http.StatusBadRequest, errors.New("empty password"))
-		return
-	}
-
 	token, err := s.service.UserService.Login(userPayload)
 	if err != nil {
 		if errors.Is(err, service.ErrUserBlockedOrUnverified) {
 			s.logger.Warn("failed login attempt", slog.Any("error", err))
-			utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("failed to login: %s", err.Error()))
+			utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("failed to login: %s", "user is unverified or blocked"))
 			return
 		}
-		if errors.Is(err, service.ErrUserNotFound) {
+		if errors.Is(err, service.ErrInvalidCredentials) {
 			s.logger.Warn("failed login attempt", slog.Any("error", err))
-			utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("invalid email or password", err.Error()))
+			utils.WriteError(w, http.StatusUnauthorized, errors.New("invalid email or password"))
 			return
 		}
 		s.logger.Warn("failed login attempt", slog.Any("error", err))
@@ -141,7 +128,7 @@ func (s *Handler) login(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 	})
 
-	utils.WriteJSON(w, http.StatusOK, dto.TokenResponse{Token: token})
+	// utils.WriteJSON(w, http.StatusOK, dto.TokenResponse{Token: token})
 }
 
 // @Summary		Send verification code to user's email
@@ -215,7 +202,6 @@ func (h *Handler) verifyEmail(w http.ResponseWriter, r *http.Request) {
 	err := h.service.UserService.VerifyEmail(req)
 	switch {
 	case err == nil:
-		w.WriteHeader(http.StatusOK)
 		utils.WriteJSON(w, http.StatusOK, JSONAnswer{Message: "email verified"})
 		return
 	case errors.Is(err, service.ErrNoNeedVerification):

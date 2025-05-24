@@ -21,11 +21,7 @@ type RegisterUser struct {
 type LoginUser struct {
 	// required: true
 	// example: user@example.com
-	Email string `json:"email"`
-
-	// required: true
-	// example: username123
-	Login string `json:"login"`
+	Identifier string `json:"identifier"`
 
 	// required: true
 	// example: securePassword123
