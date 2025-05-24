@@ -76,9 +76,6 @@ func humanMsg(startRFC string) (string, error) {
 		return "", err
 	}
 
-	// Use fixed offset instead of location
-	start = start.Add(6 * time.Hour) // +06:00 for Almaty
-
 	diff := time.Until(start)
 	mins := int(diff.Minutes())
 	if mins < 0 {
