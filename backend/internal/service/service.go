@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/transport/dto"
 )
@@ -29,6 +30,7 @@ func NewService(
 }
 
 type ComputerService interface {
+	ComputersMap() map[int64]*entities.Computer
 	GetAllComputers() ([]*entities.Computer, error)
 	GetComputer(id int64) (*entities.Computer, error)
 	CreateComputer(*entities.Computer) (int64, error)
@@ -41,19 +43,20 @@ type UserService interface {
 	GetAllUsers() ([]*entities.User, error)
 	GetUser(int64) (*entities.User, error)
 	CreateUser(*entities.User) (int64, error)
-	//AuthUser()
+	// AuthUser()
 	Register(userDTO dto.RegisterUser) (int64, error)
 	Login(userDTO dto.LoginUser) (string, error)
 	VerifyEmail(emailverify dto.VerifyEmailRequest) error
 	SendVerificationCode(dto.VerificationRequest) error
 	DeleteUnverifiedUsers() error
-	//FillBalance()
-
+	// FillBalance()
 }
 
 type BookingService interface {
+	// BookingNotified(*entities.Booking)
 	GetAllBookings() ([]*entities.Booking, error)
 	CreateBooking(context.Context, *entities.Booking) (int64, error)
+	BookingNotified(*entities.Booking) error
 	GetComputerBookings(id int64) ([]*entities.Booking, error)
 	UserBookings(id int64) ([]*entities.Booking, error)
 	GetActiveBookings() ([]*entities.Booking, error)
@@ -63,6 +66,7 @@ type BookingService interface {
 	GetComputersLeftOccupiedTime(packageID int64) ([]*entities.ComputerOccupiedLeftTime, error)
 	GetComputerLeftOccupiedTime(computerID int64, packageID int64) (*entities.ComputerOccupiedLeftTime, error)
 	GenerateBooking(context.Context)
+	GetBookingsBeforeStartTime() ([]*entities.Booking, error)
 	RefreshBookings()
 }
 
@@ -75,6 +79,4 @@ type PackageService interface {
 	DeletePackage(int64) error
 }
 
-var (
-	ErrUnhandledError = errors.New("unhandled error occured, please ask an admin to fix")
-)
+var ErrUnhandledError = errors.New("unhandled error occured, please ask an admin to fix")

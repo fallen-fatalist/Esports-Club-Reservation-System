@@ -41,3 +41,8 @@ func WithAuth(j JWTManager, requiredRoles []string, next http.HandlerFunc) http.
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 }
+
+func GetUserIDFromContext(ctx context.Context) (string, bool) {
+	userID, ok := ctx.Value(userIDKey).(string)
+	return userID, ok
+}

@@ -13,6 +13,7 @@ type Booking struct {
 	UserID     int64  `json:"user_id"`
 	ComputerID int64  `json:"computer_id"`
 	PackageID  int64  `json:"package_id"`
+	IsNotified bool   `json:"is_notified"`
 	StartTime  string `json:"start_time"`
 	EndTime    string `json:"end_time"`
 	Status     string `json:"status,omitempty"`
@@ -97,5 +98,6 @@ func (b *Booking) Compare(secondBooking *Booking) int {
 
 // Errors
 var (
-	ErrBookingOverlap = errors.New("booking overlaps with another booking")
+	ErrNotCorrespondenceOfRoom = errors.New("package in booking must correspond to the computer room")
+	ErrBookingOverlap          = errors.New("booking overlaps with another booking")
 )

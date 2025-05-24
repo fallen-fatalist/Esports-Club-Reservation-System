@@ -10,6 +10,17 @@ const bookingService = {
             throw error;
         }
     },
+    async getUserBookings() {
+        try {
+            const response = await api.get('/api/users/bookings');  
+            return response.data;
+        } catch (error) {
+            console.error('Error getting bookings', error);
+            throw error;
+        }
+    },
+
+
     async createBooking(bookingData) {
       try {
         console.log('Request payload:', JSON.stringify(bookingData, null, 2));

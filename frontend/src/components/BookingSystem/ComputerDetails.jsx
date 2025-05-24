@@ -24,6 +24,44 @@ const formatTimeLeft = (seconds) => {
   }
 };
 
+const isPS5 = (computer) => {
+  return computer?.type === 'ps5' || 
+         computer?.name?.toLowerCase().includes('ps5') || 
+         computer?.model?.toLowerCase().includes('ps5') ||
+         computer?.room === 'Console';
+};
+
+const getPS5Specs = (detailedComputer) => {
+  const ps5Specs = [];
+  
+  ps5Specs.push({ key: 'cpu', label: 'CPU', value: 'Sony PlayStation 5' });
+  
+  const specsToCheck = ['gpu', 'ram', 'monitor', 'mouse', 'keyboard', 'headset', 'mousepad'];
+  
+  specsToCheck.forEach(spec => {
+    const value = detailedComputer?.[spec];
+    if (value && value.trim() && value.toLowerCase() !== 'n/a') {
+      ps5Specs.push({ 
+        key: spec, 
+        label: spec.toUpperCase(), 
+        value: value 
+      });
+    }
+  });
+  
+  return ps5Specs;
+};
+
+const getComputerSpecs = (detailedComputer) => {
+  const allSpecs = ['cpu', 'gpu', 'ram', 'monitor', 'mouse', 'keyboard', 'headset', 'mousepad'];
+  
+  return allSpecs.map(spec => ({
+    key: spec,
+    label: spec.toUpperCase(),
+    value: detailedComputer?.[spec] || 'N/A'
+  }));
+};
+
 const ComputerDetails = ({ computer, bookings, date }) => {
   const [detailedComputer, setDetailedComputer] = useState(null);
   const [timeLeft, setTimeLeft] = useState(null);
@@ -42,6 +80,8 @@ const ComputerDetails = ({ computer, bookings, date }) => {
         )
         .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
     : [];
+
+  const itemIsPS5 = isPS5(computer);
 
   useEffect(() => {
     if (computer?.id) {
@@ -91,6 +131,10 @@ const ComputerDetails = ({ computer, bookings, date }) => {
   }, [computer, computerBookings]);
 
   if (!computer || !detailedComputer) return null;
+
+  const specifications = itemIsPS5 
+    ? getPS5Specs(detailedComputer) 
+    : getComputerSpecs(detailedComputer);
 
   return (
     <div className="computer-details">
@@ -158,13 +202,13 @@ const ComputerDetails = ({ computer, bookings, date }) => {
         </div>
       <div className="computer-specs">
         <h4 onClick={() => setShowSpecs(!showSpecs)} style={{ cursor: "pointer" }}>
-          Specifications {showSpecs ? "▲" : "▼"}
+          {itemIsPS5 ? 'Console Specifications' : 'Specifications'} {showSpecs ? "▲" : "▼"}
         </h4>
         {showSpecs && (
           <ul className="specs-list">
-            {["cpu", "gpu", "ram", "monitor", "mouse", "keyboard", "headset", "mousepad"].map((spec) => (
-              <li key={spec}>
-                <strong>{spec.toUpperCase()}:</strong> {detailedComputer?.[spec] || "N/A"}
+            {specifications.map((spec) => (
+              <li key={spec.key}>
+                <strong>{spec.label}:</strong> {spec.value}
               </li>
             ))}
           </ul>
