@@ -86,9 +86,6 @@ func startWorkers(svc service.Service, ctx context.Context, emailSender email.Em
 	refresherTicker := time.NewTicker(1 * time.Minute)
 	go worker.RefresherCallback(refresherTicker, svc.BookingService)
 
-	creatorTicker := time.NewTicker(30 * time.Minute)
-	go worker.GeneratorCallback(creatorTicker, svc.BookingService)
-
 	cleanupTicker := time.NewTicker(time.Minute)
 	go worker.StartUserCleanupWorker(cleanupTicker, ctx, svc.UserService)
 
