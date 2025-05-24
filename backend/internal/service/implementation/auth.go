@@ -13,6 +13,8 @@ import (
 	"esports_club_booking/internal/transport/dto"
 )
 
+var _ service.UserService = (*UserService)(nil)
+
 func (s *UserService) Register(userDTO dto.RegisterUser) (int64, error) {
 	// check if user already exists
 	const op = "service.RegisterUser"

@@ -13,7 +13,8 @@ import (
 
 // Errors
 var (
-	ErrComputerNotFound = errors.New("computer does not exist")
+	_                   service.ComputerService = (*ComputerService)(nil)
+	ErrComputerNotFound                         = errors.New("computer does not exist")
 )
 
 type ComputerService struct {

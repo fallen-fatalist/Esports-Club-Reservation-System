@@ -15,6 +15,8 @@ import (
 	"esports_club_booking/internal/service"
 )
 
+var _ service.BookingService = (*BookingService)(nil)
+
 type BookingService struct {
 	repository      repository.BookingRepository
 	computerService service.ComputerService
@@ -97,6 +99,17 @@ func (s *BookingService) BookingNotified(booking *entities.Booking) error {
 
 	_, err := s.repository.Update(booking)
 	return err
+}
+
+func (s *BookingService) GetBooking(id int64) (*entities.Booking, error) {
+	if err := entities.ValidateID(id); err != nil {
+		return nil, err
+	}
+	booking, err := s.repository.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	return booking, nil
 }
 
 func (s *BookingService) GetComputerBookings(id int64) ([]*entities.Booking, error) {

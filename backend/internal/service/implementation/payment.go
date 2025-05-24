@@ -9,7 +9,10 @@ import (
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/repository"
 	"esports_club_booking/internal/repository/paypal"
+	"esports_club_booking/internal/service"
 )
+
+var _ service.PaymentService = (*PaymentService)(nil)
 
 const (
 	maxStatusAttempts = 5

@@ -8,6 +8,8 @@ import (
 	"esports_club_booking/internal/repository"
 )
 
+var _ *PackageService = (*PackageService)(nil)
+
 type PackageService struct {
 	packages   []*entities.Package
 	packageMap map[int64]*entities.Package

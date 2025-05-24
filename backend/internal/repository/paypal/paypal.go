@@ -42,8 +42,8 @@ func (p *PayPalClient) Deposit(amount float64, receiverEmail string, description
 		},
 	}
 	ApplicationContext := &paypal.ApplicationContext{
-		ReturnURL:  "https://yourdomain.com/success",
-		CancelURL:  "https://yourdomain.com/cancel",
+		// ReturnURL:  "https://yourdomain.com/success",
+		// CancelURL:  "https://yourdomain.com/cancel",
 		UserAction: "PAY_NOW", // optional; shows immediate payment button
 	}
 

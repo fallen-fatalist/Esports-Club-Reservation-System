@@ -13,6 +13,7 @@ type Service struct {
 	UserService     UserService
 	BookingService  BookingService
 	PackageService  PackageService
+	PaymentService  PaymentService
 }
 
 func NewService(
@@ -20,12 +21,14 @@ func NewService(
 	UserService UserService,
 	BookingService BookingService,
 	PackageService PackageService,
+	PaymentService PaymentService,
 ) *Service {
 	return &Service{
 		ComputerService: ComputerService,
 		UserService:     UserService,
 		BookingService:  BookingService,
 		PackageService:  PackageService,
+		PaymentService:  PaymentService,
 	}
 }
 
@@ -59,6 +62,7 @@ type BookingService interface {
 	BookingNotified(*entities.Booking) error
 	GetComputerBookings(id int64) ([]*entities.Booking, error)
 	UserBookings(id int64) ([]*entities.Booking, error)
+	GetBooking(id int64) (*entities.Booking, error)
 	GetActiveBookings() ([]*entities.Booking, error)
 	GetPendingBookings() ([]*entities.Booking, error)
 	GetFinishedBookings() ([]*entities.Booking, error)
@@ -80,9 +84,9 @@ type PackageService interface {
 }
 
 type PaymentService interface {
-	PayBooking(context.Context, *entities.Booking) (string, error)
+	PayBooking(context.Context, *entities.Booking) error
 	CancelBooking(context.Context, *entities.Booking) error
-	Deposit(context.Context, *entities.User) (string, error)
+	Deposit(context.Context, *entities.User, float64) error
 
 	// Further do
 	// Withdraw(context.Context, *entities.User) (string, error)

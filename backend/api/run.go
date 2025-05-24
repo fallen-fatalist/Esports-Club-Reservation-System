@@ -12,6 +12,8 @@ import (
 	"esports_club_booking/internal/auth"
 	"esports_club_booking/internal/config"
 	"esports_club_booking/internal/email"
+	"esports_club_booking/internal/repository"
+	"esports_club_booking/internal/repository/paypal"
 	"esports_club_booking/internal/repository/postgres"
 	"esports_club_booking/internal/service"
 	"esports_club_booking/internal/service/implementation"
@@ -59,11 +61,24 @@ func Run() {
 	// Set the number of computers
 	bookingService, _ := implementation.NewBookingService(bookingRepository, computerService, packageService)
 
+	paypalClient, err := paypal.NewPayPalClient(cfg.PayPal.ClientID, cfg.PayPal.Secret)
+	if err != nil {
+		logger.Error("Failed to create PayPal client", slog.Any("error", err))
+		return
+	}
+	paymentService := implementation.NewPaymentService(paypalClient, repository.Repository{
+		BookingRepository:  bookingRepository,
+		UserRepository:     userRepository,
+		PackageRepository:  packageRepository,
+		ComputerRepository: computerRepository,
+	})
+
 	svc := service.NewService(
 		computerService,
 		userService,
 		bookingService,
 		packageService,
+		paymentService,
 	)
 
 	// workers

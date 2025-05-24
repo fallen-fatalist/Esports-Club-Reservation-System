@@ -1,11 +1,14 @@
 package handlers
 
 import (
+	"encoding/json"
 	"log/slog"
 	"net/http"
 
 	"esports_club_booking/internal/auth"
+	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/service"
+	"esports_club_booking/internal/transport/dto"
 )
 
 var allRoles []string = []string{"client", "admin", "analyst", "manager"}
@@ -55,6 +58,19 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/sign-in", h.HandleLogin)
 	mux.HandleFunc("/auth/activate", h.HandleRequestCode)
 	mux.HandleFunc("/auth/verify", h.HandleVerifyEmail)
+
+	// Payment
+	mux.HandleFunc("POST /payment/deposit", func(w http.ResponseWriter, r *http.Request) {
+		var req dto.DepositRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		h.service.PaymentService.Deposit(r.Context(), &entities.User{
+			ID: req.UserID,
+		}, req.Amount)
+	})
 }
 
 type JSONAnswer struct {
