@@ -13,6 +13,7 @@ type (
 		DataBase    DataBase
 		JWT         JWTConfig
 		EmailSender EmailSender
+		PayPal      PayPal
 	}
 
 	Server struct {
@@ -39,6 +40,11 @@ type (
 		SMTPPort    int64
 		Password    string
 	}
+
+	PayPal struct {
+		ClientID string
+		Secret   string
+	}
 )
 
 func NewConfig() *Config {
@@ -62,6 +68,10 @@ func NewConfig() *Config {
 			SMTPHost:    getEnvStr("EMAIL_SENDER_SMTP_HOST", "smtp.gmail.com"),
 			SMTPPort:    getEnvInt64("EMAIL_SENDER_SMTP_PORT", 587),
 			Password:    getEnvStr("EMAIL_SENDER_APP_PASSWORD", ""),
+		},
+		PayPal: PayPal{
+			ClientID: getEnvStr("PAYPAL_CLIENT_ID", ""),
+			Secret:   getEnvStr("PAYPAL_CLIENT_SECRET", ""),
 		},
 	}
 }

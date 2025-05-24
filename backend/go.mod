@@ -4,8 +4,9 @@ go 1.24.2
 
 require (
 	github.com/golang-jwt/jwt/v5 v5.2.2
+	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
-	github.com/plutov/paypal/v4 v4.13.0
+	github.com/plutov/paypal v2.0.5+incompatible
 	github.com/swaggo/http-swagger v1.3.4
 	github.com/swaggo/swag v1.16.4
 	golang.org/x/crypto v0.38.0
@@ -20,6 +21,7 @@ require (
 	github.com/go-openapi/swag v0.23.1 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/mailru/easyjson v0.9.0 // indirect
+	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/swaggo/files v1.0.1 // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/tools v0.33.0 // indirect

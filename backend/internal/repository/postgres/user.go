@@ -149,7 +149,7 @@ func (r *UserRepository) Create(user *entities.User, hashedPassword string) (int
 	return user.ID, nil
 }
 
-func (r *UserRepository) Update(booking *entities.Booking) (int64, error) {
+func (r *UserRepository) Update(user *entities.User) (int64, error) {
 	return 0, nil
 }
 

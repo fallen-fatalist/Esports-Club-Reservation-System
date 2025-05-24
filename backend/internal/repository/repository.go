@@ -12,12 +12,14 @@ type Repository struct {
 	UserRepository     UserRepository
 	ComputerRepository ComputerRepository
 	BookingRepository  BookingRepository
+	PackageRepository  PackageRepository
 }
 
 func NewRepository(
 	userRepository UserRepository,
 	computerRepository ComputerRepository,
 	bookingRepository BookingRepository,
+	packageRepository PackageRepository,
 ) (*Repository, error) {
 	if userRepository == nil {
 		panic("User repository is nil")
@@ -25,11 +27,15 @@ func NewRepository(
 		panic("Computer repository is nil")
 	} else if bookingRepository == nil {
 		panic("User repository is nil")
+	} else if packageRepository == nil {
+		panic("Package repository is nil")
 	}
+
 	return &Repository{
 		UserRepository:     userRepository,
 		ComputerRepository: computerRepository,
 		BookingRepository:  bookingRepository,
+		PackageRepository:  packageRepository,
 	}, nil
 }
 
@@ -39,7 +45,7 @@ type UserRepository interface {
 	GetByEmail(email string) (entities.User, error)
 	GetCredentialsByEmail(email string) (entities.UserCredentials, error)
 	Create(entity *entities.User, hashedPassword string) (int64, error)
-	Update(*entities.Booking) (int64, error)
+	Update(*entities.User) (int64, error)
 	Delete(int64) error
 	GetVerificationByEmail(email string) (postgres.EmailVerification, error)
 	SaveEmailVerification(email string, code string, expiresAt time.Time) error
@@ -75,4 +81,8 @@ type PackageRepository interface {
 	Create(*entities.Package) (int64, error)
 	Update(*entities.Package) (int64, error)
 	Delete(int64) error
+}
+
+type PayPalClient interface {
+	Deposit(ctx context.Context, userID int64, amount float64) (string, error)
 }

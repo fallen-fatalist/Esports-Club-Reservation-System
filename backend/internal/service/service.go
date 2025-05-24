@@ -81,8 +81,14 @@ type PackageService interface {
 
 type PaymentService interface {
 	PayBooking(context.Context, *entities.Booking) (string, error)
-	CancelPayment(context.Context, *entities.Booking) error
+	CancelBooking(context.Context, *entities.Booking) error
 	Deposit(context.Context, *entities.User) (string, error)
+
+	// Further do
+	// Withdraw(context.Context, *entities.User) (string, error)
+	// GetTransactionHistory(context.Context, *entities.User) ([]*entities.Transaction, error)
+	// GetBalance(context.Context, *entities.User) (float64, error)
+	//
 }
 
-var ErrUnhandledError = errors.New("unhandled error occured, please ask an admin to fix")
+var ErrUnhandledError = errors.New("unhandled error occurred, please ask an admin to fix")

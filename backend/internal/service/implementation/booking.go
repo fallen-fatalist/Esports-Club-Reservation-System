@@ -23,7 +23,8 @@ type BookingService struct {
 }
 
 func NewBookingService(repository repository.BookingRepository, computerService service.ComputerService,
-	packageService service.PackageService) (*BookingService, error) {
+	packageService service.PackageService,
+) (*BookingService, error) {
 	if repository == nil {
 		log.Fatal("Nil repository provided to booking service")
 	} else if packageService == nil {

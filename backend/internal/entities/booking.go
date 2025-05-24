@@ -83,6 +83,7 @@ func (b *Booking) Validate() error {
 	return nil
 }
 
+// One class is compared with another, compared with what is passed as an argument
 func (b *Booking) Compare(secondBooking *Booking) int {
 	t1, err1 := time.Parse(time.RFC3339, b.StartTime)
 	t2, err2 := time.Parse(time.RFC3339, secondBooking.StartTime)
