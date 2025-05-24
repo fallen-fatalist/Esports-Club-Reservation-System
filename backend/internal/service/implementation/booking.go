@@ -16,25 +16,34 @@ import (
 )
 
 type BookingService struct {
-	repository     repository.BookingRepository
-	packageService service.PackageService
-	computerNumber int
+	repository      repository.BookingRepository
+	computerService service.ComputerService
+	packageService  service.PackageService
+	computerNumber  int
 }
 
-func NewBookingService(repository repository.BookingRepository, packageService service.PackageService, computerNumber int) (*BookingService, error) {
+func NewBookingService(repository repository.BookingRepository, computerService service.ComputerService,
+	packageService service.PackageService) (*BookingService, error) {
 	if repository == nil {
 		log.Fatal("Nil repository provided to booking service")
 	} else if packageService == nil {
 		log.Fatal("Nil package service provided to booking service")
+	} else if computerService == nil {
+		log.Fatal("Nil computer service provided to booking service")
+	}
+
+	// Fetch the number of computers
+	var computerNum int
+	computers, err := computerService.GetAllComputers()
+	if err == nil {
+		computerNum = len(computers)
 	}
 
 	service := &BookingService{
-		repository:     repository,
-		packageService: packageService,
-	}
-
-	if computerNumber > 0 {
-		service.computerNumber = computerNumber
+		repository:      repository,
+		computerService: computerService,
+		packageService:  packageService,
+		computerNumber:  computerNum,
 	}
 
 	return service, nil
@@ -63,6 +72,13 @@ func (s *BookingService) CreateBooking(ctx context.Context, booking *entities.Bo
 	}
 	if conflict {
 		return 0, entities.ErrBookingOverlap
+	}
+
+	packageMap := s.packageService.PackagesMap()
+	computersMap := s.computerService.ComputersMap()
+
+	if packageMap[booking.PackageID].Room != computersMap[booking.ComputerID].Room {
+		return 0, entities.ErrNotCorrespondenceOfRoom
 	}
 
 	booking.Status = "pending"

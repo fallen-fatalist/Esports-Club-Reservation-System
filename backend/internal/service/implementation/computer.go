@@ -3,6 +3,9 @@ package implementation
 import (
 	"database/sql"
 	"errors"
+	"esports_club_booking/internal/entities"
+	"esports_club_booking/internal/repository"
+	"esports_club_booking/internal/service"
 	"log"
 	"log/slog"
 
@@ -17,14 +20,26 @@ var (
 )
 
 type ComputerService struct {
-	repository repository.ComputerRepository
+	repository   repository.ComputerRepository
+	computersMap map[int64]*entities.Computer
 }
 
 func NewComputerService(repository repository.ComputerRepository) (*ComputerService, error) {
 	if repository == nil {
 		log.Fatal("Nil repository provided to computer service")
 	}
-	return &ComputerService{repository: repository}, nil
+
+	s := &ComputerService{repository: repository, computersMap: make(map[int64]*entities.Computer)}
+	computers, _ := s.GetAllComputers()
+	for _, computer := range computers {
+		s.computersMap[computer.ID] = computer
+	}
+
+	return s, nil
+}
+
+func (s *ComputerService) ComputersMap() map[int64]*entities.Computer {
+	return s.computersMap
 }
 
 func (s *ComputerService) GetAllComputers() ([]*entities.Computer, error) {

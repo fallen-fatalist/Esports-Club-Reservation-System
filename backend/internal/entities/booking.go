@@ -98,5 +98,6 @@ func (b *Booking) Compare(secondBooking *Booking) int {
 
 // Errors
 var (
-	ErrBookingOverlap = errors.New("booking overlaps with another booking")
+	ErrNotCorrespondenceOfRoom = errors.New("package in booking must correspond to the computer room")
+	ErrBookingOverlap          = errors.New("booking overlaps with another booking")
 )
