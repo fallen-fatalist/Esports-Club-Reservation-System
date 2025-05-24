@@ -6,40 +6,32 @@ import { getCookie } from './components/utils/cookies.js';
 import Navbar from './components/Navbar';
 import AppRouter from './components/AppRouter';
 import { AuthContext } from './context/contextIndex';
+import { ThemeProviderCustom } from './context/ThemeContext'; 
 
 // Styles
 import './styles/main.css';
 
 function App() {
   const [isAuth, setIsAuth] = useState(false);
-  const [isDarkTheme, setIsDarkTheme] = useState(() => {
-    return localStorage.getItem("theme") === "dark";
-  });
-
-  const toggleTheme = () => {
-    const newTheme = isDarkTheme ? "light" : "dark";
-    setIsDarkTheme(!isDarkTheme);
-    localStorage.setItem("theme", newTheme);
-  };
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", isDarkTheme ? "dark" : "light");
 
-    // Проверка токена (используем getCookie вместо Cookies.get)
-    const token = getCookie("token");  // <- Вот тут исправлено!
+    const token = getCookie("token");  
     if (token) {
       setIsAuth(true);
     }
-  }, [isDarkTheme]);
+  }, []);
 
   return (
     <AuthContext.Provider value={{ isAuth, setIsAuth }}>
-      <BrowserRouter>
-        <div className="App">
-          <Navbar toggleTheme={toggleTheme} isDarkTheme={isDarkTheme} />
-          <AppRouter />
-        </div>
-      </BrowserRouter>
+      <ThemeProviderCustom> 
+        <BrowserRouter>
+          <div className="App">
+            <Navbar />
+            <AppRouter />
+          </div>
+        </BrowserRouter>
+      </ThemeProviderCustom>
     </AuthContext.Provider>
   );
 }

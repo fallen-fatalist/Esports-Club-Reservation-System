@@ -1,6 +1,5 @@
 import axios from 'axios';
 
-// Создаем инстанс axios без baseURL, чтобы использовать proxy
 export const api = axios.create();
 
 api.interceptors.request.use(config => {

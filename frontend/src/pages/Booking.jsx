@@ -3,6 +3,7 @@ import useComputers from "../hooks/useComputers";
 import useBookings from "../hooks/useBookings";
 import ComputerList from "../components/BookingSystem/ComputerList";
 import bookingService from "../services/bookingService";
+import packageService from "../services/packageService";
 import isComputerAvailable from "../components/utils/isComputerAvailable";
 import dateUtils from "../components/utils/dateUtils";
 import ComputerDetailsModal from "../components/BookingSystem/ComputerDetailsModal";
@@ -42,7 +43,8 @@ const Booking = () => {
 
   const [date, setDate] = useState(getCurrentDate());
   const [time, setTime] = useState(getCurrentTimeString());
-  const [duration, setDuration] = useState(60);
+  const [selectedPackage, setSelectedPackage] = useState(null); 
+  const [packages, setPackages] = useState([]); 
   const [selectedComputers, setSelectedComputers] = useState([]);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [filteredComputers, setFilteredComputers] = useState([]);
@@ -57,9 +59,34 @@ const Booking = () => {
   const { bookings, refetchBookings } = useBookings();
   const [computers, setComputers] = useState([]);
 
+  useEffect(() => {
+    const loadPackages = async () => {
+      try {
+        const fetchedPackages = await packageService.getPackages();
+        setPackages(fetchedPackages);
+        
+        if (!selectedPackage && fetchedPackages.length > 0) {
+          setSelectedPackage(fetchedPackages[0].id);
+        }
+      } catch (error) {
+        console.error('Error loading packages:', error);
+        setErrorMessage('Failed to load packages');
+      }
+    };
+
+    loadPackages();
+  }, [selectedPackage]);
+
+  const getCurrentPackageDuration = useCallback(() => {
+    if (!selectedPackage || packages.length === 0) return 60;
+    const pkg = packages.find(p => p.id === selectedPackage);
+    return pkg ? pkg.duration * 60 : 60; 
+  }, [selectedPackage, packages]);
+
   const validateDateTime = useCallback(() => {
     const timeToUse = time || getCurrentTimeString();
     const today = getCurrentDate();
+    const duration = getCurrentPackageDuration();
 
     if (date < today) {
       setErrorMessage(`Cannot book in the past. Please select today's date (${today})`);
@@ -77,18 +104,19 @@ const Booking = () => {
       return false;
     }
 
-    if (duration > 180) {
-      setErrorMessage("Maximum booking duration is 3 hours");
+    if (duration > 300) { 
+      setErrorMessage("Maximum booking duration is 5 hours");
       return false;
     }
 
     setErrorMessage(null);
     return true;
-  }, [date, time, duration]);
+  }, [date, time, getCurrentPackageDuration]);
 
   const checkAvailability = useCallback(() => {
     if (!validateDateTime()) return;
     const timeToUse = time || getCurrentTimeString();
+    const duration = getCurrentPackageDuration();
 
     const updatedList = fetchedComputers
       .filter(c => !excludedStatuses.includes(c.status))
@@ -107,13 +135,13 @@ const Booking = () => {
     setIsFiltered(true);
     setSelectedComputers([]);
     setErrorMessage(null);
-  }, [fetchedComputers, bookings, date, time, duration, validateDateTime]);
+  }, [fetchedComputers, bookings, date, time, getCurrentPackageDuration, validateDateTime]);
 
   useEffect(() => {
-    if (fetchedComputers.length > 0) {
+    if (fetchedComputers.length > 0 && selectedPackage) {
       checkAvailability();
     }
-  }, [fetchedComputers, checkAvailability]);
+  }, [fetchedComputers, checkAvailability, selectedPackage]);
 
   const handleBookMultipleComputers = async () => {
     if (selectedComputers.length === 0) {
@@ -121,9 +149,14 @@ const Booking = () => {
       return;
     }
     if (!validateDateTime()) return;
+    if (!selectedPackage) {
+      setErrorMessage("Please select a package.");
+      return;
+    }
 
     try {
       setInfoMessage(`Processing booking for ${selectedComputers.length} computer(s)...`);
+      const duration = getCurrentPackageDuration();
       const startTime = dateUtils.parseDate(date, time || getCurrentTimeString());
       const endTime = new Date(startTime.getTime() + duration * 60000);
       const formattedStartTime = dateUtils.formatWithLocalTimezone(startTime);
@@ -137,7 +170,7 @@ const Booking = () => {
           computer_id: computerId,
           start_time: formattedStartTime,
           end_time: formattedEndTime,
-          package_id: 1,
+          package_id: selectedPackage, 
           status: "pending"
         })
       );
@@ -199,9 +232,14 @@ const Booking = () => {
       return;
     }
     if (!validateDateTime()) return;
+    if (!selectedPackage) {
+      setErrorMessage("Please select a package.");
+      return;
+    }
 
     try {
       setInfoMessage("Processing your booking...");
+      const duration = getCurrentPackageDuration();
       const startTime = dateUtils.parseDate(date, time || getCurrentTimeString());
       const endTime = new Date(startTime.getTime() + duration * 60000);
       const formattedStartTime = dateUtils.formatWithLocalTimezone(startTime);
@@ -214,7 +252,7 @@ const Booking = () => {
         computer_id: computerId,
         start_time: formattedStartTime,
         end_time: formattedEndTime,
-        package_id: 1,
+        package_id: selectedPackage, 
         status: "pending"
       });
 
@@ -236,8 +274,7 @@ const Booking = () => {
     }
   };
 
-  const handleAutoSelectComputers = () => {
-    const count = parseInt(autoSelectCountInput, 10) || 1;
+  const handleAutoSelectComputers = (count) => {
     const available = filteredComputers.filter((c) => c.status === 'available');
 
     if (available.length === 0) {
@@ -277,8 +314,8 @@ const Booking = () => {
           setDate={setDate}
           time={time}
           setTime={setTime}
-          duration={duration}
-          setDuration={setDuration}
+          selectedPackage={selectedPackage}
+          setSelectedPackage={setSelectedPackage}
           onCheckAvailability={checkAvailability}
           errorMessage={errorMessage}
           infoMessage={infoMessage}
@@ -289,6 +326,7 @@ const Booking = () => {
           handleAutoSelectComputers={handleAutoSelectComputers}
           autoSelectCountInput={autoSelectCountInput}
           setAutoSelectCountInput={setAutoSelectCountInput}
+          availableComputersCount={getFilteredComputersForDisplay().filter(c => c.status === 'available').length}
         />
 
         <div className="computers__container">
@@ -311,7 +349,8 @@ const Booking = () => {
           computers={filteredComputers}
           date={date}
           time={time}
-          duration={duration}
+          selectedPackage={selectedPackage}
+          packages={packages}
           onBookComputer={handleBookComputer}
           bookings={bookings}
         />

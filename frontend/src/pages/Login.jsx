@@ -5,7 +5,6 @@ import { AuthContext } from "../context/contextIndex";
 import { useNavigate } from "react-router-dom";
 import { signIn } from "../services/authService";
 
-// Нативные методы для работы с куками
 const setCookie = (name, value, days) => {
   const date = new Date();
   date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
@@ -31,7 +30,6 @@ const Login = () => {
       const res = await signIn(form);
       const token = res.data.token;
       
-      // Устанавливаем куку на 7 дней
       if (token) {
         setCookie("token", token, 7);
         setIsAuth(true);
@@ -75,7 +73,7 @@ const Login = () => {
                 <p>{error}</p>
               </div>
             )}
-            <MyButton>Login</MyButton>
+            <button className="auth-btn">Login</button>
           </form>
         </div>
       </div>

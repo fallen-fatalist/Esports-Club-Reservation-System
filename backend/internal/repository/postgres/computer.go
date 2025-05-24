@@ -1,8 +1,8 @@
 package postgres
 
 import (
-	"esports_club_booking/internal/entities"
 	"database/sql"
+	"esports_club_booking/internal/entities"
 )
 
 type ComputerRepository struct {
@@ -22,6 +22,7 @@ func (r *ComputerRepository) GetAll() ([]*entities.Computer, error) {
 		SELECT 
 			computer_id, 
 			status, 
+			room,
 			cpu, 
 			gpu, 
 			ram, 
@@ -48,6 +49,7 @@ func (r *ComputerRepository) GetAll() ([]*entities.Computer, error) {
 		err := rows.Scan(
 			&c.ID,
 			&c.Status,
+			&c.Room,
 			&c.CPU,
 			&c.GPU,
 			&c.RAM,

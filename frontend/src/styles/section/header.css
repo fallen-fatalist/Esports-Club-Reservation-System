@@ -30,11 +30,11 @@
 
 .navbar__logo {
     font-weight: 400;
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-xl);
     line-height: 20px;
     text-decoration: none;  
     padding: var(--space-md);
-    color: var(--color-text-secondary);
+    color: var(--color-text-primary);
     cursor: pointer;
     transition: color var(--transition-normal);
 }
@@ -78,3 +78,4 @@
 .navbar__links a:hover::after {
     width: 100%;
 }
+
