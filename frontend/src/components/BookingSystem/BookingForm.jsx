@@ -16,14 +16,13 @@ const BookingForm = ({
   autoSelectCountInput, setAutoSelectCountInput,
   availableComputersCount,
   currentRoom: initialRoom = "Standard",
-  setCurrentRoom // Необязательный prop для изменения текущего зала
+  setCurrentRoom 
 }) => {
   const [packages, setPackages] = useState([]);
   const [packagesLoading, setPackagesLoading] = useState(true);
   const [packagesError, setPackagesError] = useState(null);
   const [internalRoom, setInternalRoom] = useState(initialRoom);
 
-  // Используем внутреннее состояние, если внешнее не передано
   const currentRoom = setCurrentRoom ? initialRoom : internalRoom;
 
   useEffect(() => {
@@ -33,7 +32,6 @@ const BookingForm = ({
         const fetchedPackages = await packageService.getPackages();
         setPackages(fetchedPackages);
         
-        // Сбрасываем выбранный пакет при смене зала
         if (selectedPackage) {
           const currentPackage = fetchedPackages.find(pkg => pkg.id === selectedPackage);
           if (!currentPackage || currentPackage.room !== currentRoom) {
@@ -54,7 +52,6 @@ const BookingForm = ({
 
   const filteredPackages = packages.filter(pkg => pkg.room === currentRoom);
 
-  // Получаем уникальные залы из пакетов
   const availableRooms = [...new Set(packages.map(pkg => pkg.room))].sort();
 
   const parseValidCount = () => {
@@ -74,13 +71,11 @@ const BookingForm = ({
   };
 
   const handleRoomChange = (newRoom) => {
-    // Используем внешний setter, если передан, иначе внутренний
     if (setCurrentRoom) {
       setCurrentRoom(newRoom);
     } else {
       setInternalRoom(newRoom);
     }
-    // Очищаем выбранные компьютеры при смене зала
     setSelectedComputers([]);
   };
 
@@ -98,7 +93,6 @@ const BookingForm = ({
           <MyTime value={time} onChange={(e) => setTime(e.target.value)} />
         </div>
         
-        {/* Выбор зала */}
         <div className="reservation__room">
           <MyDropdown 
             value={currentRoom} 

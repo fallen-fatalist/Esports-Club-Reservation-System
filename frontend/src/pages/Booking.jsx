@@ -8,6 +8,7 @@ import isComputerAvailable from "../components/utils/isComputerAvailable";
 import dateUtils from "../components/utils/dateUtils";
 import ComputerDetailsModal from "../components/BookingSystem/ComputerDetailsModal";
 import BookingForm from "../components/BookingSystem/BookingForm";
+import MyModal from "../components/UI/modal/MyModal"; 
 
 const excludedStatuses = ['pending', 'under repair', 'not working', 'unknown'];
 
@@ -54,11 +55,32 @@ const Booking = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalComputerId, setModalComputerId] = useState(null);
   const [autoSelectCountInput, setAutoSelectCountInput] = useState("1");
-  const [currentRoom, setCurrentRoom] = useState("Standard"); // Добавляем состояние для текущего зала
+  const [currentRoom, setCurrentRoom] = useState("Standard");
+  
+  // Новые состояния для модального окна ошибки 401
+  const [authErrorModal, setAuthErrorModal] = useState(false);
 
   const { computers: fetchedComputers = [], loading, error } = useComputers();
   const { bookings, refetchBookings } = useBookings();
   const [computers, setComputers] = useState([]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentTime = getCurrentTimeString();
+      const currentDate = getCurrentDate();
+      
+      if (date === currentDate) {
+        const now = new Date();
+        const selectedDateTime = dateUtils.parseDate(date, time);
+        
+        if (selectedDateTime <= now) {
+          setTime(currentTime);
+        }
+      }
+    }, 60000); 
+
+    return () => clearInterval(interval);
+  }, [date, time]);
 
   useEffect(() => {
     const loadPackages = async () => {
@@ -67,13 +89,16 @@ const Booking = () => {
         setPackages(fetchedPackages);
         
         if (!selectedPackage && fetchedPackages.length > 0) {
-          // Ищем пакет для текущего зала
           const roomPackage = fetchedPackages.find(pkg => pkg.room === currentRoom);
           setSelectedPackage(roomPackage ? roomPackage.id : fetchedPackages[0].id);
         }
       } catch (error) {
         console.error('Error loading packages:', error);
-        setErrorMessage('Failed to load packages');
+        if (error.response?.status === 401) {
+          setAuthErrorModal(true);
+        } else {
+          setErrorMessage('Failed to load packages');
+        }
       }
     };
 
@@ -100,10 +125,12 @@ const Booking = () => {
     const nowPlusBuffer = new Date();
 
     if (bookingStart <= nowPlusBuffer) {
+      // Автоматически обновляем время вместо показа ошибки
       const futureTime = new Date(Date.now() + 1 * 60 * 1000);
       const hours = String(futureTime.getHours()).padStart(2, '0');
-      const minutes = String(Math.ceil(futureTime.getMinutes() / 5) * 5).padStart(2, '0');
-      setErrorMessage(`Cannot book in the past. Choose time after ${hours}:${minutes}`);
+      const roundedMinutes = Math.ceil(futureTime.getMinutes() / 5) * 5;
+      const minutes = String(roundedMinutes).padStart(2, '0');
+      setTime(`${hours}:${minutes}`);
       return false;
     }
 
@@ -206,6 +233,12 @@ const Booking = () => {
   };
 
   const handleBookingError = (error) => {
+    if (error.response?.status === 401) {
+      setAuthErrorModal(true);
+      setInfoMessage(null);
+      return;
+    }
+
     let errorMsg = "Error creating booking. Please try again.";
     if (error.response?.data?.message) {
       errorMsg = error.response.data.message;
@@ -278,7 +311,6 @@ const Booking = () => {
   };
 
   const handleAutoSelectComputers = (count) => {
-    // Фильтруем компьютеры только из выбранного зала
     const roomComputers = filteredComputers.filter((c) => c.room === currentRoom);
     const available = roomComputers.filter((c) => c.status === 'available');
 
@@ -312,6 +344,12 @@ const Booking = () => {
     return getFilteredComputersForDisplay()
       .filter(c => c.status === 'available' && c.room === currentRoom)
       .length;
+  };
+
+  const handleAuthError = () => {
+    setAuthErrorModal(false);
+    // Можно добавить редирект на страницу логина
+    // window.location.href = '/login';
   };
 
   if (loading) return <div className="loading-message">Loading computers...</div>;
@@ -368,6 +406,20 @@ const Booking = () => {
           onBookComputer={handleBookComputer}
           bookings={bookings}
         />
+
+        {/* 401 error modal need to style a bit */}
+        <MyModal visible={authErrorModal} setVisible={setAuthErrorModal}>
+          <div className="auth-error-modal">
+            <h3>Authentication Error</h3>
+            <p>Your session has expired. Please log in again to continue.</p>
+            <button 
+              className="auth-btn" 
+              onClick={handleAuthError}
+            >
+              OK
+            </button>
+          </div>
+        </MyModal>
       </div>
     </section>
   );
