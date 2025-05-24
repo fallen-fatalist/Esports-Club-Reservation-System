@@ -58,8 +58,29 @@ func (r *UserRepository) GetAll() ([]*entities.User, error) {
 	return users, nil
 }
 
-func (r *UserRepository) GetByID(int64) (*entities.User, error) {
-	return nil, nil
+func (r *UserRepository) GetByID(id int64) (*entities.User, error) {
+	query := `
+		SELECT user_id, login, email, status, role, balance, created_at
+		FROM users
+		WHERE user_id = $1
+	`
+	var user entities.User
+	err := r.db.QueryRow(query, id).Scan(
+		&user.ID,
+		&user.Login,
+		&user.Email,
+		&user.Status,
+		&user.Role,
+		&user.Balance,
+		&user.CreatedAt,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, service.ErrUserNotFound
+		}
+		return nil, fmt.Errorf("repository.GetByID: failed to get user: %w", err)
+	}
+	return &user, nil
 }
 
 func (r *UserRepository) GetCredentialsByEmail(email string) (entities.UserCredentials, error) {
@@ -76,7 +97,7 @@ func (r *UserRepository) GetCredentialsByEmail(email string) (entities.UserCrede
 		if err == sql.ErrNoRows {
 			return uc, service.ErrUserNotFound
 		}
-		return uc, fmt.Errorf("repository.GetCredentialsByEmail: failed to get user: %w", err)
+		return uc, entities.ErrFailedToGetUser
 	}
 	return uc, nil
 }
@@ -101,7 +122,7 @@ func (r *UserRepository) GetByEmail(email string) (entities.User, error) {
 		if err == sql.ErrNoRows {
 			return user, service.ErrUserNotFound
 		}
-		return user, fmt.Errorf("repository.GetByEmail: failed to get user: %w", err)
+		return user, entities.ErrFailedToGetUser
 	}
 	return user, nil
 }
@@ -122,7 +143,7 @@ func (r *UserRepository) Create(user *entities.User, hashedPassword string) (int
 	).Scan(&user.ID)
 
 	if err != nil {
-		return -1, fmt.Errorf("repository.Create: failed to insert user: %w", err)
+		return -1, entities.ErrFailedToInsertUser
 	}
 
 	return user.ID, nil

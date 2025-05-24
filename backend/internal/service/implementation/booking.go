@@ -3,15 +3,16 @@ package implementation
 import (
 	"context"
 	"errors"
-	"esports_club_booking/internal/entities"
-	"esports_club_booking/internal/repository"
-	"esports_club_booking/internal/service"
 	"fmt"
 	"log"
 	"log/slog"
 	"math/rand"
 	"sort"
 	"time"
+
+	"esports_club_booking/internal/entities"
+	"esports_club_booking/internal/repository"
+	"esports_club_booking/internal/service"
 )
 
 type BookingService struct {
@@ -54,7 +55,6 @@ func (s *BookingService) GetAllBookings() ([]*entities.Booking, error) {
 	} else {
 		return bookings, nil
 	}
-
 }
 
 func (s *BookingService) CreateBooking(ctx context.Context, booking *entities.Booking) (int64, error) {
@@ -89,6 +89,13 @@ func (s *BookingService) CreateBooking(ctx context.Context, booking *entities.Bo
 	} else {
 		return id, nil
 	}
+}
+
+func (s *BookingService) BookingNotified(booking *entities.Booking) error {
+	booking.IsNotified = true
+
+	_, err := s.repository.Update(booking)
+	return err
 }
 
 func (s *BookingService) GetComputerBookings(id int64) ([]*entities.Booking, error) {
@@ -189,7 +196,11 @@ func (s *BookingService) GetPendingBookings() ([]*entities.Booking, error) {
 				EndTime:    endTime.Format(time.RFC3339),
 				Status:     booking.Status,
 				CreatedAt:  booking.CreatedAt,
+				IsNotified: booking.IsNotified,
 			})
+
+			booking.IsNotified = true
+			s.repository.Update(booking)
 		}
 	}
 	return pending_bookings, nil
@@ -261,7 +272,6 @@ func (s *BookingService) GetCancelledBookings() ([]*entities.Booking, error) {
 		}
 	}
 	return cancelled_bookings, nil
-
 }
 
 // TODO: optimize the GetComputersLeftOccupiedTime with bulk query
@@ -344,6 +354,37 @@ func (s *BookingService) GetComputerLeftOccupiedTime(computerID int64, packageID
 	return &leftTime, nil
 }
 
+func (s *BookingService) GetBookingsBeforeStartTime() ([]*entities.Booking, error) {
+	bookings, err := s.repository.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now().UTC()
+	lowerBound := now.Add(-30 * time.Second)
+	upperBound := now.Add(15*time.Minute + 30*time.Second)
+
+	pendingBookings := make([]*entities.Booking, 0)
+
+	for _, booking := range bookings {
+		if booking.Status != "pending" || booking.IsNotified {
+			continue
+		}
+
+		startTime, err := time.Parse(time.RFC3339, booking.StartTime)
+		if err != nil {
+			return nil, fmt.Errorf("invalid start_time: %w", err)
+		}
+
+		// Check if startTime is within the 15-minute ±30s window
+		if startTime.After(lowerBound) && startTime.Before(upperBound) {
+			pendingBookings = append(pendingBookings, booking)
+		}
+	}
+
+	return pendingBookings, nil
+}
+
 func (s *BookingService) RefreshBookings() {
 	s.repository.RefreshBookings()
 }
@@ -351,7 +392,7 @@ func (s *BookingService) RefreshBookings() {
 const eps = 0.0000000001
 
 func (s *BookingService) GenerateBooking(ctx context.Context) {
-	var retryNum = 0
+	retryNum := 0
 	userID := int64(rand.Intn(43) + 1)
 	computerID := int64(rand.Intn(40) + 1)
 
@@ -389,7 +430,6 @@ func (s *BookingService) GenerateBooking(ctx context.Context) {
 			return
 		} else {
 			s.GenerateBooking(ctx)
-
 		}
 		// If incorrect values while validation should retry
 
