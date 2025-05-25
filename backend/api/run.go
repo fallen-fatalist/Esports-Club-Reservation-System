@@ -72,8 +72,8 @@ func Run() {
 	handlers := handlers.NewHandler(svc, logger, jwtManager)
 	handlers.RegisterEndpoints(mux)
 
-	address := fmt.Sprintf("%s:%s", cfg.Server.Adress, cfg.Server.Port)
-	srv := httpserver.NewServer(mux, logger, address)
+	cfg.Server.Address = fmt.Sprintf("%s:%s", cfg.Server.Address, cfg.Server.Port)
+	srv := httpserver.NewServer(mux, logger, cfg.Server)
 
 	if err := srv.Start(); err != nil {
 		logger.Error("Failed to start server", slog.Any("error", err))
