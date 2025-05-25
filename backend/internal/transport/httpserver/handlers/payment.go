@@ -43,7 +43,7 @@ func (s *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.service.PaymentService.Deposit(r.Context(), user, req.Amount); err != nil {
+	if _, err := s.service.PaymentService.Deposit(r.Context(), user, req.Amount); err != nil {
 		slog.Error("Error processing deposit:", err)
 
 		var status int

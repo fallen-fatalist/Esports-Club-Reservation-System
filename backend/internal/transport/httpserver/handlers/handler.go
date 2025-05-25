@@ -61,15 +61,22 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 
 	// Payment
 	mux.HandleFunc("POST /payment/deposit", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("123"))
 		var req dto.DepositRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		h.service.PaymentService.Deposit(r.Context(), &entities.User{
+		redirect, err := h.service.PaymentService.Deposit(r.Context(), &entities.User{
 			ID: req.UserID,
 		}, req.Amount)
+
+		if err != nil {
+			w.Write([]byte("..."))
+		}
+
+		w.Write([]byte(redirect))
 	})
 }
 

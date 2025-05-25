@@ -86,7 +86,7 @@ type PackageService interface {
 type PaymentService interface {
 	PayBooking(context.Context, *entities.Booking) error
 	CancelBooking(context.Context, *entities.Booking) error
-	Deposit(context.Context, *entities.User, float64) error
+	Deposit(context.Context, *entities.User, float64) (string, error)
 
 	// Further do
 	// Withdraw(context.Context, *entities.User) (string, error)

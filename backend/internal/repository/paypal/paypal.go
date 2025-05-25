@@ -42,9 +42,8 @@ func (p *PayPalClient) Deposit(amount float64, receiverEmail string, description
 		},
 	}
 	ApplicationContext := &paypal.ApplicationContext{
-		// ReturnURL:  "https://yourdomain.com/success",
-		// CancelURL:  "https://yourdomain.com/cancel",
-		UserAction: "PAY_NOW", // optional; shows immediate payment button
+		ReturnURL: "https://github.com",
+		CancelURL: "https://guthib.com",
 	}
 
 	order, err := p.Client.CreateOrder(paypal.OrderIntentCapture, unit, payer, ApplicationContext)
@@ -52,7 +51,19 @@ func (p *PayPalClient) Deposit(amount float64, receiverEmail string, description
 		return "", fmt.Errorf("failed to create order: %w", err)
 	}
 
-	return order.ID, nil
+	var redirectURL string
+	for _, link := range order.Links {
+		if link.Rel == "approve" {
+			redirectURL = link.Href
+			break
+		}
+	}
+
+	if redirectURL == "" {
+		return "", fmt.Errorf("no approval link found in order response")
+	}
+
+	return redirectURL, nil
 }
 
 func (p *PayPalClient) CheckOrderStatus(orderID string) (string, error) {
