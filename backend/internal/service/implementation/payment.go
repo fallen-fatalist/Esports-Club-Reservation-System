@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"esports_club_booking/internal/entities"
@@ -15,8 +16,8 @@ import (
 var _ service.PaymentService = (*PaymentService)(nil)
 
 const (
-	maxStatusAttempts = 5
-	statusCheckDelay  = 20 * time.Second
+	maxStatusAttempts = 30
+	statusCheckDelay  = 1 * time.Second
 )
 
 type PaymentService struct {
@@ -31,14 +32,65 @@ func NewPaymentService(client *paypal.PayPalClient, repo repository.Repository) 
 	}
 }
 
-// Deposint returns
-func (s *PaymentService) Deposit(ctx context.Context, user *entities.User, amount float64) (string, error) {
-	redirectURL, err := s.paypalClient.Deposit(amount, user.Email, "Deposit to your account")
+func (s *PaymentService) Deposit(ctx context.Context, userID int64, amount float64) (string, error) {
+	user, err := s.repo.UserRepository.GetByID(userID)
+	if err != nil {
+		return "", fmt.Errorf("couldn't fetch user by id %w", err)
+	}
+
+	orderID, redirectURL, err := s.paypalClient.Deposit(amount, user.Email, "Deposit to your account")
 	if err != nil {
 		return "", fmt.Errorf("paypal deposit failed: %w", err)
 	}
 
-	return redirectURL, nil
+	// Log the redirect URL for debugging purposes
+	log.Println("Redirect user to PayPal for payment:", redirectURL)
+
+	if err := s.verifyPaymentCompletion(ctx, orderID); err != nil {
+		return "", fmt.Errorf("payment verification failed: %w", err)
+	}
+
+	user.Balance += amount
+	if _, err := s.repo.UserRepository.Update(user); err != nil {
+		return "", fmt.Errorf("failed to update user balance: %w", err)
+	}
+
+	return orderID, nil
+}
+
+func (s *PaymentService) verifyPaymentCompletion(ctx context.Context, orderID string) error {
+	for attempt := 0; attempt < maxStatusAttempts; attempt++ {
+		status, err := s.paypalClient.CheckOrderStatus(orderID)
+		if err != nil {
+			return fmt.Errorf("failed to check payment status: %w", err)
+		}
+
+		switch status {
+		case "SUCCESS":
+			return nil
+		case "DENIED", "FAILED":
+			return entities.ErrPaymentFailed
+		case "CANCELED":
+			return entities.ErrPaymentCanceled
+		case "PENDING", "PROCESSING", "CREATED":
+			if err := s.waitForNextCheck(ctx); err != nil {
+				return err
+			}
+		default:
+			return errors.Join(entities.ErrUnknownPaymentStatus, fmt.Errorf("status: %s", status))
+		}
+	}
+
+	return entities.ErrPaymentTimeout
+}
+
+func (s *PaymentService) waitForNextCheck(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(statusCheckDelay):
+		return nil
+	}
 }
 
 func (s *PaymentService) PayBooking(ctx context.Context, booking *entities.Booking) error {

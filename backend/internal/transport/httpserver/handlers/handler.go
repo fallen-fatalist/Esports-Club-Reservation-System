@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"esports_club_booking/internal/auth"
-	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/service"
 	"esports_club_booking/internal/transport/dto"
 )
@@ -61,22 +60,14 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 
 	// Payment
 	mux.HandleFunc("POST /payment/deposit", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("123"))
 		var req dto.DepositRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		redirect, err := h.service.PaymentService.Deposit(r.Context(), &entities.User{
-			ID: req.UserID,
-		}, req.Amount)
-
-		if err != nil {
-			w.Write([]byte("..."))
-		}
-
-		w.Write([]byte(redirect))
+		go h.service.PaymentService.Deposit(r.Context(), req.UserID, req.Amount)
+		w.WriteHeader(http.StatusPermanentRedirect)
 	})
 }
 

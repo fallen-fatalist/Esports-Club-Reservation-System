@@ -86,5 +86,5 @@ type PackageRepository interface {
 }
 
 type PayPalClient interface {
-	Deposit(ctx context.Context, userID int64, amount float64) (string, error)
+	Deposit(amount float64, receiverEmail string, description string) (string, string, error)
 }

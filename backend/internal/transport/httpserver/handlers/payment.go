@@ -30,21 +30,14 @@ func (s *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 
 	var req dto.DepositRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		slog.Error("Error decoding deposit request:", err)
+		slog.Error("Error decoding deposit request:", "error", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
-	user, err := s.service.UserService.GetUser(req.UserID)
-	if err != nil {
-		slog.Error("Error fetching user:", err)
-		http.Error(w, "User not found", http.StatusNotFound)
-		return
-	}
-
-	if _, err := s.service.PaymentService.Deposit(r.Context(), user, req.Amount); err != nil {
-		slog.Error("Error processing deposit:", err)
+	if _, err := s.service.PaymentService.Deposit(r.Context(), req.UserID, req.Amount); err != nil {
+		slog.Error("Error processing deposit:", "error", err)
 
 		var status int
 		switch {
@@ -59,13 +52,13 @@ func (s *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 		}
 
 		jsonResponse(w, status, dto.JSONAnswer{
-			Message: "Deposit failed",
+			Message: "Fail",
 		})
 		return
 	}
 
 	jsonResponse(w, http.StatusOK, dto.JSONAnswer{
-		Message: "Deposit successful",
+		Message: "Success",
 	})
 }
 

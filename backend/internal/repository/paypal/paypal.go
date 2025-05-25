@@ -1,20 +1,19 @@
 package paypal
 
 import (
+	"esports_club_booking/internal/repository"
 	"fmt"
-	"os"
 
 	"github.com/plutov/paypal"
 )
+
+var _ repository.PayPalClient = (*PayPalClient)(nil)
 
 type PayPalClient struct {
 	Client *paypal.Client
 }
 
 func NewPayPalClient(clientID, secret string) (*PayPalClient, error) {
-	fmt.Println("Creating PayPal client with ID:", clientID)
-	fmt.Println(secret)
-
 	client, err := paypal.NewClient(clientID, secret, paypal.APIBaseSandBox)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create client: %w", err)
@@ -25,11 +24,12 @@ func NewPayPalClient(clientID, secret string) (*PayPalClient, error) {
 		return nil, fmt.Errorf("failed to get access token: %w", err)
 	}
 
-	client.SetLog(os.Stdout)
+	// Turn on only for debugging purposes
+	// client.SetLog(os.Stdout)
 	return &PayPalClient{Client: client}, nil
 }
 
-func (p *PayPalClient) Deposit(amount float64, receiverEmail string, description string) (string, error) {
+func (p *PayPalClient) Deposit(amount float64, receiverEmail string, description string) (string, string, error) {
 	payer := &paypal.CreateOrderPayer{
 		EmailAddress: receiverEmail,
 	}
@@ -42,13 +42,14 @@ func (p *PayPalClient) Deposit(amount float64, receiverEmail string, description
 		},
 	}
 	ApplicationContext := &paypal.ApplicationContext{
-		ReturnURL: "https://github.com",
-		CancelURL: "https://guthib.com",
+		ReturnURL:  "https://github.com", // Payment success
+		CancelURL:  "https://guthib.com", // Payment cancelled
+		UserAction: "PAY_NOW",            // optional; shows immediate payment button
 	}
 
 	order, err := p.Client.CreateOrder(paypal.OrderIntentCapture, unit, payer, ApplicationContext)
 	if err != nil {
-		return "", fmt.Errorf("failed to create order: %w", err)
+		return "", "", fmt.Errorf("failed to create order: %w", err)
 	}
 
 	var redirectURL string
@@ -60,10 +61,10 @@ func (p *PayPalClient) Deposit(amount float64, receiverEmail string, description
 	}
 
 	if redirectURL == "" {
-		return "", fmt.Errorf("no approval link found in order response")
+		return "", "", fmt.Errorf("no approval link found in order response")
 	}
 
-	return redirectURL, nil
+	return order.ID, redirectURL, nil
 }
 
 func (p *PayPalClient) CheckOrderStatus(orderID string) (string, error) {
