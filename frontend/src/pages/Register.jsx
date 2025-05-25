@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { signUp, activate, verifyEmail } from "../services/authService";
 
 const Register = () => {
-  const { login, showModal } = useContext(AuthContext);
+  const { login: loginContext, showModal } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1);
@@ -14,6 +14,7 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalContent, setModalContent] = useState({ title: "", message: "" });
+
   const [form, setForm] = useState({
     email: "",
     login: "",
@@ -27,33 +28,70 @@ const Register = () => {
     setModalVisible(true);
   };
 
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+    if (error) setError("");
+  };
+
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePassword = (password) => {
+    // Минимум 8 символов, одна заглавная буква (английская) и одна цифра
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
+    return passwordRegex.test(password);
+  };
+
+  const validateForm = () => {
+    const { email, login, password, confirmPassword } = form;
+
+    if (!email || !login || !password || !confirmPassword) {
+      setError("All fields are required");
+      return false;
+    }
+
+    if (!validateEmail(email)) {
+      setError("Please enter a valid email address");
+      return false;
+    }
+
+    if (login.length < 3) {
+      setError("Login must be at least 3 characters long");
+      return false;
+    }
+
+    if (!validatePassword(password)) {
+      setError("Password must be at least 8 characters long, contain at least one uppercase English letter and one digit");
+      return false;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return false;
+    }
+
+    return true;
+  };
+
   const handleRegister = async (event) => {
     event.preventDefault();
     setError("");
     setIsLoading(true);
 
-    const { email, login: userLogin, password, confirmPassword } = form;
-
-    if (!email || !userLogin || !password || !confirmPassword) {
-      setError("All fields are required");
+    if (!validateForm()) {
       setIsLoading(false);
       return;
     }
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      setIsLoading(false);
-      return;
-    }
+    const { email, login, password } = form;
 
     try {
-      await signUp({ email, login: userLogin, password });
+      await signUp({ email, login, password });
       await activate(email);
       setStep(2);
-      showLocalModal(
-        "Registration Successful!",
-        "Please check your email and enter the verification code below."
-      );
+      showLocalModal("Registration Successful!", "Please check your email and enter the verification code.");
     } catch (err) {
       const errorMessage =
         err.response?.data?.error ||
@@ -78,22 +116,25 @@ const Register = () => {
     }
 
     try {
-      const response = await verifyEmail({ email: form.email, code: form.code });
+      const res = await verifyEmail({ email: form.email, code: form.code });
 
-      if (response.data?.token) {
-        login(response.data.token);
-        showModal("Success", "Registration completed successfully! Welcome!");
-        setTimeout(() => navigate("/"), 1500);
+      // Для httpOnly cookies проверяем статус ответа, а не токен
+      if (res.status === 200 || res.data?.success) {
+        // Если верификация прошла успешно и сервер автоматически авторизует,
+        // то вызываем loginContext без параметров (для httpOnly cookies)
+        try {
+          await loginContext(); // Это вызовет checkAuth для проверки cookie
+          navigate("/"); // Мгновенный переход
+        } catch (authError) {
+          // Если автоматической авторизации нет, направляем на логин
+          navigate("/login"); // Мгновенный переход
+        }
       } else {
-        showModal("Verification Complete", "Please log in with your credentials.");
-        setTimeout(() => navigate("/login"), 1500);
+        navigate("/login"); // Мгновенный переход
       }
     } catch (err) {
       if (err.response?.status === 400) {
-        showLocalModal(
-          "Verification Error",
-          "The verification code you entered is incorrect. Please try again."
-        );
+        showLocalModal("Verification Error", "Invalid verification code. Try again.");
       } else {
         const errorMessage =
           err.response?.data?.error ||
@@ -112,38 +153,27 @@ const Register = () => {
     setIsLoading(true);
     try {
       await activate(form.email);
-      showLocalModal(
-        "Code Sent",
-        "A new verification code has been sent to your email."
-      );
+      showLocalModal("Code Sent", "New verification code sent to your email.");
     } catch (err) {
       const errorMessage =
         err.response?.data?.error ||
         err.response?.data?.message ||
         err.message ||
-        "Failed to resend verification code";
+        "Failed to resend code";
       setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleChange = (e) => {
-    setForm((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
-    if (error) setError("");
-  };
-
-  const handleModalClose = () => {
-    setModalVisible(false);
-  };
-
   const goBackToRegistration = () => {
     setStep(1);
     setError("");
     setForm((prev) => ({ ...prev, code: "" }));
+  };
+
+  const handleModalClose = () => {
+    setModalVisible(false);
   };
 
   return (
@@ -167,7 +197,7 @@ const Register = () => {
                 <MyInput
                   name="login"
                   type="text"
-                  placeholder="Create username"
+                  placeholder="Create login (min 3 characters)"
                   value={form.login}
                   onChange={handleChange}
                   required
@@ -175,7 +205,7 @@ const Register = () => {
                 <MyInput
                   name="password"
                   type="password"
-                  placeholder="Create password"
+                  placeholder="Create password (min 8 chars, 1 uppercase, 1 digit)"
                   value={form.password}
                   onChange={handleChange}
                   required
@@ -189,9 +219,7 @@ const Register = () => {
                   required
                 />
                 {error && (
-                  <div className="error-message">
-                    <p>{error}</p>
-                  </div>
+                  <div className="error-message"><p>{error}</p></div>
                 )}
                 <button className="auth-btn" type="submit" disabled={isLoading}>
                   {isLoading ? "Registering..." : "Register"}
@@ -212,12 +240,9 @@ const Register = () => {
             ) : (
               <form onSubmit={handleVerify}>
                 <div style={{ marginBottom: "20px", textAlign: "center" }}>
-                  <h3 style={{ color: "#28a745", marginBottom: "10px" }}>
-                    Check Your Email
-                  </h3>
-                  <p style={{ color: "#6c757d", fontSize: "14px" }}>
-                    We've sent a verification code to:<br />
-                    <strong>{form.email}</strong>
+                  <h3 style={{ color: "#28a745" }}>Check Your Email</h3>
+                  <p style={{ fontSize: "14px" }}>
+                    We sent a verification code to: <strong>{form.email}</strong>
                   </p>
                 </div>
 
@@ -230,40 +255,20 @@ const Register = () => {
                   required
                 />
                 {error && (
-                  <div className="error-message">
-                    <p>{error}</p>
-                  </div>
+                  <div className="error-message"><p>{error}</p></div>
                 )}
                 <button className="auth-btn" type="submit" disabled={isLoading}>
-                  {isLoading ? "Verifying..." : "Verify Email"}
+                  {isLoading ? "Verifying..." : "Verify"}
                 </button>
-                <div
-                  style={{ marginTop: "15px", display: "flex", gap: "10px" }}
-                >
-                  <button
-                    type="button"
-                    className="details-button"
-                    onClick={resendActivationCode}
-                    disabled={isLoading}
-                    style={{ flex: 1 }}
-                  >
+                <div style={{ marginTop: "15px", display: "flex", gap: "10px" }}>
+                  <button type="button" className="details-button" onClick={resendActivationCode} disabled={isLoading} style={{ flex: 1 }}>
                     Resend Code
                   </button>
-                  <button
-                    type="button"
-                    className="details-button"
-                    onClick={goBackToRegistration}
-                    style={{ flex: 1 }}
-                  >
-                    Back to Registration
+                  <button type="button" className="details-button" onClick={goBackToRegistration} style={{ flex: 1 }}>
+                    Back
                   </button>
-                  <button
-                    type="button"
-                    className="details-button"
-                    onClick={() => navigate("/login")}
-                    style={{ flex: 1 }}
-                  >
-                    Go to Login
+                  <button type="button" className="details-button" onClick={() => navigate("/login")} style={{ flex: 1 }}>
+                    Login
                   </button>
                 </div>
               </form>
@@ -274,15 +279,13 @@ const Register = () => {
 
       <MyModal visible={modalVisible} setVisible={setModalVisible}>
         <div style={{ padding: "20px", textAlign: "center" }}>
-          <h3 style={{ marginBottom: "15px", color: "#d8000c" }}>
+          <h3 style={{ 
+            color: modalContent.title?.includes("Error") ? "#d8000c" : "#28a745" 
+          }}>
             {modalContent.title}
           </h3>
-          <p style={{ marginBottom: "20px", lineHeight: "1.5" }}>
-            {modalContent.message}
-          </p>
-          <button className="auth-btn" onClick={handleModalClose}>
-            OK
-          </button>
+          <p style={{ marginBottom: "20px" }}>{modalContent.message}</p>
+          <button className="auth-btn" onClick={handleModalClose}>OK</button>
         </div>
       </MyModal>
     </>

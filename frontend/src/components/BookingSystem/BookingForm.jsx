@@ -8,7 +8,7 @@ import packageService from "../../services/packageService";
 const BookingForm = ({
   date, setDate,
   time, setTime,
-  selectedPackage, setSelectedPackage, 
+  selectedPackage, setSelectedPackage,
   errorMessage,
   infoMessage, bookingSuccess,
   selectedComputers, handleBookMultipleComputers,
@@ -16,7 +16,10 @@ const BookingForm = ({
   autoSelectCountInput, setAutoSelectCountInput,
   availableComputersCount,
   currentRoom: initialRoom = "Standard",
-  setCurrentRoom 
+  setCurrentRoom,
+  authWarning,
+  navigate,
+  isAuthenticated = false 
 }) => {
   const [packages, setPackages] = useState([]);
   const [packagesLoading, setPackagesLoading] = useState(true);
@@ -31,7 +34,7 @@ const BookingForm = ({
         setPackagesLoading(true);
         const fetchedPackages = await packageService.getPackages();
         setPackages(fetchedPackages);
-        
+
         if (selectedPackage) {
           const currentPackage = fetchedPackages.find(pkg => pkg.id === selectedPackage);
           if (!currentPackage || currentPackage.room !== currentRoom) {
@@ -51,7 +54,6 @@ const BookingForm = ({
   }, [currentRoom, selectedPackage, setSelectedPackage]);
 
   const filteredPackages = packages.filter(pkg => pkg.room === currentRoom);
-
   const availableRooms = [...new Set(packages.map(pkg => pkg.room))].sort();
 
   const parseValidCount = () => {
@@ -66,9 +68,7 @@ const BookingForm = ({
     handleAutoSelectComputers(count);
   };
 
-  const formatPackageOption = (pkg) => {
-    return `${pkg.name} - ${pkg.duration}h - ${pkg.price}₸`;
-  };
+  const formatPackageOption = (pkg) => `${pkg.name} - ${pkg.duration}h - ${pkg.price}₸`;
 
   const handleRoomChange = (newRoom) => {
     if (setCurrentRoom) {
@@ -92,12 +92,9 @@ const BookingForm = ({
         <div className="reservation__time">
           <MyTime value={time} onChange={(e) => setTime(e.target.value)} />
         </div>
-        
+
         <div className="reservation__room">
-          <MyDropdown 
-            value={currentRoom} 
-            onChange={(e) => handleRoomChange(e.target.value)}
-          >
+          <MyDropdown value={currentRoom} onChange={(e) => handleRoomChange(e.target.value)}>
             {availableRooms.map((room) => (
               <option key={room} value={room}>
                 {room} Room
@@ -116,10 +113,7 @@ const BookingForm = ({
               <option>Error loading packages</option>
             </MyDropdown>
           ) : (
-            <MyDropdown 
-              value={selectedPackage} 
-              onChange={(e) => setSelectedPackage(Number(e.target.value))}
-            >
+            <MyDropdown value={selectedPackage} onChange={(e) => setSelectedPackage(Number(e.target.value))}>
               <option value="">Select package</option>
               {filteredPackages.map((pkg) => (
                 <option key={pkg.id} value={pkg.id}>
@@ -131,38 +125,40 @@ const BookingForm = ({
         </div>
       </div>
 
-      <div className="auto-selection">
-        <label htmlFor="autoSelectCount">Auto-select computers:</label>
-        <input
-          id="autoSelectCount"
-          type="number"
-          min="1"
-          max={availableComputersCount}
-          value={autoSelectCountInput}
-          onChange={(e) => {
-            const value = e.target.value;
-            const parsed = parseInt(value);
-            if (parsed > availableComputersCount) {
-              setAutoSelectCountInput(String(availableComputersCount));
-            } else {
-              setAutoSelectCountInput(value);
-            }
-          }}
-          onBlur={() => {
-            const count = parseValidCount();
-            setAutoSelectCountInput(String(count));
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              handleAutoSelectClick();
-            }
-          }}
-          className="auto-select-input"
-        />
-        <button className="auto-select-btn" onClick={handleAutoSelectClick}>
-          <span className="btn-txt">Auto Select</span>
-        </button>
-      </div>
+      {isAuthenticated && (
+        <div className="auto-selection">
+          <label htmlFor="autoSelectCount">Auto-select computers:</label>
+          <input
+            id="autoSelectCount"
+            type="number"
+            min="1"
+            max={availableComputersCount}
+            value={autoSelectCountInput}
+            onChange={(e) => {
+              const value = e.target.value;
+              const parsed = parseInt(value);
+              if (parsed > availableComputersCount) {
+                setAutoSelectCountInput(String(availableComputersCount));
+              } else {
+                setAutoSelectCountInput(value);
+              }
+            }}
+            onBlur={() => {
+              const count = parseValidCount();
+              setAutoSelectCountInput(String(count));
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleAutoSelectClick();
+              }
+            }}
+            className="auto-select-input"
+          />
+          <button className="auto-select-btn" onClick={handleAutoSelectClick}>
+            <span className="btn-txt">Auto Select</span>
+          </button>
+        </div>
+      )}
 
       {packagesError && <Message message={packagesError} type="error" />}
       {errorMessage && <Message message={errorMessage} type="error" />}
@@ -172,8 +168,13 @@ const BookingForm = ({
           <p>Your computer has been booked successfully!</p>
         </div>
       )}
+      {authWarning && (
+        <div className="auth-warning">
+          Please log in to book computers and access all features.
+        </div>
+      )}
 
-      {selectedComputers.length > 0 && (
+      {isAuthenticated && selectedComputers.length > 0 && (
         <div className="computers__selection-actions">
           <span className="computers__selection-count">
             Selected computers: {selectedComputers.length}
@@ -191,3 +192,4 @@ const BookingForm = ({
 };
 
 export default BookingForm;
+

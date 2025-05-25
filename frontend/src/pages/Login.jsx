@@ -9,31 +9,29 @@ const Login = () => {
   const { login, showModal } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({ email: "", login: "", password: "" });
-  const [errorModalVisible, setErrorModalVisible] = useState(false);
-  const [errorModalMessage, setErrorModalMessage] = useState("");
+  const [form, setForm] = useState({ identifier: "", password: "" });
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalContent, setModalContent] = useState({ title: "", message: "" });
+
+  const showLocalModal = (title, message) => {
+    setModalContent({ title, message });
+    setModalVisible(true);
+  };
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    if (error) setError("");
   };
 
   const validateForm = () => {
-    if (!form.email.trim()) {
-      setErrorModalMessage("Email cannot be empty.");
-      return false;
-    }
-    if (!form.login.trim()) {
-      setErrorModalMessage("Login cannot be empty.");
+    if (!form.identifier.trim()) {
+      setError("Email or login cannot be empty.");
       return false;
     }
     if (!form.password.trim()) {
-      setErrorModalMessage("Password cannot be empty.");
-      return false;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(form.email)) {
-      setErrorModalMessage("Please enter a valid email address.");
+      setError("Password cannot be empty.");
       return false;
     }
     return true;
@@ -43,82 +41,65 @@ const Login = () => {
     event.preventDefault();
 
     if (!validateForm()) {
-      setErrorModalVisible(true);
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const res = await signIn(form);
-      const token = res.data?.token;
-
-      if (token) {
-        login(token);
-        showModal("Success", "You have successfully logged in!");
-        setTimeout(() => navigate("/"), 1500);
-      } else {
-        setErrorModalMessage("Invalid server response.");
-        setErrorModalVisible(true);
-      }
+      // Для httpOnly cookies передаем просто form данные
+      await login(form); // Используем login из контекста, который уже содержит signIn + checkAuth
+      
+      // Мгновенный переход без модального окна
+      navigate("/");
     } catch (err) {
-      console.error("Login error:", err);
-
       let msg = "Login failed. Please try again.";
 
       if (err.response) {
         switch (err.response.status) {
           case 400:
-            msg = "Please check your input data.";
+            msg = "Please check your input.";
             break;
           case 401:
-            msg = "Incorrect email, login, or password.";
+            msg = "Incorrect login/email or password.";
             break;
           case 403:
-            msg = "Access denied. Your account might not be activated.";
-            break;
-          case 404:
-            msg = "Service is temporarily unavailable. Please try again later.";
+            msg = "Your account may not be activated.";
             break;
           case 500:
-            msg = "Server error. Please try again later.";
+            msg = "Server error. Try again later.";
             break;
           default:
-            msg = err.response.data?.error || err.response.data?.message || msg;
+            msg = err.response.data?.message || msg;
         }
       } else {
         msg = "No internet connection.";
       }
 
-      setErrorModalMessage(msg);
-      setErrorModalVisible(true);
+      setError(msg);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleModalClose = () => {
+    setModalVisible(false);
   };
 
   return (
     <>
       <section className="authorization">
         <header className="login__header">
-          <h1>Login Page</h1>
+          <h1>Login</h1>
         </header>
         <div className="auth__container">
           <div className="login__email">
             <form onSubmit={handleLogin}>
               <MyInput
-                name="email"
+                name="identifier"
                 type="text"
-                placeholder="Enter email"
-                value={form.email}
-                onChange={handleChange}
-                required
-              />
-              <MyInput
-                name="login"
-                type="text"
-                placeholder="Enter login"
-                value={form.login}
+                placeholder="Enter email or login"
+                value={form.identifier}
                 onChange={handleChange}
                 required
               />
@@ -130,29 +111,40 @@ const Login = () => {
                 onChange={handleChange}
                 required
               />
-
+              {error && (
+                <div className="error-message"><p>{error}</p></div>
+              )}
               <button className="auth-btn" type="submit" disabled={isLoading}>
                 {isLoading ? "Logging in..." : "Login"}
               </button>
+              <div style={{ marginTop: "15px", textAlign: "center" }}>
+                <p style={{ color: "#6c757d", fontSize: "14px" }}>
+                  Don't have an account?{" "}
+                  <button
+                    type="button"
+                    className="details-button"
+                    onClick={() => navigate("/register")}
+                  >
+                    Register here
+                  </button>
+                </p>
+              </div>
             </form>
           </div>
         </div>
       </section>
 
-      <MyModal visible={errorModalVisible} setVisible={setErrorModalVisible}>
-        <div style={{ padding: "20px", textAlign: "center", color: "var(--color-text-primary)" }}>
-          <h3 style={{ color: "#d8000c" }}>Error</h3>
-          <p>{errorModalMessage}</p>
-          <button
-            className="auth-btn"
-            onClick={() => setErrorModalVisible(false)}
-            style={{ marginTop: "15px", padding: "8px 16px" }}
-          >
-            Close
-          </button>
+      <MyModal visible={modalVisible} setVisible={setModalVisible}>
+        <div style={{ padding: "20px", textAlign: "center" }}>
+          <h3 style={{ 
+            color: modalContent.title?.includes("Error") ? "#d8000c" : "#28a745" 
+          }}>
+            {modalContent.title}
+          </h3>
+          <p style={{ marginBottom: "20px" }}>{modalContent.message}</p>
+          <button className="auth-btn" onClick={handleModalClose}>OK</button>
         </div>
       </MyModal>
-
     </>
   );
 };
