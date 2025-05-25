@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"log/slog"
@@ -18,15 +19,28 @@ import (
 	"esports_club_booking/internal/transport/httpserver"
 	"esports_club_booking/internal/transport/httpserver/handlers"
 	"esports_club_booking/internal/worker"
+
+	"github.com/joho/godotenv"
 )
 
 func Run() {
-	// err := godotenv.Load()
-	// if err != nil {
-	// 	log.Fatal("Error loading .env file")
-	// }
+	// Parse the environment flag
+	env := flag.String("environment", "production", "Application environment (development|production)")
+	flag.Parse()
+
+	// Load .env only if in development mode
+	if *env == "development" {
+		err := godotenv.Load()
+		if err != nil {
+			log.Fatal("Error loading .env file")
+		}
+	}
 	// Load the configuration
 	cfg := config.NewConfig()
+
+	if *env == "development" {
+		cfg.DataBase.Host = "localhost"
+	}
 
 	// Initialize the logger
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
