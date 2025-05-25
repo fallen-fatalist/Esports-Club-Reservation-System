@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"esports_club_booking/internal/transport/dto"
+	"esports_club_booking/internal/utils"
 	"net/http"
 	"slices"
 )
@@ -17,7 +19,7 @@ func WithAuth(j JWTManager, requiredRoles []string, next http.HandlerFunc) http.
 	return func(w http.ResponseWriter, r *http.Request) {
 		tokenCookie, err := r.Cookie("jwt_token")
 		if err != nil || tokenCookie.Value == "" {
-			http.Error(w, "missing token", http.StatusUnauthorized)
+			utils.WriteJSON(w, http.StatusUnauthorized, dto.JSONAnswer{Message: "missing token"})
 			return
 		}
 		tokenStr := tokenCookie.Value
@@ -45,4 +47,9 @@ func WithAuth(j JWTManager, requiredRoles []string, next http.HandlerFunc) http.
 func GetUserIDFromContext(ctx context.Context) (string, bool) {
 	userID, ok := ctx.Value(userIDKey).(string)
 	return userID, ok
+}
+
+func GetRoleFromContext(ctx context.Context) (string, bool) {
+	role, ok := ctx.Value(roleKey).(string)
+	return role, ok
 }
