@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -223,4 +224,38 @@ func (h *Handler) verifyEmail(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
+}
+
+// @Summary		Check if user is authorized
+// @Description	Returns the user's data if they are authorized
+// @Tags			Auth
+// @Accept			json
+// @Produce		json
+// @Success		200		{object}	dto.UserDTO	"User authorized"
+// @Router			/auth/authorized [get]
+func (h *Handler) IsAuthorized(w http.ResponseWriter, r *http.Request) {
+	userIDStr, _ := auth.GetUserIDFromContext(r.Context())
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	// Lie to the client who is trying to brute force the token
+	if err != nil {
+		utils.WriteJSON(w, http.StatusUnauthorized, dto.JSONAnswer{Message: "missing token"})
+		return
+	}
+
+	user, err := h.service.UserService.GetUser(userID)
+	if err != nil {
+		h.logger.Error("failed to get user", slog.Any("error", err))
+		utils.WriteJSON(w, http.StatusInternalServerError, dto.JSONAnswer{Message: "internal error"})
+		return
+	}
+
+	userDTO := dto.UserDTO{
+		Username: user.Login,
+		Email:    user.Email,
+		Status:   user.Status,
+		Role:     user.Role,
+		Balance:  user.Balance,
+	}
+
+	utils.WriteJSON(w, http.StatusOK, userDTO)
 }

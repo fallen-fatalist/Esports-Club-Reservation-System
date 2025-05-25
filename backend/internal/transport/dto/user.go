@@ -55,8 +55,15 @@ type JSONAnswer struct {
 	Message string `json:"message"`
 }
 
-
 // Rasul do comment here please
 type TokenResponse struct {
 	Token string `json:"token"`
+}
+
+type UserDTO struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Status   string `json:"status"`
+	Role     string `json:"role"`
+	Balance  int    `json:"balance"`
 }

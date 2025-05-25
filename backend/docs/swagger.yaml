@@ -36,6 +36,19 @@ definitions:
       token:
         type: string
     type: object
+  dto.UserDTO:
+    properties:
+      balance:
+        type: integer
+      email:
+        type: string
+      role:
+        type: string
+      status:
+        type: string
+      username:
+        type: string
+    type: object
   dto.VerificationRequest:
     properties:
       email:
@@ -647,6 +660,21 @@ paths:
           schema:
             $ref: '#/definitions/utils.HTTPError'
       summary: Send verification code to user's email
+      tags:
+      - Auth
+  /auth/authorized:
+    get:
+      consumes:
+      - application/json
+      description: Returns the user's data if they are authorized
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User authorized
+          schema:
+            $ref: '#/definitions/dto.UserDTO'
+      summary: Check if user is authorized
       tags:
       - Auth
   /auth/sign-in:

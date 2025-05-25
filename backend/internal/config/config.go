@@ -1,10 +1,14 @@
 package config
 
 import (
+	"flag"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 type (
@@ -42,8 +46,15 @@ type (
 )
 
 func NewConfig() *Config {
-	if getEnvStr("EMAIL_SENDER_APP_PASSWORD", "") == "" {
-		panic("envs are not loading")
+	var env string
+	flag.StringVar(&env, "env", "prod", "Application environment (dev|prod)")
+	flag.Parse()
+
+	if env == "dev" {
+		err := godotenv.Load("config/config.dev.env") // путь можешь адаптировать
+		if err != nil {
+			log.Fatal("Error loading config.dev.env")
+		}
 	}
 	return &Config{
 		Server: Server{
