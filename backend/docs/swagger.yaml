@@ -2,15 +2,10 @@ basePath: /api
 definitions:
   dto.LoginUser:
     properties:
-      email:
+      identifier:
         description: |-
           required: true
           example: user@example.com
-        type: string
-      login:
-        description: |-
-          required: true
-          example: username123
         type: string
       password:
         description: |-
@@ -72,6 +67,8 @@ definitions:
         type: string
       id:
         type: integer
+      is_notified:
+        type: boolean
       package_id:
         type: integer
       start_time:
@@ -591,17 +588,11 @@ paths:
       summary: Get all packages
       tags:
       - Packages
-  /api/users/{id}/bookings:
+  /api/users//bookings:
     get:
       consumes:
       - application/json
       description: Returns a list of bookings for the specified user ID
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        type: integer
       produces:
       - application/json
       responses:

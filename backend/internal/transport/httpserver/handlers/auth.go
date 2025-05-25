@@ -40,7 +40,6 @@ func (s *Handler) register(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	fmt.Println("here shit happens")
 	// if userPayload.Email == "" {
 	// 	utils.WriteError(w, http.StatusBadRequest, errors.New("empty email"))
 	// 	return
@@ -54,7 +53,7 @@ func (s *Handler) register(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
-	userId, err := s.service.UserService.Register(userPayload)
+	_, err := s.service.UserService.Register(userPayload)
 	if err != nil {
 		if errors.Is(err, service.ErrUserAlreadyExists) {
 			utils.WriteError(w, http.StatusConflict, errors.New("user with this email or login already exists"))
@@ -65,7 +64,6 @@ func (s *Handler) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.logger.Info("successfully registered user", slog.Int64("user_id", userId))
 	utils.WriteJSON(w, http.StatusCreated, utils.Message{Message: "user created successfully"})
 }
 
@@ -159,7 +157,7 @@ func (h *Handler) requestCode(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := h.service.UserService.SendVerificationCode(req); err != nil {
 		if errors.Is(err, service.ErrSentCodeAlready) {
-			http.Error(w, "code already sent,wait for new attempt", http.StatusBadRequest)
+			utils.WriteJSON(w, http.StatusTooManyRequests, "code already sent,wait for new attempt")
 			return
 		}
 		h.logger.Error("failed to send verification code", slog.Any("error", err))

@@ -55,6 +55,8 @@ type JSONAnswer struct {
 	Message string `json:"message"`
 }
 
+
+// Rasul do comment here please
 type TokenResponse struct {
 	Token string `json:"token"`
 }
