@@ -1,6 +1,7 @@
 package config
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -44,7 +45,11 @@ type (
 	}
 )
 
-func NewConfig(env string) *Config {
+func NewConfig() *Config {
+	var env string
+	flag.StringVar(&env, "env", "prod", "Application environment (dev|prod)")
+	flag.Parse()
+
 	if env == "dev" {
 		err := godotenv.Load("config/config.dev.env") // путь можешь адаптировать
 		if err != nil {

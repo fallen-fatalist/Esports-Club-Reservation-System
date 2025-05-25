@@ -14,4 +14,4 @@ COPY --from=builder /app/bin /app
 
 EXPOSE 8080
 
-CMD ["/app/booking-service", "--port", "8080"]
+CMD ["/app/booking-service"]
