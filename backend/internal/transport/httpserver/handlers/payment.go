@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
@@ -113,6 +114,32 @@ func (s *Handler) handleBookingRefund(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, http.StatusOK, dto.JSONAnswer{
 		Message: "Refund successful",
 	})
+}
+
+func (h *Handler) handleWebhook(w http.ResponseWriter, r *http.Request) {
+	var event map[string]interface{}
+
+	err := json.NewDecoder(r.Body).Decode(&event)
+	if err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	eventType, ok := event["event_type"].(string)
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	switch eventType {
+	case "PAYMENT.CAPTURE.COMPLETED":
+		// amount := event[""].(string)
+		// h.service.PaymentService.Deposit(r.Context(), ,)
+	default:
+		fmt.Println("📦 Unhandled event:", eventType)
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 // Helper function for consistent JSON responses

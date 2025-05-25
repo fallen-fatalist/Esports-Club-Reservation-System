@@ -1,10 +1,11 @@
 package paypal
 
 import (
+	"context"
 	"esports_club_booking/internal/repository"
 	"fmt"
 
-	"github.com/plutov/paypal"
+	"github.com/plutov/paypal/v4"
 )
 
 var _ repository.PayPalClient = (*PayPalClient)(nil)
@@ -19,7 +20,7 @@ func NewPayPalClient(clientID, secret string) (*PayPalClient, error) {
 		return nil, fmt.Errorf("failed to create client: %w", err)
 	}
 
-	_, err = client.GetAccessToken()
+	_, err = client.GetAccessToken(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get access token: %w", err)
 	}
@@ -30,9 +31,6 @@ func NewPayPalClient(clientID, secret string) (*PayPalClient, error) {
 }
 
 func (p *PayPalClient) Deposit(amount float64, receiverEmail string, description string) (string, string, error) {
-	payer := &paypal.CreateOrderPayer{
-		EmailAddress: receiverEmail,
-	}
 	unit := []paypal.PurchaseUnitRequest{
 		{
 			Amount: &paypal.PurchaseUnitAmount{
@@ -47,7 +45,7 @@ func (p *PayPalClient) Deposit(amount float64, receiverEmail string, description
 		UserAction: "PAY_NOW",            // optional; shows immediate payment button
 	}
 
-	order, err := p.Client.CreateOrder(paypal.OrderIntentCapture, unit, payer, ApplicationContext)
+	order, err := p.Client.CreateOrder(context.Background(), paypal.OrderIntentCapture, unit, &paypal.PaymentSource{}, ApplicationContext)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to create order: %w", err)
 	}
@@ -68,7 +66,7 @@ func (p *PayPalClient) Deposit(amount float64, receiverEmail string, description
 }
 
 func (p *PayPalClient) CheckOrderStatus(orderID string) (string, error) {
-	order, err := p.Client.GetOrder(orderID)
+	order, err := p.Client.GetOrder(context.Background(), orderID)
 	if err != nil {
 		return "", fmt.Errorf("failed to get order status: %w", err)
 	}
