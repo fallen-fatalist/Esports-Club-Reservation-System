@@ -17,10 +17,9 @@ const Navbar = () => {
     toggleTheme(); 
   };
 
-  const handleLogout = () => {
-    logoutRequest();
-    logout(); 
-    navigate('/'); 
+  const handleLogout = async () => {
+    await logout();   
+    navigate('/');
   };
 
   return (

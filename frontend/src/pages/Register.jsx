@@ -38,9 +38,15 @@ const Register = () => {
     return emailRegex.test(email);
   };
 
+  const validateLogin = (login) => {
+    // Латинские буквы (a–z), цифры (0–9), подчёркивание (_), длина от 3 до 20 символов
+    const loginRegex = /^[a-zA-Z0-9_]{3,20}$/;
+    return loginRegex.test(login);
+  };
+
   const validatePassword = (password) => {
-    // Минимум 8 символов, одна заглавная буква (английская) и одна цифра
-    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
+    // Минимум 8 символов, одна заглавная, одна строчная, одна цифра, один спецсимвол
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
     return passwordRegex.test(password);
   };
 
@@ -57,13 +63,13 @@ const Register = () => {
       return false;
     }
 
-    if (login.length < 3) {
-      setError("Login must be at least 3 characters long");
+    if (!validateLogin(login)) {
+      setError("Login must be 3-20 characters long and contain only Latin letters, digits, and underscores");
       return false;
     }
 
     if (!validatePassword(password)) {
-      setError("Password must be at least 8 characters long, contain at least one uppercase English letter and one digit");
+      setError("Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one digit, and one special character");
       return false;
     }
 
@@ -118,19 +124,11 @@ const Register = () => {
     try {
       const res = await verifyEmail({ email: form.email, code: form.code });
 
-      // Для httpOnly cookies проверяем статус ответа, а не токен
       if (res.status === 200 || res.data?.success) {
-        // Если верификация прошла успешно и сервер автоматически авторизует,
-        // то вызываем loginContext без параметров (для httpOnly cookies)
-        try {
-          await loginContext(); // Это вызовет checkAuth для проверки cookie
-          navigate("/"); // Мгновенный переход
-        } catch (authError) {
-          // Если автоматической авторизации нет, направляем на логин
-          navigate("/login"); // Мгновенный переход
-        }
+        showLocalModal("Email Verified", "Your email has been successfully verified!");
+        navigate("/login");
       } else {
-        navigate("/login"); // Мгновенный переход
+        navigate("/login");
       }
     } catch (err) {
       if (err.response?.status === 400) {
@@ -197,7 +195,7 @@ const Register = () => {
                 <MyInput
                   name="login"
                   type="text"
-                  placeholder="Create login (min 3 characters)"
+                  placeholder="Create username (3-20 chars, Latin letters, digits, _)"
                   value={form.login}
                   onChange={handleChange}
                   required
@@ -205,7 +203,7 @@ const Register = () => {
                 <MyInput
                   name="password"
                   type="password"
-                  placeholder="Create password (min 8 chars, 1 uppercase, 1 digit)"
+                  placeholder="Create password (8+ chars, upper, lower, digit, special)"
                   value={form.password}
                   onChange={handleChange}
                   required

@@ -6,7 +6,7 @@ import MyModal from './components/UI/modal/MyModal';
 import { AuthContext } from './context/contextIndex';
 import { ThemeProviderCustom } from './context/ThemeContext';
 import './styles/main.css';
-import { checkAuth, signIn } from './services/authService';
+import { checkAuth, signIn, logoutRequest } from './services/authService';
 
 function App() {
   const [isAuth, setIsAuth] = useState(false);
@@ -33,8 +33,14 @@ function App() {
     }
   };
 
-  const logout = () => {
-    setIsAuth(false);
+  const logout = async () => {
+    try {
+      await logoutRequest(); 
+    } catch (error) {
+      console.error("Logout request failed:", error);
+    } finally {
+      setIsAuth(false); 
+    }
   };
 
   const checkUserAuth = async () => {
