@@ -93,70 +93,43 @@ func (s *PaymentService) waitForNextCheck(ctx context.Context) error {
 	}
 }
 
-func (s *PaymentService) PayBooking(ctx context.Context, booking *entities.Booking) error {
+func (s *PaymentService) PayBooking(ctx context.Context, bookingID int64) error {
+	booking, err := s.repo.BookingRepository.GetByID(bookingID)
+	if err != nil {
+		return fmt.Errorf("failed to get booking %w", err, "id", bookingID)
+	}
+
+	packageItem, err := s.repo.PackageRepository.GetByID(booking.PackageID)
+	if err != nil {
+		return fmt.Errorf("failed to get package: %w", err)
+	}
+
 	user, err := s.repo.UserRepository.GetByID(booking.UserID)
 	if err != nil {
 		return fmt.Errorf("failed to get user: %w", err)
 	}
 
-	pkg, err := s.repo.PackageRepository.GetByID(booking.PackageID)
-	if err != nil {
-		return fmt.Errorf("failed to get package: %w", err)
+	if user.Balance < packageItem.Price {
+		return fmt.Errorf("insufficient balance for booking: user balance %.2f, package price %.2f", user.Balance, packageItem.Price)
 	}
 
-	if user.Balance < pkg.Price {
-		return entities.ErrInsufficientBalance
-	}
-
-	// Start transaction
-	user.Balance -= pkg.Price
-	if _, err := s.repo.UserRepository.Update(user); err != nil {
-		return fmt.Errorf("failed to deduct balance: %w", err)
-	}
-
-	if _, err := s.repo.BookingRepository.Create(ctx, booking); err != nil {
-		// Rollback balance update if booking creation fails
-		user.Balance += pkg.Price
-		if _, rollbackErr := s.repo.UserRepository.Update(user); rollbackErr != nil {
-			return errors.Join(
-				fmt.Errorf("failed to create booking: %w", err),
-				fmt.Errorf("failed to rollback balance: %w", rollbackErr),
-			)
-		}
-		return fmt.Errorf("failed to create booking: %w", err)
-	}
-
-	return nil
+	return s.repo.PaymentRepository.PayBooking(ctx, booking, packageItem.Price)
 }
 
-func (s *PaymentService) CancelBooking(ctx context.Context, booking *entities.Booking) error {
-	user, err := s.repo.UserRepository.GetByID(booking.UserID)
+func (s *PaymentService) CancelBooking(ctx context.Context, bookingID int64) error {
+	booking, err := s.repo.BookingRepository.GetByID(bookingID)
 	if err != nil {
-		return fmt.Errorf("failed to get user: %w", err)
+		return fmt.Errorf("failed to get booking %w", err, "id", bookingID)
 	}
 
-	pkg, err := s.repo.PackageRepository.GetByID(booking.PackageID)
+	if booking.Status != "pending" {
+		return fmt.Errorf("booking is pending and no longer cancellable")
+	}
+
+	packageItem, err := s.repo.PackageRepository.GetByID(booking.PackageID)
 	if err != nil {
-		return fmt.Errorf("failed to get package: %w", err)
+		return fmt.Errorf("failed to get package: %w", err, "id", booking.PackageID)
 	}
 
-	// Refund the amount
-	user.Balance += pkg.Price
-	if _, err := s.repo.UserRepository.Update(user); err != nil {
-		return fmt.Errorf("failed to refund balance: %w", err)
-	}
-
-	if err := s.repo.BookingRepository.Delete(booking.ID); err != nil {
-		// Rollback refund if booking deletion fails
-		user.Balance -= pkg.Price
-		if _, rollbackErr := s.repo.UserRepository.Update(user); rollbackErr != nil {
-			return errors.Join(
-				fmt.Errorf("failed to delete booking: %w", err),
-				fmt.Errorf("failed to rollback refund: %w", rollbackErr),
-			)
-		}
-		return fmt.Errorf("failed to delete booking: %w", err)
-	}
-
-	return nil
+	return s.repo.PaymentRepository.CancelBooking(ctx, booking, packageItem.Price)
 }

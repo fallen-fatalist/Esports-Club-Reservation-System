@@ -83,8 +83,8 @@ type PackageService interface {
 }
 
 type PaymentService interface {
-	PayBooking(context.Context, *entities.Booking) error
-	CancelBooking(context.Context, *entities.Booking) error
+	PayBooking(context.Context, int64) error
+	CancelBooking(context.Context, int64) error
 	Deposit(context.Context, int64, float64) (redirectURL string, err error)
 
 	// Further do

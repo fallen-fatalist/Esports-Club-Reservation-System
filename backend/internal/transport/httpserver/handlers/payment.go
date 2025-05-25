@@ -89,14 +89,7 @@ func (s *Handler) handleBookingPayment(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	booking, err := s.service.BookingService.GetBooking(req.BookingID)
-	if err != nil {
-		slog.Error("Error fetching booking:", err)
-		http.Error(w, "Booking not found", http.StatusNotFound)
-		return
-	}
-
-	if err := s.service.PaymentService.PayBooking(r.Context(), booking); err != nil {
+	if err := s.service.PaymentService.PayBooking(r.Context(), req.BookingID); err != nil {
 		slog.Error("Error processing booking payment:", err)
 
 		var status int
@@ -144,14 +137,7 @@ func (s *Handler) handleBookingRefund(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	booking, err := s.service.BookingService.GetBooking(bookingID)
-	if err != nil {
-		slog.Error("Error fetching booking:", err)
-		http.Error(w, "Booking not found", http.StatusNotFound)
-		return
-	}
-
-	if err := s.service.PaymentService.CancelBooking(r.Context(), booking); err != nil {
+	if err := s.service.PaymentService.CancelBooking(r.Context(), bookingID); err != nil {
 		slog.Error("Error processing booking refund:", err)
 		http.Error(w, "Refund failed", http.StatusInternalServerError)
 		return

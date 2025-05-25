@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/service"
 )
 
@@ -27,7 +28,7 @@ func (r *UserRepository) SaveEmailVerification(email, code string, expiresAt tim
 	return nil
 }
 
-func (r *UserRepository) GetVerificationByEmail(email string) (EmailVerification, error) {
+func (r *UserRepository) GetVerificationByEmail(email string) (entities.EmailVerification, error) {
 	const op = "postgres.UserRepository.GetVerificationByEmail"
 
 	row := r.db.QueryRow(`
@@ -36,7 +37,7 @@ func (r *UserRepository) GetVerificationByEmail(email string) (EmailVerification
         WHERE email = $1
     `, email)
 
-	var v EmailVerification
+	var v entities.EmailVerification
 	if err := row.Scan(&v.Email, &v.Code, &v.Attempts, &v.LastAttempt, &v.BlockedUntil, &v.CreatedAt, &v.ExpiresAt); err != nil {
 		if err == sql.ErrNoRows {
 			return v, service.ErrNoNeedVerification

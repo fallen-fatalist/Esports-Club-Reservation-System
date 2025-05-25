@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"esports_club_booking/internal/entities"
-	"esports_club_booking/internal/repository/postgres"
 )
 
 type Repository struct {
@@ -13,6 +12,7 @@ type Repository struct {
 	ComputerRepository ComputerRepository
 	BookingRepository  BookingRepository
 	PackageRepository  PackageRepository
+	PaymentRepository  PaymentRepository
 }
 
 func NewRepository(
@@ -20,6 +20,7 @@ func NewRepository(
 	computerRepository ComputerRepository,
 	bookingRepository BookingRepository,
 	packageRepository PackageRepository,
+	paymentRepository PaymentRepository,
 ) (*Repository, error) {
 	if userRepository == nil {
 		panic("User repository is nil")
@@ -29,13 +30,15 @@ func NewRepository(
 		panic("User repository is nil")
 	} else if packageRepository == nil {
 		panic("Package repository is nil")
+	} else if paymentRepository == nil {
+		panic("Payment repository is nil")
 	}
-
 	return &Repository{
 		UserRepository:     userRepository,
 		ComputerRepository: computerRepository,
 		BookingRepository:  bookingRepository,
 		PackageRepository:  packageRepository,
+		PaymentRepository:  paymentRepository,
 	}, nil
 }
 
@@ -49,7 +52,7 @@ type UserRepository interface {
 	Create(entity *entities.User, hashedPassword string) (int64, error)
 	Update(*entities.User) (int64, error)
 	Delete(int64) error
-	GetVerificationByEmail(email string) (postgres.EmailVerification, error)
+	GetVerificationByEmail(email string) (entities.EmailVerification, error)
 	SaveEmailVerification(email string, code string, expiresAt time.Time) error
 	MarkEmailVerified(userID int64) error
 	BlockEmail(email string, duration time.Duration) error
@@ -83,6 +86,11 @@ type PackageRepository interface {
 	Create(*entities.Package) (int64, error)
 	Update(*entities.Package) (int64, error)
 	Delete(int64) error
+}
+
+type PaymentRepository interface {
+	PayBooking(ctx context.Context, bookingID *entities.Booking, amount float64) error
+	CancelBooking(ctx context.Context, booking *entities.Booking, amount float64) error
 }
 
 type PayPalClient interface {
