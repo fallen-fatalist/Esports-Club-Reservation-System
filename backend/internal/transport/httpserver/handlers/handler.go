@@ -50,7 +50,8 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	// mux.Handle("/api/bookings/pending", http.HandlerFunc(PendingBookings))
 	// mux.Handle("/api/bookings/finished", http.HandlerFunc(FinishedBookings))
 
-	// User & Auth
+	//User & Auth
+	mux.HandleFunc("GET /auth/authorized", auth.WithAuth(h.jwtMng, allRoles, h.IsAuthorized))
 	mux.HandleFunc("/auth/sign-up", h.HandleRegistration)
 	mux.HandleFunc("/auth/sign-in", h.HandleLogin)
 	mux.HandleFunc("/auth/activate", h.HandleRequestCode)

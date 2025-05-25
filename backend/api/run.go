@@ -27,6 +27,8 @@ func Run() {
 	// if err != nil {
 	// 	log.Fatal("Error loading .env file")
 	// }
+	// Parse the envir`onment flag
+	// Load .env only if in development mode
 	// Load the configuration
 	cfg := config.NewConfig()
 
