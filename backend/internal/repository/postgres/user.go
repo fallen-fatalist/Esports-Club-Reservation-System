@@ -103,6 +103,25 @@ func (r *UserRepository) GetCredentialsByEmail(email string) (entities.UserCrede
 	return uc, nil
 }
 
+func (r *UserRepository) GetCredentialsByLogin(login string) (entities.UserCredentials, error) {
+	query := `SELECT user_id, hashed_password, role, status FROM users WHERE login = $1`
+
+	var uc entities.UserCredentials
+	err := r.db.QueryRow(query, login).Scan(
+		&uc.ID,
+		&uc.HashedPassword,
+		&uc.Role,
+		&uc.Status,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return uc, service.ErrUserNotFound
+		}
+		return uc, entities.ErrFailedToGetUser
+	}
+	return uc, nil
+}
+
 func (r *UserRepository) GetByEmail(email string) (entities.User, error) {
 	query := `
         SELECT user_id, login, email, status, role, balance, created_at
@@ -111,6 +130,31 @@ func (r *UserRepository) GetByEmail(email string) (entities.User, error) {
     `
 	var user entities.User
 	err := r.db.QueryRow(query, email).Scan(
+		&user.ID,
+		&user.Login,
+		&user.Email,
+		&user.Status,
+		&user.Role,
+		&user.Balance,
+		&user.CreatedAt,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return user, service.ErrUserNotFound
+		}
+		return user, entities.ErrFailedToGetUser
+	}
+	return user, nil
+}
+
+func (r *UserRepository) GetByLogin(login string) (entities.User, error) {
+	query := `
+        SELECT user_id, login, email, status, role, balance, created_at
+        FROM users 
+        WHERE login = $1
+    `
+	var user entities.User
+	err := r.db.QueryRow(query, login).Scan(
 		&user.ID,
 		&user.Login,
 		&user.Email,

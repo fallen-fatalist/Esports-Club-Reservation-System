@@ -645,7 +645,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/users/{id}/bookings": {
+        "/api/users//bookings": {
             "get": {
                 "security": [
                     {
@@ -663,15 +663,6 @@ const docTemplate = `{
                     "Bookings"
                 ],
                 "summary": "Get bookings for a specific user",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "User ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "List of bookings for the user",
@@ -910,12 +901,8 @@ const docTemplate = `{
         "dto.LoginUser": {
             "type": "object",
             "properties": {
-                "email": {
+                "identifier": {
                     "description": "required: true\nexample: user@example.com",
-                    "type": "string"
-                },
-                "login": {
-                    "description": "required: true\nexample: username123",
                     "type": "string"
                 },
                 "password": {
@@ -985,6 +972,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                },
+                "is_notified": {
+                    "type": "boolean"
                 },
                 "package_id": {
                     "type": "integer"

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -41,9 +42,8 @@ func (j *jwtManager) ValidateToken(tokenStr string) (*Claims, error) {
 		}
 		return []byte(j.secret), nil
 	})
-
 	if err != nil || !token.Valid {
-		return nil, errors.New("invalid token")
+		return nil, fmt.Errorf("invalid or expired token: %w", err)
 	}
 
 	claimsMap, ok := token.Claims.(jwt.MapClaims)
@@ -53,7 +53,6 @@ func (j *jwtManager) ValidateToken(tokenStr string) (*Claims, error) {
 
 	userID, ok1 := claimsMap["sub"].(string)
 	role, ok2 := claimsMap["role"].(string)
-
 	if !ok1 || !ok2 {
 		return nil, errors.New("missing claims data")
 	}
@@ -62,4 +61,19 @@ func (j *jwtManager) ValidateToken(tokenStr string) (*Claims, error) {
 		UserID: userID,
 		Role:   role,
 	}, nil
+}
+
+func ExtractExpiration(tokenString string) (time.Time, error) {
+	token, _, err := new(jwt.Parser).ParseUnverified(tokenString, jwt.MapClaims{})
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok {
+		if exp, ok := claims["exp"].(float64); ok {
+			return time.Unix(int64(exp), 0), nil
+		}
+	}
+
+	return time.Time{}, errors.New("exp not found")
 }

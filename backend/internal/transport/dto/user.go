@@ -21,11 +21,7 @@ type RegisterUser struct {
 type LoginUser struct {
 	// required: true
 	// example: user@example.com
-	Email string `json:"email"`
-
-	// required: true
-	// example: username123
-	Login string `json:"login"`
+	Identifier string `json:"identifier"`
 
 	// required: true
 	// example: securePassword123
@@ -59,6 +55,8 @@ type JSONAnswer struct {
 	Message string `json:"message"`
 }
 
+
+// Rasul do comment here please
 type TokenResponse struct {
 	Token string `json:"token"`
 }

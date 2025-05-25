@@ -43,7 +43,9 @@ type UserRepository interface {
 	GetAll() ([]*entities.User, error)
 	GetByID(int64) (*entities.User, error)
 	GetByEmail(email string) (entities.User, error)
+	GetByLogin(email string) (entities.User, error)
 	GetCredentialsByEmail(email string) (entities.UserCredentials, error)
+	GetCredentialsByLogin(login string) (entities.UserCredentials, error)
 	Create(entity *entities.User, hashedPassword string) (int64, error)
 	Update(*entities.User) (int64, error)
 	Delete(int64) error
