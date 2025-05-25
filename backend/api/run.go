@@ -48,6 +48,7 @@ func Run() {
 	computerRepository, _ := postgres.NewComputerRepository(db)
 	bookingRepository, _ := postgres.NewBookingRepository(db)
 	packageRepository, _ := postgres.NewPackageRepository(db)
+	paymentRepository, _ := postgres.NewPaymentRepository(db)
 
 	// Services init
 	jwtManager := auth.NewJWTManager(cfg.JWT.Secret, cfg.JWT.Expiration)
@@ -71,6 +72,7 @@ func Run() {
 		UserRepository:     userRepository,
 		PackageRepository:  packageRepository,
 		ComputerRepository: computerRepository,
+		PaymentRepository:  paymentRepository,
 	})
 
 	svc := service.NewService(

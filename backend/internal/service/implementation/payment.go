@@ -47,65 +47,7 @@ func (s *PaymentService) Deposit(ctx context.Context, userID int64, amount float
 	return orderID, redirectURL, nil
 }
 
-func (s *PaymentService) VerifyDeposit(ctx context.Context, userID int64, amount float64, orderID string) error {
-	if err := s.verifyPaymentCompletion(ctx, orderID); err != nil {
-		return fmt.Errorf("payment verification failed: %w", err)
-	}
-
-	user, err := s.repo.UserRepository.GetByID(userID)
-	if err != nil {
-		return fmt.Errorf("failed to get user: %w", err)
-	}
-
-	user.Balance += amount
-	if _, err := s.repo.UserRepository.Update(ctx, user); err != nil {
-		return fmt.Errorf("failed to update user balance: %w", err)
-	}
-
-	return nil
-}
-
-func (s *PaymentService) verifyPaymentCompletion(ctx context.Context, orderID string) error {
-	for attempt := 0; attempt < maxStatusAttempts; attempt++ {
-		status, err := s.paypalClient.CheckOrderStatus(orderID)
-		if err != nil {
-			return fmt.Errorf("failed to check payment status: %w", err)
-		}
-
-		switch status {
-		case "SUCCESS":
-			return nil
-		case "DENIED", "FAILED":
-			return entities.ErrPaymentFailed
-		case "CANCELED":
-			return entities.ErrPaymentCanceled
-		case "PENDING", "PROCESSING", "CREATED":
-			if err := s.waitForNextCheck(ctx); err != nil {
-				return err
-			}
-		default:
-			return errors.Join(entities.ErrUnknownPaymentStatus, fmt.Errorf("status: %s", status))
-		}
-	}
-
-	return entities.ErrPaymentTimeout
-}
-
-func (s *PaymentService) waitForNextCheck(ctx context.Context) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-time.After(statusCheckDelay):
-		return nil
-	}
-}
-
-func (s *PaymentService) PayBooking(ctx context.Context, bookingID int64) error {
-	booking, err := s.repo.BookingRepository.GetByID(bookingID)
-	if err != nil {
-		return fmt.Errorf("failed to get booking %w", err)
-	}
-
+func (s *PaymentService) PayBooking(ctx context.Context, booking *entities.Booking) error {
 	packageItem, err := s.repo.PackageRepository.GetByID(booking.PackageID)
 	if err != nil {
 		return fmt.Errorf("failed to get package: %w", err)
@@ -139,4 +81,58 @@ func (s *PaymentService) CancelBooking(ctx context.Context, bookingID int64) err
 	}
 
 	return s.repo.PaymentRepository.CancelBooking(ctx, booking, packageItem.Price)
+}
+
+func (s *PaymentService) VerifyDeposit(ctx context.Context, userID int64, amount float64, orderID string) {
+	if err := s.verifyPaymentCompletion(ctx, orderID); err != nil {
+		fmt.Printf("payment verification failed: %v\n", err)
+		return
+	}
+
+	user, err := s.repo.UserRepository.GetByID(userID)
+	if err != nil {
+		fmt.Printf("failed to get user: %v\n", err)
+		return
+	}
+
+	_, err = s.repo.PaymentRepository.Deposit(ctx, user, amount)
+	if err != nil {
+		fmt.Printf("failed to deposit %v\n", err)
+		return
+	}
+}
+
+func (s *PaymentService) verifyPaymentCompletion(ctx context.Context, orderID string) error {
+	for attempt := 0; attempt < maxStatusAttempts; attempt++ {
+		status, err := s.paypalClient.CheckOrderStatus(orderID)
+		if err != nil {
+			return fmt.Errorf("failed to check payment status: %w", err)
+		}
+
+		switch status {
+		case "APPROVED":
+			return nil
+		case "DENIED", "FAILED":
+			return entities.ErrPaymentFailed
+		case "CANCELED":
+			return entities.ErrPaymentCanceled
+		case "PENDING", "PROCESSING", "CREATED":
+			if err := s.waitForNextCheck(ctx); err != nil {
+				return err
+			}
+		default:
+			return errors.Join(entities.ErrUnknownPaymentStatus, fmt.Errorf("status: %s", status))
+		}
+	}
+
+	return entities.ErrPaymentTimeout
+}
+
+func (s *PaymentService) waitForNextCheck(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(statusCheckDelay):
+		return nil
+	}
 }

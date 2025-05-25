@@ -22,6 +22,34 @@ func NewPaymentRepository(db *sql.DB) (*PaymentRepository, error) {
 	return &PaymentRepository{db: db}, nil
 }
 
+func (r *PaymentRepository) Deposit(ctx context.Context, user *entities.User, amout float64) (int64, error) {
+	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{
+		Isolation: sql.LevelSerializable,
+	})
+	if err != nil {
+		return 0, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	const depositQuery = `
+		UPDATE users
+		SET balance = $1
+		WHERE user_id = $2
+		RETURNING user_id
+	`
+
+	_, err = tx.QueryContext(ctx, depositQuery, user.Balance+amout, user.ID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to update users: %w", err)
+	}
+
+	return user.ID, tx.Commit()
+}
+
 func (r *PaymentRepository) PayBooking(ctx context.Context, booking *entities.Booking, amount float64) error {
 	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{
 		Isolation: sql.LevelSerializable,

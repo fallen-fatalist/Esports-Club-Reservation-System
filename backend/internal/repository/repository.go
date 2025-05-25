@@ -89,6 +89,7 @@ type PackageRepository interface {
 }
 
 type PaymentRepository interface {
+	Deposit(ctx context.Context, user *entities.User, amout float64) (int64, error)
 	PayBooking(ctx context.Context, bookingID *entities.Booking, amount float64) error
 	CancelBooking(ctx context.Context, booking *entities.Booking, amount float64) error
 }
