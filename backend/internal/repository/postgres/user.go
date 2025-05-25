@@ -6,8 +6,11 @@ import (
 	"fmt"
 
 	"esports_club_booking/internal/entities"
+	"esports_club_booking/internal/repository"
 	"esports_club_booking/internal/service"
 )
+
+var _ repository.UserRepository = (*UserRepository)(nil)
 
 type UserRepository struct {
 	db *sql.DB

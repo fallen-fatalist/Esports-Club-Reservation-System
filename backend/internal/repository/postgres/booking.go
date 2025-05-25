@@ -8,7 +8,10 @@ import (
 	"time"
 
 	"esports_club_booking/internal/entities"
+	"esports_club_booking/internal/repository"
 )
+
+var _ repository.BookingRepository = (*BookingRepository)(nil)
 
 type BookingRepository struct {
 	db *sql.DB

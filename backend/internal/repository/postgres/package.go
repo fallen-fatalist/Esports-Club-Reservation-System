@@ -5,7 +5,10 @@ import (
 	"time"
 
 	"esports_club_booking/internal/entities"
+	"esports_club_booking/internal/repository"
 )
+
+var _ repository.PackageRepository = (*PackageRepository)(nil)
 
 type PackageRepository struct {
 	db *sql.DB

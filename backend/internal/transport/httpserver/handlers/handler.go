@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
+	"log"
 	"log/slog"
 	"net/http"
 
@@ -62,12 +64,20 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("POST /payment/deposit", func(w http.ResponseWriter, r *http.Request) {
 		var req dto.DepositRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			log.Println(err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		go h.service.PaymentService.Deposit(r.Context(), req.UserID, req.Amount)
-		w.WriteHeader(http.StatusPermanentRedirect)
+		_, redirectURL, err := h.service.PaymentService.Deposit(context.Background(), req.UserID, req.Amount)
+		if err != nil {
+			log.Println(err)
+			jsonResponse(w, 400, dto.JSONAnswer{Message: err.Error()})
+			return
+		}
+
+		w.Header().Add("Location", redirectURL)
+		w.WriteHeader(http.StatusMovedPermanently)
 	})
 }
 

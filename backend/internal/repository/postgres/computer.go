@@ -4,7 +4,10 @@ import (
 	"database/sql"
 
 	"esports_club_booking/internal/entities"
+	"esports_club_booking/internal/repository"
 )
+
+var _ repository.ComputerRepository = (*ComputerRepository)(nil)
 
 type ComputerRepository struct {
 	db *sql.DB

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	"esports_club_booking/internal/entities"
@@ -32,30 +31,38 @@ func NewPaymentService(client *paypal.PayPalClient, repo repository.Repository) 
 	}
 }
 
-func (s *PaymentService) Deposit(ctx context.Context, userID int64, amount float64) (string, error) {
+func (s *PaymentService) Deposit(ctx context.Context, userID int64, amount float64) (string, string, error) {
 	user, err := s.repo.UserRepository.GetByID(userID)
 	if err != nil {
-		return "", fmt.Errorf("couldn't fetch user by id %w", err)
+		return "", "", fmt.Errorf("couldn't fetch user by id %w", err)
 	}
 
 	orderID, redirectURL, err := s.paypalClient.Deposit(amount, user.Email, "Deposit to your account")
 	if err != nil {
-		return "", fmt.Errorf("paypal deposit failed: %w", err)
+		return "", "", fmt.Errorf("paypal deposit failed: %w", err)
 	}
 
-	// Log the redirect URL for debugging purposes
-	log.Println("Redirect user to PayPal for payment:", redirectURL)
+	go s.VerifyDeposit(context.Background(), userID, amount, orderID)
 
+	return orderID, redirectURL, nil
+}
+
+func (s *PaymentService) VerifyDeposit(ctx context.Context, userID int64, amount float64, orderID string) error {
 	if err := s.verifyPaymentCompletion(ctx, orderID); err != nil {
-		return "", fmt.Errorf("payment verification failed: %w", err)
+		return fmt.Errorf("payment verification failed: %w", err)
+	}
+
+	user, err := s.repo.UserRepository.GetByID(userID)
+	if err != nil {
+		return fmt.Errorf("failed to get user: %w", err)
 	}
 
 	user.Balance += amount
-	if _, err := s.repo.UserRepository.Update(user); err != nil {
-		return "", fmt.Errorf("failed to update user balance: %w", err)
+	if _, err := s.repo.UserRepository.Update(ctx, user); err != nil {
+		return fmt.Errorf("failed to update user balance: %w", err)
 	}
 
-	return orderID, nil
+	return nil
 }
 
 func (s *PaymentService) verifyPaymentCompletion(ctx context.Context, orderID string) error {
@@ -96,7 +103,7 @@ func (s *PaymentService) waitForNextCheck(ctx context.Context) error {
 func (s *PaymentService) PayBooking(ctx context.Context, bookingID int64) error {
 	booking, err := s.repo.BookingRepository.GetByID(bookingID)
 	if err != nil {
-		return fmt.Errorf("failed to get booking %w", err, "id", bookingID)
+		return fmt.Errorf("failed to get booking %w", err)
 	}
 
 	packageItem, err := s.repo.PackageRepository.GetByID(booking.PackageID)
@@ -119,7 +126,7 @@ func (s *PaymentService) PayBooking(ctx context.Context, bookingID int64) error 
 func (s *PaymentService) CancelBooking(ctx context.Context, bookingID int64) error {
 	booking, err := s.repo.BookingRepository.GetByID(bookingID)
 	if err != nil {
-		return fmt.Errorf("failed to get booking %w", err, "id", bookingID)
+		return fmt.Errorf("failed to get booking %w", err)
 	}
 
 	if booking.Status != "pending" {
@@ -128,7 +135,7 @@ func (s *PaymentService) CancelBooking(ctx context.Context, bookingID int64) err
 
 	packageItem, err := s.repo.PackageRepository.GetByID(booking.PackageID)
 	if err != nil {
-		return fmt.Errorf("failed to get package: %w", err, "id", booking.PackageID)
+		return fmt.Errorf("failed to get package: %w", err)
 	}
 
 	return s.repo.PaymentRepository.CancelBooking(ctx, booking, packageItem.Price)

@@ -50,7 +50,7 @@ type UserRepository interface {
 	GetCredentialsByEmail(email string) (entities.UserCredentials, error)
 	GetCredentialsByLogin(login string) (entities.UserCredentials, error)
 	Create(entity *entities.User, hashedPassword string) (int64, error)
-	Update(*entities.User) (int64, error)
+	Update(context.Context, *entities.User) (int64, error)
 	Delete(int64) error
 	GetVerificationByEmail(email string) (entities.EmailVerification, error)
 	SaveEmailVerification(email string, code string, expiresAt time.Time) error

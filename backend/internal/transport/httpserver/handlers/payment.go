@@ -36,7 +36,8 @@ func (s *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if _, err := s.service.PaymentService.Deposit(r.Context(), req.UserID, req.Amount); err != nil {
+	orderID, redirectURL, err := s.service.PaymentService.Deposit(r.Context(), req.UserID, req.Amount)
+	if err != nil {
 		slog.Error("Error processing deposit:", "error", err)
 
 		var status int
@@ -56,6 +57,9 @@ func (s *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
+	w.Header().Add("Locatino", redirectURL)
+	go s.service.PaymentService.VerifyDeposit(r.Context(), req.UserID, req.Amount, orderID)
 
 	jsonResponse(w, http.StatusOK, dto.JSONAnswer{
 		Message: "Success",
