@@ -6,6 +6,7 @@ import moonOutline from "../images/MoonOutlined.svg";
 import { ThemeContext } from "../context/ThemeContext";
 import LogoutIcon from '@mui/icons-material/Logout';
 import LoginIcon from '@mui/icons-material/Login';
+import { logoutRequest } from "../services/authService";
 
 const Navbar = () => {
   const { isDarkTheme, toggleTheme } = useContext(ThemeContext);
@@ -17,6 +18,7 @@ const Navbar = () => {
   };
 
   const handleLogout = () => {
+    logoutRequest();
     logout(); 
     navigate('/'); 
   };
