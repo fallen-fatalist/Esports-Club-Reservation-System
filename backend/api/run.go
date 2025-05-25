@@ -19,28 +19,16 @@ import (
 	"esports_club_booking/internal/transport/httpserver"
 	"esports_club_booking/internal/transport/httpserver/handlers"
 	"esports_club_booking/internal/worker"
-
-	"github.com/joho/godotenv"
 )
 
 func Run() {
 	// Parse the environment flag
-	env := flag.String("environment", "production", "Application environment (development|production)")
+	env := flag.String("env", "prod", "Application environment (dev|prod)")
 	flag.Parse()
 
 	// Load .env only if in development mode
-	if *env == "development" {
-		err := godotenv.Load()
-		if err != nil {
-			log.Fatal("Error loading .env file")
-		}
-	}
 	// Load the configuration
-	cfg := config.NewConfig()
-
-	if *env == "development" {
-		cfg.DataBase.Host = "localhost"
-	}
+	cfg := config.NewConfig(*env)
 
 	// Initialize the logger
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
