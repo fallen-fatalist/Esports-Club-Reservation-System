@@ -61,9 +61,9 @@ type TokenResponse struct {
 }
 
 type UserDTO struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Status   string `json:"status"`
-	Role     string `json:"role"`
-	Balance  int    `json:"balance"`
+	Username string  `json:"username"`
+	Email    string  `json:"email"`
+	Status   string  `json:"status"`
+	Role     string  `json:"role"`
+	Balance  float64 `json:"balance"`
 }
