@@ -5,6 +5,7 @@ import (
 	"errors"
 	"esports_club_booking/internal/auth"
 	"esports_club_booking/internal/service"
+	authService "esports_club_booking/internal/service/implementation"
 	"esports_club_booking/internal/transport/dto"
 	"esports_club_booking/internal/utils"
 	"fmt"
@@ -41,18 +42,6 @@ func (s *Handler) register(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	// if userPayload.Email == "" {
-	// 	utils.WriteError(w, http.StatusBadRequest, errors.New("empty email"))
-	// 	return
-	// }
-	// if userPayload.Login == "" {
-	// 	utils.WriteError(w, http.StatusBadRequest, errors.New("empty login"))
-	// 	return
-	// }
-	// if userPayload.Password == "" {
-	// 	utils.WriteError(w, http.StatusBadRequest, errors.New("empty password"))
-	// 	return
-	// }
 
 	_, err := s.service.UserService.Register(userPayload)
 	if err != nil {
@@ -269,7 +258,6 @@ func (h *Handler) IsAuthorized(w http.ResponseWriter, r *http.Request) {
 // @Failure		400				{object}	utils.HTTPError				"Invalid request or user not found"
 // @Failure		500				{object}	utils.HTTPError				"Internal server error"
 // @Router			/auth/reset/request [post]
-
 func (h *Handler) HandleRequestPasswordResetCode(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
@@ -289,12 +277,10 @@ func (h *Handler) requestPasswordResetCode(w http.ResponseWriter, r *http.Reques
 
 	if err := h.service.UserService.SendPasswordResetCode(req.Email); err != nil {
 		if errors.Is(err, service.ErrUserNotFound) {
-			h.logger.Error("no user with this email", slog.Any("error", err))
-			http.Error(w, "no user with this email exists", http.StatusBadRequest)
+			utils.WriteError(w, http.StatusBadRequest, err)
 			return
 		} else if errors.Is(err, service.ErrPasswordRecentlyChanged) {
-			h.logger.Error("passord change recently", slog.Any("error", err))
-			http.Error(w, "can not change password, you already changed password recently", http.StatusBadRequest)
+			utils.WriteError(w, http.StatusBadRequest, err)
 			return
 		}
 		h.logger.Error("failed to send reset code", slog.Any("error", err))
@@ -316,6 +302,8 @@ func (h *Handler) requestPasswordResetCode(w http.ResponseWriter, r *http.Reques
 // @Failure		404				{object}	utils.HTTPError				"User not found"
 // @Failure		429				{object}	utils.HTTPError				"Too many attempts"
 // @Failure		500				{object}	utils.HTTPError				"Internal server error"
+// @Failure		400				{object}	utils.HTTPError				"Password recently changed"
+// @Failure		400				{object}	utils.HTTPError				"Invalid username or password"
 // @Router			/auth/reset/confirm [post]
 func (h *Handler) HandleResetPassword(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
@@ -336,18 +324,43 @@ func (h *Handler) resetPassword(w http.ResponseWriter, r *http.Request) {
 	err := h.service.UserService.ConfirmPasswordReset(req)
 	switch {
 	case err == nil:
+		h.Logout(w, r)
 		utils.WriteJSON(w, http.StatusOK, JSONAnswer{Message: "password changed"})
+
 	case errors.Is(err, service.ErrInvalidVerificationCode):
-		http.Error(w, "invalid or expired code", http.StatusBadRequest)
+		utils.WriteError(w, http.StatusBadRequest, err)
+
 	case errors.Is(err, service.ErrTooManyAttempts):
-		http.Error(w, "too many attempts, try later", http.StatusTooManyRequests)
+		utils.WriteError(w, http.StatusTooManyRequests, err)
+
 	case errors.Is(err, service.ErrNoNeedVerification):
-		http.Error(w, service.ErrNoNeedVerification.Error(), http.StatusBadGateway)
+		utils.WriteError(w, http.StatusBadGateway, err)
+
 	case errors.Is(err, service.ErrUserNotFound):
-		http.Error(w, "user not found", http.StatusNotFound)
+		utils.WriteError(w, http.StatusNotFound, err)
+
+	case errors.Is(err, authService.ErrUsernameEmpty),
+		errors.Is(err, authService.ErrUsernameLength),
+		errors.Is(err, authService.ErrUsernameWhitespace),
+		errors.Is(err, authService.ErrUsernameStartLetter),
+		errors.Is(err, authService.ErrUsernameInvalidCharacters),
+		errors.Is(err, authService.ErrUsernameConsecutiveSpecials),
+		errors.Is(err, authService.ErrUsernameEndsWithSpecial),
+		errors.Is(err, authService.ErrEmailEmpty),
+		errors.Is(err, authService.ErrEmailWhitespace),
+		errors.Is(err, authService.ErrEmailInvalidFormat),
+		errors.Is(err, authService.ErrPasswordEmpty),
+		errors.Is(err, authService.ErrPasswordTooShort),
+		errors.Is(err, authService.ErrPasswordWhitespace),
+		errors.Is(err, authService.ErrPasswordMissingLowercase),
+		errors.Is(err, authService.ErrPasswordMissingUppercase),
+		errors.Is(err, authService.ErrPasswordMissingDigit),
+		errors.Is(err, authService.ErrPasswordMissingSpecial):
+		utils.WriteError(w, http.StatusBadRequest, err)
+
 	default:
 		h.logger.Error("internal error", slog.Any("error", err))
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		utils.WriteJSON(w, http.StatusInternalServerError, JSONAnswer{Message: "internal error"})
 	}
 }
 

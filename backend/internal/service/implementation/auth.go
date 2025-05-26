@@ -8,6 +8,7 @@ import (
 	"esports_club_booking/internal/transport/dto"
 	"fmt"
 	"math/rand"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -21,6 +22,19 @@ const (
 func (s *UserService) Register(userDTO dto.RegisterUser) (int64, error) {
 	// check if user already exists
 	const op = "service.RegisterUser"
+
+	if err := validateEmail(userDTO.Email); err != nil {
+		return -1, err
+	}
+
+	if err := validateUsername(userDTO.Login); err != nil {
+		return -1, err
+	}
+
+	if err := validatePassword(userDTO.Password); err != nil {
+		return -1, err
+	}
+
 	_, err := s.repo.GetByEmail(userDTO.Email)
 	if err == nil {
 		return -1, service.ErrUserAlreadyExists
@@ -199,7 +213,8 @@ func (s *UserService) SendPasswordResetCode(email string) error {
 		return fmt.Errorf("%s: user status is '%s', expected 'active'", op, user.Status)
 	}
 	now := time.Now()
-	if user.PasswordUpdatedAt != nil && now.Sub(*user.PasswordUpdatedAt) < 24*time.Hour {
+	if user.PasswordUpdatedAt != nil &&
+		((now.Sub(*user.PasswordUpdatedAt) < 24*time.Hour) && (now.Sub(*user.PasswordUpdatedAt) >= 10*time.Minute)) {
 		return service.ErrPasswordRecentlyChanged
 	}
 
@@ -215,12 +230,14 @@ func (s *UserService) SendPasswordResetCode(email string) error {
 	}
 
 	body := fmt.Sprintf(
-		"Your password reset code is: %s\n\nThis code will expire at %s.\nIf you did not request a password reset, please ignore this email.",
+		"DON'T SHARE THIS CODE ANYONE!\nYour password reset code is: %s\n\nThis code will expire at %s.\nIf you did not request a password reset, please ignore this email.",
 		code,
 		expiresAt.Format(time.RFC1123),
 	)
 
-	if err := s.emailSender.SendEmail(email, "Password Reset Request", body); err != nil {
+	subject := "Password Reset Code"
+
+	if err := s.emailSender.SendEmail(email, subject, body); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -229,6 +246,11 @@ func (s *UserService) SendPasswordResetCode(email string) error {
 
 func (s *UserService) ConfirmPasswordReset(req dto.ResetPasswordConfirm) error {
 	const op = "service.ResetPassword"
+
+	if err := validatePassword(req.NewPassword); err != nil {
+		return err
+	}
+
 	// 1. get info about verification
 
 	v, err := s.repo.GetVerification(req.Email, ResetPasswordRequest)
@@ -256,8 +278,8 @@ func (s *UserService) ConfirmPasswordReset(req dto.ResetPasswordConfirm) error {
 	if userCr.Status != "active" {
 		return fmt.Errorf("%s: user status is '%s', expected 'active'", op, userCr.Status)
 	}
-	// check password update cooldown (24h)
-	if userCr.PasswordUpdatedAt != nil && now.Sub(*userCr.PasswordUpdatedAt) < 24*time.Hour {
+	// check password update cooldown (24h) or later than 10 minutes (case when incorrect password changed)
+	if userCr.PasswordUpdatedAt != nil && ((now.Sub(*userCr.PasswordUpdatedAt) < 24*time.Hour) && (now.Sub(*userCr.PasswordUpdatedAt) > 10*time.Minute)) {
 		return service.ErrPasswordRecentlyChanged
 	}
 
@@ -281,5 +303,95 @@ func (s *UserService) ConfirmPasswordReset(req dto.ResetPasswordConfirm) error {
 		return fmt.Errorf("%s: failed to delete verification: %w", op, err)
 	}
 
+	return nil
+}
+
+var (
+	// Username errors
+	ErrUsernameEmpty               = errors.New("username cannot be empty")
+	ErrUsernameLength              = errors.New("username must be between 3 and 20 characters")
+	ErrUsernameWhitespace          = errors.New("username cannot contain any spaces or tabs")
+	ErrUsernameStartLetter         = errors.New("username must start with a letter")
+	ErrUsernameInvalidCharacters   = errors.New("username can only contain letters, numbers, underscores, and dots")
+	ErrUsernameConsecutiveSpecials = errors.New("username cannot contain consecutive dots or underscores")
+	ErrUsernameEndsWithSpecial     = errors.New("username cannot end with a dot or underscore")
+
+	// Email errors
+	ErrEmailEmpty         = errors.New("email cannot be empty")
+	ErrEmailWhitespace    = errors.New("email cannot contain spaces or whitespace characters")
+	ErrEmailInvalidFormat = errors.New("invalid email format")
+
+	// Password errors
+	ErrPasswordEmpty            = errors.New("password cannot be empty")
+	ErrPasswordTooShort         = errors.New("password must be at least 8 characters long")
+	ErrPasswordWhitespace       = errors.New("password cannot contain whitespace")
+	ErrPasswordMissingLowercase = errors.New("password must contain at least one lowercase letter")
+	ErrPasswordMissingUppercase = errors.New("password must contain at least one uppercase letter")
+	ErrPasswordMissingDigit     = errors.New("password must contain at least one digit")
+	ErrPasswordMissingSpecial   = errors.New("password must contain at least one special character")
+)
+
+// TODO: attach validations to UserDTO struct
+func validateUsername(username string) error {
+	if username == "" {
+		return ErrUsernameEmpty
+	}
+	if len(username) < 3 || len(username) > 20 {
+		return ErrUsernameLength
+	}
+	if strings.ContainsAny(username, " \t\n\r") {
+		return ErrUsernameWhitespace
+	}
+	if !regexp.MustCompile(`^[a-zA-Z]`).MatchString(username) {
+		return ErrUsernameStartLetter
+	}
+	if !regexp.MustCompile(`^[a-zA-Z0-9._]+$`).MatchString(username) {
+		return ErrUsernameInvalidCharacters
+	}
+	if regexp.MustCompile(`[._]{2,}`).MatchString(username) {
+		return ErrUsernameConsecutiveSpecials
+	}
+	if strings.HasSuffix(username, ".") || strings.HasSuffix(username, "_") {
+		return ErrUsernameEndsWithSpecial
+	}
+	return nil
+}
+
+func validateEmail(email string) error {
+	if email == "" {
+		return ErrEmailEmpty
+	}
+	if strings.ContainsAny(email, " \t\n\r") {
+		return ErrEmailWhitespace
+	}
+	emailRegex := `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`
+	if !regexp.MustCompile(emailRegex).MatchString(email) {
+		return ErrEmailInvalidFormat
+	}
+	return nil
+}
+
+func validatePassword(password string) error {
+	if password == "" {
+		return ErrPasswordEmpty
+	}
+	if len(password) < 8 {
+		return ErrPasswordTooShort
+	}
+	if strings.ContainsAny(password, " \t\n\r") {
+		return ErrPasswordWhitespace
+	}
+	if !regexp.MustCompile(`[a-z]`).MatchString(password) {
+		return ErrPasswordMissingLowercase
+	}
+	if !regexp.MustCompile(`[A-Z]`).MatchString(password) {
+		return ErrPasswordMissingUppercase
+	}
+	if !regexp.MustCompile(`[0-9]`).MatchString(password) {
+		return ErrPasswordMissingDigit
+	}
+	if !regexp.MustCompile(`[!@#$%^&*()_\-+=\[\]{}|\\;:'",.<>/?]`).MatchString(password) {
+		return ErrPasswordMissingSpecial
+	}
 	return nil
 }

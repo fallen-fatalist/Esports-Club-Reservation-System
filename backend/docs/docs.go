@@ -795,7 +795,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid request or verification code",
+                        "description": "Invalid username or password",
                         "schema": {
                             "$ref": "#/definitions/utils.HTTPError"
                         }
@@ -808,6 +808,52 @@ const docTemplate = `{
                     },
                     "429": {
                         "description": "Too many attempts",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/reset/request": {
+            "post": {
+                "description": "Sends a password reset code to the user's email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Request password reset code",
+                "parameters": [
+                    {
+                        "description": "Password reset request",
+                        "name": "resetRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reset code sent",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request or user not found",
                         "schema": {
                             "$ref": "#/definitions/utils.HTTPError"
                         }
@@ -1025,6 +1071,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "new_password": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ResetPasswordRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
                     "type": "string"
                 }
             }
