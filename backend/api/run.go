@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"log"
 	"log/slog"
@@ -22,13 +21,11 @@ import (
 )
 
 func Run() {
-	// Parse the environment flag
-	env := flag.String("env", "prod", "Application environment (dev|prod)")
-	flag.Parse()
+	// Parse the envir`onment flag
 
 	// Load .env only if in development mode
 	// Load the configuration
-	cfg := config.NewConfig(*env)
+	cfg := config.NewConfig()
 
 	// Initialize the logger
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
