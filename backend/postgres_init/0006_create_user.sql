@@ -12,5 +12,6 @@ CREATE TABLE users (
     balance INT DEFAULT 0,
     promotion user_promotion DEFAULT '',
     created_at TIMESTAMPTZ DEFAULT NOW(),
+    password_updated_at TIMESTAMPTZ DEFAULT NOW(),
     CONSTRAINT email_format_check CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
 );

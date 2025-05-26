@@ -56,6 +56,9 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/activate", h.HandleRequestCode)
 	mux.HandleFunc("/auth/verify", h.HandleVerifyEmail)
 
+	mux.HandleFunc("/reset-password/code", h.HandleRequestPasswordResetCode)
+	mux.HandleFunc("/reset-password/confirm", h.HandleResetPassword)
+
 }
 
 type JSONAnswer struct {

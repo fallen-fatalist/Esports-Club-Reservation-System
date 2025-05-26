@@ -12,4 +12,5 @@ var (
 	ErrUserBlockedOrUnverified = errors.New("user not verified or blocked")
 	ErrNoNeedVerification      = errors.New("user didn't request code or doent't need verification ")
 	ErrSentCodeAlready         = errors.New("code already sent")
+	ErrPasswordRecentlyChanged = errors.New("password changed recently")
 )

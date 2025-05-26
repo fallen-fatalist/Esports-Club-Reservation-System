@@ -94,7 +94,6 @@ func (s *Handler) login(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-
 	token, err := s.service.UserService.Login(userPayload)
 	if err != nil {
 		if errors.Is(err, service.ErrUserBlockedOrUnverified) {
@@ -151,7 +150,7 @@ func (h *Handler) HandleRequestCode(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) requestCode(w http.ResponseWriter, r *http.Request) {
-	var req dto.VerificationRequest
+	var req dto.EmailVerificationRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
@@ -258,4 +257,96 @@ func (h *Handler) IsAuthorized(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteJSON(w, http.StatusOK, userDTO)
+}
+
+// @Summary		Request password reset code
+// @Description	Sends a password reset code to the user's email
+// @Tags			Auth
+// @Accept			json
+// @Produce		json
+// @Param			resetRequest	body		dto.ResetPasswordRequest	true	"Password reset request"
+// @Success		200				{object}	JSONAnswer					"Reset code sent"
+// @Failure		400				{object}	utils.HTTPError				"Invalid request or user not found"
+// @Failure		500				{object}	utils.HTTPError				"Internal server error"
+// @Router			/auth/reset/request [post]
+
+func (h *Handler) HandleRequestPasswordResetCode(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		h.requestPasswordResetCode(w, r)
+	default:
+		w.Header().Set("Allow", "POST")
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func (h *Handler) requestPasswordResetCode(w http.ResponseWriter, r *http.Request) {
+	var req dto.ResetPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.service.UserService.SendPasswordResetCode(req.Email); err != nil {
+		if errors.Is(err, service.ErrUserNotFound) {
+			h.logger.Error("no user with this email", slog.Any("error", err))
+			http.Error(w, "no user with this email exists", http.StatusBadRequest)
+			return
+		} else if errors.Is(err, service.ErrPasswordRecentlyChanged) {
+			h.logger.Error("passord change recently", slog.Any("error", err))
+			http.Error(w, "can not change password, you already changed password recently", http.StatusBadRequest)
+			return
+		}
+		h.logger.Error("failed to send reset code", slog.Any("error", err))
+		http.Error(w, "failed to send reset code", http.StatusInternalServerError)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, JSONAnswer{Message: "reset code sent"})
+}
+
+// @Summary		Reset password
+// @Description	Resets user's password using email, code and new password
+// @Tags			Auth
+// @Accept			json
+// @Produce		json
+// @Param			resetConfirm	body		dto.ResetPasswordConfirm	true	"Password reset confirmation"
+// @Success		200				{object}	JSONAnswer					"Password reset successfully"
+// @Failure		400				{object}	utils.HTTPError				"Invalid request or verification code"
+// @Failure		404				{object}	utils.HTTPError				"User not found"
+// @Failure		429				{object}	utils.HTTPError				"Too many attempts"
+// @Failure		500				{object}	utils.HTTPError				"Internal server error"
+// @Router			/auth/reset/confirm [post]
+func (h *Handler) HandleResetPassword(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		h.resetPassword(w, r)
+	default:
+		w.Header().Set("Allow", "POST")
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func (h *Handler) resetPassword(w http.ResponseWriter, r *http.Request) {
+	var req dto.ResetPasswordConfirm
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+	err := h.service.UserService.ConfirmPasswordReset(req)
+	switch {
+	case err == nil:
+		utils.WriteJSON(w, http.StatusOK, JSONAnswer{Message: "password changed"})
+	case errors.Is(err, service.ErrInvalidVerificationCode):
+		http.Error(w, "invalid or expired code", http.StatusBadRequest)
+	case errors.Is(err, service.ErrTooManyAttempts):
+		http.Error(w, "too many attempts, try later", http.StatusTooManyRequests)
+	case errors.Is(err, service.ErrNoNeedVerification):
+		http.Error(w, service.ErrNoNeedVerification.Error(), http.StatusBadGateway)
+	case errors.Is(err, service.ErrUserNotFound):
+		http.Error(w, "user not found", http.StatusNotFound)
+	default:
+		h.logger.Error("internal error", slog.Any("error", err))
+		http.Error(w, "internal error", http.StatusInternalServerError)
+	}
 }

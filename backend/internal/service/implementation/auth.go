@@ -13,6 +13,11 @@ import (
 	"time"
 )
 
+const (
+	VerificationEmail    = "verification"
+	ResetPasswordRequest = "reset_password"
+)
+
 func (s *UserService) Register(userDTO dto.RegisterUser) (int64, error) {
 	// check if user already exists
 	const op = "service.RegisterUser"
@@ -76,13 +81,13 @@ func (s *UserService) Login(userDTO dto.LoginUser) (string, error) {
 
 	// compare passwords from request and database
 	if !auth.VerifyPassword(user.HashedPassword, userDTO.Password) {
-		return "", errors.New("invalid email or password")
+		return "", service.ErrInvalidCredentials
 	}
 	if user.Status == "blocked" || user.Status == "unverified" {
 		return "", service.ErrUserBlockedOrUnverified
 	}
 	//generate jwt token and sign it (auth.CreateJWT already signs it for you)
-	userIDstr := strconv.Itoa(user.ID)
+	userIDstr := strconv.FormatInt(user.ID, 10)
 	tokenString, err := s.jwt.CreateToken(userIDstr, user.Role)
 	if err != nil {
 		return "", fmt.Errorf("%s: failed to generate JWT token: %w", op, err)
@@ -91,7 +96,7 @@ func (s *UserService) Login(userDTO dto.LoginUser) (string, error) {
 	return tokenString, nil
 }
 
-func (s *UserService) SendVerificationCode(req dto.VerificationRequest) error {
+func (s *UserService) SendVerificationCode(req dto.EmailVerificationRequest) error {
 	const op = "service.SendVerificationCode"
 
 	user, err := s.repo.GetCredentialsByEmail(req.Email)
@@ -108,15 +113,20 @@ func (s *UserService) SendVerificationCode(req dto.VerificationRequest) error {
 	code := fmt.Sprintf("%06d", rand.Intn(1000000))
 	expiresAt := time.Now().Add(15 * time.Minute)
 
-	if _, err := s.repo.GetVerificationByEmail(req.Email); err == nil {
+	if _, err := s.repo.GetVerification(req.Email, VerificationEmail); err == nil {
 		return fmt.Errorf("%s: %w", op, service.ErrSentCodeAlready)
 	}
 
-	if err := s.repo.SaveEmailVerification(req.Email, code, expiresAt); err != nil {
+	if err := s.repo.SaveVerification(req.Email, code, VerificationEmail, expiresAt); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	body := fmt.Sprintf("Ваш код подтверждения: %s\n Он действителен до %s", code, expiresAt.Format(time.RFC1123))
-	if err := s.emailSender.SendEmail(req.Email, "Код верификации", body); err != nil {
+	body := fmt.Sprintf(
+		"Your verification code is: %s\n\nThis code is valid until %s.",
+		code,
+		expiresAt.Format(time.RFC1123),
+	)
+
+	if err := s.emailSender.SendEmail(req.Email, "Email Verification Code", body); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -126,7 +136,7 @@ func (s *UserService) SendVerificationCode(req dto.VerificationRequest) error {
 func (s *UserService) VerifyEmail(req dto.VerifyEmailRequest) error {
 	const op = "service.VerifyEmail"
 
-	v, err := s.repo.GetVerificationByEmail(req.Email)
+	v, err := s.repo.GetVerification(req.Email, VerificationEmail)
 	if errors.Is(err, service.ErrNoNeedVerification) {
 		return service.ErrNoNeedVerification
 	}
@@ -140,7 +150,7 @@ func (s *UserService) VerifyEmail(req dto.VerifyEmailRequest) error {
 	}
 	if v.Attempts >= 5 {
 		// блокируем на 15 минут
-		if err := s.repo.BlockEmail(req.Email, 15*time.Minute); err != nil {
+		if err := s.repo.BlockEmail(req.Email, VerificationEmail, 15*time.Minute); err != nil {
 			return err
 		}
 		return service.ErrTooManyAttempts
@@ -149,7 +159,7 @@ func (s *UserService) VerifyEmail(req dto.VerifyEmailRequest) error {
 	// 2) Проверяем срок и код
 	if now.After(v.ExpiresAt) || v.Code != req.Code {
 		// инкремент попыток и обновляем last_attempt
-		_ = s.repo.IncrementAttempt(req.Email)
+		_ = s.repo.IncrementAttempt(req.Email, VerificationEmail)
 		return service.ErrInvalidVerificationCode
 	}
 
@@ -163,7 +173,7 @@ func (s *UserService) VerifyEmail(req dto.VerifyEmailRequest) error {
 	}
 
 	// 4) Удаляем запись о верификации
-	if err := s.repo.DeleteVerification(req.Email); err != nil {
+	if err := s.repo.DeleteVerification(req.Email, VerificationEmail); err != nil {
 		return err
 	}
 	return nil
@@ -171,4 +181,105 @@ func (s *UserService) VerifyEmail(req dto.VerifyEmailRequest) error {
 
 func (s *UserService) DeleteUnverifiedUsers() error {
 	return s.repo.DeleteUnverifiedUsers(time.Now())
+}
+
+// reset password logic
+
+func (s *UserService) SendPasswordResetCode(email string) error {
+	const op = "service.RequestPasswordReset"
+
+	user, err := s.repo.GetCredentialsByEmail(email)
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotFound) {
+			return service.ErrUserNotFound
+		}
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	if user.Status != "active" {
+		return fmt.Errorf("%s: user status is '%s', expected 'active'", op, user.Status)
+	}
+	now := time.Now()
+	if user.PasswordUpdatedAt != nil && now.Sub(*user.PasswordUpdatedAt) < 24*time.Hour {
+		return service.ErrPasswordRecentlyChanged
+	}
+
+	if _, err := s.repo.GetVerification(email, ResetPasswordRequest); err == nil {
+		return fmt.Errorf("%s: %w", op, service.ErrSentCodeAlready)
+	}
+
+	code := fmt.Sprintf("%06d", rand.Intn(1000000))
+	expiresAt := time.Now().Add(15 * time.Minute)
+
+	if err := s.repo.SaveVerification(email, code, ResetPasswordRequest, expiresAt); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	body := fmt.Sprintf(
+		"Your password reset code is: %s\n\nThis code will expire at %s.\nIf you did not request a password reset, please ignore this email.",
+		code,
+		expiresAt.Format(time.RFC1123),
+	)
+
+	if err := s.emailSender.SendEmail(email, "Password Reset Request", body); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
+func (s *UserService) ConfirmPasswordReset(req dto.ResetPasswordConfirm) error {
+	const op = "service.ResetPassword"
+	// 1. get info about verification
+
+	v, err := s.repo.GetVerification(req.Email, ResetPasswordRequest)
+	if errors.Is(err, service.ErrNoNeedVerification) {
+		return service.ErrNoNeedVerification
+	}
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	now := time.Now()
+	if v.BlockedUntil.Valid && v.BlockedUntil.Time.After(now) {
+		return service.ErrTooManyAttempts
+	}
+	if v.Attempts >= 5 {
+		_ = s.repo.BlockEmail(req.Email, ResetPasswordRequest, 15*time.Minute)
+		return service.ErrTooManyAttempts
+	}
+
+	// 3. get full user info
+	userCr, err := s.repo.GetCredentialsByEmail(req.Email)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	if userCr.Status != "active" {
+		return fmt.Errorf("%s: user status is '%s', expected 'active'", op, userCr.Status)
+	}
+	// check password update cooldown (24h)
+	if userCr.PasswordUpdatedAt != nil && now.Sub(*userCr.PasswordUpdatedAt) < 24*time.Hour {
+		return service.ErrPasswordRecentlyChanged
+	}
+
+	// 2. check of expiration and code
+	if now.After(v.ExpiresAt) || v.Code != req.Code {
+		_ = s.repo.IncrementAttempt(req.Email, ResetPasswordRequest)
+		return service.ErrInvalidVerificationCode
+	}
+
+	// 4. hash and change password
+	hashedPassword, err := auth.HashPassword(req.NewPassword)
+	if err != nil {
+		return fmt.Errorf("%s: failed to hash password: %w", op, err)
+	}
+	if err := s.repo.UpdatePassword(userCr.ID, hashedPassword); err != nil {
+		return fmt.Errorf("%s: failed to update password: %w", op, err)
+	}
+
+	// 5. and delete information about verification
+	if err := s.repo.DeleteVerification(req.Email, ResetPasswordRequest); err != nil {
+		return fmt.Errorf("%s: failed to delete verification: %w", op, err)
+	}
+
+	return nil
 }
