@@ -93,7 +93,7 @@
 }
 
 .auth-btn:hover {
-  background-color: darken(var(--color-accent), 10%);
+  background-color: var(--color-accent);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }

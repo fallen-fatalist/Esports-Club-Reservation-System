@@ -19,3 +19,14 @@
     background-color: var(--color-bg-primary);
     transition: background-color var(--transition-normal);
 }
+
+.auth-warning {
+  margin-top: 16px;
+  padding: 12px;
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+  border-radius: 4px;
+  font-size: 14px;
+}
+

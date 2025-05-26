@@ -53,15 +53,16 @@ const isPS5 = (comp) => {
          comp.room === 'Console';
 };
 
-const ComputerCard = ({ comp, selectedComputers, onComputerClick, onViewDetails, onBook }) => {
+const ComputerCard = ({ comp, selectedComputers, onComputerClick, onViewDetails, onBook, isAuthenticated }) => {
   const itemIsPS5 = isPS5(comp);
-  
+
   return (
     <div
       className={`computer-card ${comp.status || 'available'} ${
         selectedComputers.includes(comp.id) ? 'selected' : ''
       } ${itemIsPS5 ? 'ps5-card' : ''}`}
-      onClick={() => onComputerClick(comp.id)}
+      onClick={() => isAuthenticated ? onComputerClick(comp.id) : null}
+      style={{ cursor: isAuthenticated && comp.status === 'available' ? 'pointer' : 'default' }}
     >
       <div className="computer-header">
         {!itemIsPS5 && (
@@ -70,10 +71,8 @@ const ComputerCard = ({ comp, selectedComputers, onComputerClick, onViewDetails,
         <span className="computer-number">
           {itemIsPS5 ? (
             <>
-            <SportsEsportsIcon
-              className={`ps5-icon ${comp.status === 'busy' ? 'busy' : ''}`}
-            />
-               №{comp.id}
+              <SportsEsportsIcon className={`ps5-icon ${comp.status === 'busy' ? 'busy' : ''}`} />
+              №{comp.id}
             </>
           ) : (
             `№${comp.id}`
@@ -102,10 +101,9 @@ const ComputerCard = ({ comp, selectedComputers, onComputerClick, onViewDetails,
         }}>
           <span className="btn-txt">Details</span>
         </button>
-
-        {comp.status === 'available' && onBook && (
+        {comp.status === 'available' && isAuthenticated && (
           <MyButton className="book-button" onClick={(e) => {
-            e.stopPropagation(); 
+            e.stopPropagation();
             onBook(comp.id);
           }}>
             <span className="btn-txt">Book</span>
@@ -134,7 +132,8 @@ const ComputerList = ({
   onViewDetails,
   selectedComputers = [],
   onBook,
-  selectedRoom = null 
+  selectedRoom = null,
+  isAuthenticated = false
 }) => {
   const groupedComputers = groupByRoom(computers, selectedRoom);
   const [collapsedRooms, setCollapsedRooms] = useState({});
@@ -153,9 +152,7 @@ const ComputerList = ({
       {Object.keys(groupedComputers).map(room => (
         <div key={room} className={`room-section ${getRoomClass(room)} ${selectedRoom === room ? 'selected-room' : ''}`}>
           <div className="room-header" onClick={() => toggleRoom(room)} style={{ cursor: "pointer" }}>
-            <h4 className="room-title">
-              {getRoomDisplayName(room)}
-            </h4>
+            <h4 className="room-title">{getRoomDisplayName(room)}</h4>
             <span className="toggle-icon">
               {collapsedRooms[room] ? '▼' : '▲'}
             </span>
@@ -171,6 +168,7 @@ const ComputerList = ({
                   onComputerClick={onComputerClick}
                   onViewDetails={onViewDetails}
                   onBook={onBook}
+                  isAuthenticated={isAuthenticated}
                 />
               ))}
             </div>

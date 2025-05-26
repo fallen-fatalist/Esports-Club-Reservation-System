@@ -6,6 +6,7 @@ import (
 
 	"log/slog"
 
+	"esports_club_booking/internal/config"
 	"esports_club_booking/internal/transport/httpserver/middleware"
 
 	_ "esports_club_booking/docs"
@@ -16,14 +17,14 @@ import (
 type Server struct {
 	handler http.Handler
 	logger  *slog.Logger
-	address string
+	config  config.Server
 }
 
-func NewServer(handler http.Handler, logger *slog.Logger, adress string) *Server {
+func NewServer(handler http.Handler, logger *slog.Logger, cfg config.Server) *Server {
 	return &Server{
 		handler: handler,
 		logger:  logger,
-		address: adress,
+		config:  cfg,
 	}
 }
 func (s *Server) Start() error {
@@ -37,12 +38,15 @@ func (s *Server) Start() error {
 	/* Middlewares attach */
 	RequestLoggerMW := middleware.NewRequestLoggerMW(s.logger)
 
-	MWChain := middleware.NewMiddlewareChain(middleware.RecoverPanicMW, RequestLoggerMW)
+	/* CORS attach */
+	CorsMW := middleware.NewCorsMW(s.config.CORS_ALLOWED)
+
+	MWChain := middleware.NewMiddlewareChain(CorsMW, middleware.RecoverPanicMW, RequestLoggerMW)
 
 	s.logger.Info("Starting server",
-		slog.String("address", s.address),
+		slog.String("address", s.config.Address),
 		slog.Any("time", time.Now()),
 	)
 
-	return http.ListenAndServe(s.address, MWChain(router))
+	return http.ListenAndServe(s.config.Address, MWChain(router))
 }
