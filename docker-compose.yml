@@ -51,5 +51,3 @@ services:
     stdin_open: true
     tty: true
     command: npm start
-    depends_on:
-      - backend

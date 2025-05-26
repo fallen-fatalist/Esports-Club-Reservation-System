@@ -55,7 +55,7 @@ func NewConfig() *Config {
 	if env == "dev" {
 		err := godotenv.Load("config/config.dev.env") // путь можешь адаптировать
 		if err != nil {
-			log.Fatal("Error loading config.dev.env")
+			log.Fatal("Error loading config/config.dev.env")
 		}
 	}
 

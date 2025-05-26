@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"log/slog"
@@ -41,12 +42,19 @@ func (s *Server) Start() error {
 	/* CORS attach */
 	CorsMW := middleware.NewCorsMW(s.config.CORS_ALLOWED)
 
-	MWChain := middleware.NewMiddlewareChain(CorsMW, middleware.RecoverPanicMW, RequestLoggerMW)
+	MWChain := middleware.NewMiddlewareChain(middleware.RecoverPanicMW, RequestLoggerMW, CorsMW)
 
 	s.logger.Info("Starting server",
 		slog.String("address", s.config.Address),
 		slog.Any("time", time.Now()),
 	)
+
+	origins := make([]string, 0, len(s.config.CORS_ALLOWED))
+	for origin := range s.config.CORS_ALLOWED {
+		origins = append(origins, origin)
+	}
+	joinedOrigins := strings.Join(origins, ", ")
+	s.logger.Info("The following origins allowed", slog.String("origins", joinedOrigins))
 
 	return http.ListenAndServe(s.config.Address, MWChain(router))
 }
