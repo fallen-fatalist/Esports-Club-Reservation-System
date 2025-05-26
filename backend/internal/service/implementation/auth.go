@@ -115,8 +115,9 @@ func (s *UserService) SendVerificationCode(req dto.VerificationRequest) error {
 	if err := s.repo.SaveEmailVerification(req.Email, code, expiresAt); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	body := fmt.Sprintf("Ваш код подтверждения: %s\n Он действителен до %s", code, expiresAt.Format(time.RFC1123))
-	if err := s.emailSender.SendEmail(req.Email, "Код верификации", body); err != nil {
+	body := fmt.Sprintf("Don't share this code with anyone!\nYour verification code: %s\n is valid until: %s", code, expiresAt.Format(time.RFC1123))
+	subject := "Verification code"
+	if err := s.emailSender.SendEmail(req.Email, subject, body); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 

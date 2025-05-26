@@ -50,7 +50,7 @@ func (w NotificationSender) RunBookingNotification(ticker *time.Ticker) {
 				continue
 			}
 
-			msg, err := humanMsg(booking.StartTime)
+			body, err := humanMsg(booking.StartTime)
 			if err != nil {
 				w.logger.Warn("human msg", "error", err, "id", booking.UserID)
 				continue
@@ -59,7 +59,7 @@ func (w NotificationSender) RunBookingNotification(ticker *time.Ticker) {
 			err = w.EmailSender.SendEmail(
 				user.Email,
 				"Booking reminder",
-				msg,
+				body,
 			)
 			if err != nil {
 				w.logger.Warn("send email", "email", user.Email, "error", err)
@@ -82,6 +82,6 @@ func humanMsg(startRFC string) (string, error) {
 		mins = 0
 	}
 
-	return fmt.Sprintf("%d minutes left before your booking at %s",
+	return fmt.Sprintf("%d minutes left before your booking at %s\n Please don't be late",
 		mins, start.Format("Jan 2, 2006 at 3:04 PM")), nil
 }

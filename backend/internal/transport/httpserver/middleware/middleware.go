@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -64,17 +65,16 @@ func RecoverPanicMW(next http.Handler) http.Handler {
 func NewCorsMW(allowedOrigins map[string]bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			origin := r.Header.Get("Origin")
+			origin := strings.TrimSpace(r.Header.Get("Origin"))
 
-			// Check if the Origin is allowed
 			if _, allowed := allowedOrigins[origin]; allowed {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
 				w.Header().Set("Access-Control-Allow-Credentials", "true")
 				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+				w.Header().Add("Vary", "Origin")
 			}
 
-			// Handle preflight
 			if r.Method == http.MethodOptions {
 				w.WriteHeader(http.StatusOK)
 				return
