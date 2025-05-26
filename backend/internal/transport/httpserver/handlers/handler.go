@@ -55,6 +55,9 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/activate", h.HandleRequestCode)
 	mux.HandleFunc("/auth/verify", h.HandleVerifyEmail)
 
+	mux.HandleFunc("/auth/reset/request", h.HandleRequestPasswordResetCode)
+	mux.HandleFunc("/auth/reset/confirm", h.HandleResetPassword)
+
 	mux.HandleFunc("GET /auth/authorized", auth.WithAuth(h.jwtMng, allRoles, h.IsAuthorized))
 	mux.HandleFunc("POST /auth/logout", auth.WithAuth(h.jwtMng, allRoles, h.Logout))
 

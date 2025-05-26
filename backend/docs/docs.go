@@ -714,7 +714,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.VerificationRequest"
+                            "$ref": "#/definitions/dto.EmailVerificationRequest"
                         }
                     }
                 ],
@@ -763,6 +763,110 @@ const docTemplate = `{
                 }
             }
         },
+        "/auth/reset/confirm": {
+            "post": {
+                "description": "Resets user's password using email, code and new password",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Reset password",
+                "parameters": [
+                    {
+                        "description": "Password reset confirmation",
+                        "name": "resetConfirm",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ResetPasswordConfirm"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Password reset successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid username or password",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "429": {
+                        "description": "Too many attempts",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/reset/request": {
+            "post": {
+                "description": "Sends a password reset code to the user's email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Request password reset code",
+                "parameters": [
+                    {
+                        "description": "Password reset request",
+                        "name": "resetRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reset code sent",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request or user not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/sign-in": {
             "post": {
                 "description": "Login user with email, login and password, returns JWT token",
@@ -788,11 +892,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "JWT token",
-                        "schema": {
-                            "$ref": "#/definitions/dto.TokenResponse"
-                        }
+                    "204": {
+                        "description": "No Content, JWT set in HTTPOnly cookie"
                     },
                     "400": {
                         "description": "Bad request, validation error",
@@ -921,6 +1022,15 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "dto.EmailVerificationRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "description": "required: true\nexample: user@example.com",
+                    "type": "string"
+                }
+            }
+        },
         "dto.LoginUser": {
             "type": "object",
             "properties": {
@@ -951,10 +1061,24 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.TokenResponse": {
+        "dto.ResetPasswordConfirm": {
             "type": "object",
             "properties": {
-                "token": {
+                "code": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "new_password": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ResetPasswordRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
                     "type": "string"
                 }
             }
@@ -975,15 +1099,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.VerificationRequest": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "description": "required: true\nexample: user@example.com",
                     "type": "string"
                 }
             }
