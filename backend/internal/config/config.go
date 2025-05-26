@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -21,8 +22,9 @@ type (
 	}
 
 	Server struct {
-		Adress string
-		Port   string
+		Address      string
+		Port         string
+		CORS_ALLOWED map[string]bool
 	}
 
 	DataBase struct {
@@ -59,12 +61,20 @@ func NewConfig() *Config {
 	if env == "dev" {
 		err := godotenv.Load("config/config.dev.env") // путь можешь адаптировать
 		if err != nil {
-			log.Fatal("Error loading config.dev.env")
+			log.Fatal("Error loading config/config.dev.env")
 		}
 	}
+
+	raw := getEnvStr("ALLOWED_ORIGINS", "http://localhost:3000")
+	allowed := make(map[string]bool)
+	for _, origin := range strings.Split(raw, ",") {
+		allowed[strings.TrimSpace(origin)] = true
+	}
+
 	return &Config{
 		Server: Server{
-			Port: getEnvStr("PORT", "8080"),
+			Port:         getEnvStr("PORT", "8080"),
+			CORS_ALLOWED: allowed,
 		},
 		DataBase: DataBase{
 			User:     getEnvStr("DB_USER", "user"),

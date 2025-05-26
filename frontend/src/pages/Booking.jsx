@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/contextIndex";
 import useComputers from "../hooks/useComputers";
 import useBookings from "../hooks/useBookings";
 import ComputerList from "../components/BookingSystem/ComputerList";
@@ -8,6 +10,7 @@ import isComputerAvailable from "../components/utils/isComputerAvailable";
 import dateUtils from "../components/utils/dateUtils";
 import ComputerDetailsModal from "../components/BookingSystem/ComputerDetailsModal";
 import BookingForm from "../components/BookingSystem/BookingForm";
+import MyModal from "../components/UI/modal/MyModal"; 
 
 const excludedStatuses = ['pending', 'under repair', 'not working', 'unknown'];
 
@@ -20,11 +23,9 @@ const getCurrentTimeString = () => {
   now.setMilliseconds(0);
   const hours = String(now.getHours()).padStart(2, '0');
   const mins = String(now.getMinutes()).padStart(2, '0');
-
   if (hours === '00' && parseInt(mins) < 5) {
     return `00:05`;
   }
-
   return `${hours}:${mins}`;
 };
 
@@ -33,6 +34,9 @@ const isDisplayableStatus = (status) => {
 };
 
 const Booking = () => {
+  const navigate = useNavigate();
+  const { isAuth, handleAuthError, showModal } = useContext(AuthContext);
+
   const getCurrentDate = () => {
     const now = new Date();
     const year = now.getFullYear();
@@ -54,31 +58,60 @@ const Booking = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalComputerId, setModalComputerId] = useState(null);
   const [autoSelectCountInput, setAutoSelectCountInput] = useState("1");
-  const [currentRoom, setCurrentRoom] = useState("Standard"); // Добавляем состояние для текущего зала
+  const [currentRoom, setCurrentRoom] = useState("Standard");
+  const [authPromptModal, setAuthPromptModal] = useState(false);
 
   const { computers: fetchedComputers = [], loading, error } = useComputers();
   const { bookings, refetchBookings } = useBookings();
   const [computers, setComputers] = useState([]);
+
+  const checkAuthBeforeAction = (actionName = "perform this action") => {
+    if (!isAuth) {
+      showModal("Authentication Required", `Please log in to ${actionName}. You will be redirected to the login page.`);
+      setTimeout(() => {
+        navigate("/login");
+      }, 3000);
+      return false;
+    }
+    return true;
+  };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentTime = getCurrentTimeString();
+      const currentDate = getCurrentDate();
+      if (date === currentDate) {
+        const now = new Date();
+        const selectedDateTime = dateUtils.parseDate(date, time);
+        if (selectedDateTime <= now) {
+          setTime(currentTime);
+        }
+      }
+    }, 60000); 
+    return () => clearInterval(interval);
+  }, [date, time]);
 
   useEffect(() => {
     const loadPackages = async () => {
       try {
         const fetchedPackages = await packageService.getPackages();
         setPackages(fetchedPackages);
-        
         if (!selectedPackage && fetchedPackages.length > 0) {
-          // Ищем пакет для текущего зала
           const roomPackage = fetchedPackages.find(pkg => pkg.room === currentRoom);
           setSelectedPackage(roomPackage ? roomPackage.id : fetchedPackages[0].id);
         }
       } catch (error) {
         console.error('Error loading packages:', error);
-        setErrorMessage('Failed to load packages');
+        if (error.response?.status === 401) {
+          handleAuthError("Your session has expired. Please log in again.");
+          setTimeout(() => navigate("/login"), 2000);
+        } else {
+          setErrorMessage('Failed to load packages');
+        }
       }
     };
-
     loadPackages();
-  }, [selectedPackage, currentRoom]);
+  }, [selectedPackage, currentRoom, handleAuthError, navigate]);
 
   const getCurrentPackageDuration = useCallback(() => {
     if (!selectedPackage || packages.length === 0) return 60;
@@ -90,28 +123,24 @@ const Booking = () => {
     const timeToUse = time || getCurrentTimeString();
     const today = getCurrentDate();
     const duration = getCurrentPackageDuration();
-
     if (date < today) {
       setErrorMessage(`Cannot book in the past. Please select today's date (${today})`);
       return false;
     }
-
     const bookingStart = dateUtils.parseDate(date, timeToUse);
     const nowPlusBuffer = new Date();
-
     if (bookingStart <= nowPlusBuffer) {
       const futureTime = new Date(Date.now() + 1 * 60 * 1000);
       const hours = String(futureTime.getHours()).padStart(2, '0');
-      const minutes = String(Math.ceil(futureTime.getMinutes() / 5) * 5).padStart(2, '0');
-      setErrorMessage(`Cannot book in the past. Choose time after ${hours}:${minutes}`);
+      const roundedMinutes = Math.ceil(futureTime.getMinutes() / 5) * 5;
+      const minutes = String(roundedMinutes).padStart(2, '0');
+      setTime(`${hours}:${minutes}`);
       return false;
     }
-
     if (duration > 300) { 
       setErrorMessage("Maximum booking duration is 5 hours");
       return false;
     }
-
     setErrorMessage(null);
     return true;
   }, [date, time, getCurrentPackageDuration]);
@@ -120,7 +149,6 @@ const Booking = () => {
     if (!validateDateTime()) return;
     const timeToUse = time || getCurrentTimeString();
     const duration = getCurrentPackageDuration();
-
     const updatedList = fetchedComputers
       .filter(c => !excludedStatuses.includes(c.status))
       .map((c) => {
@@ -132,7 +160,6 @@ const Booking = () => {
           status: available ? 'available' : 'busy',
         };
       });
-
     setComputers(updatedList);
     setFilteredComputers(updatedList);
     setIsFiltered(true);
@@ -147,6 +174,7 @@ const Booking = () => {
   }, [fetchedComputers, checkAvailability, selectedPackage]);
 
   const handleBookMultipleComputers = async () => {
+    if (!checkAuthBeforeAction("book multiple computers")) return;
     if (selectedComputers.length === 0) {
       setErrorMessage("Please select at least one computer.");
       return;
@@ -156,7 +184,6 @@ const Booking = () => {
       setErrorMessage("Please select a package.");
       return;
     }
-
     try {
       setInfoMessage(`Processing booking for ${selectedComputers.length} computer(s)...`);
       const duration = getCurrentPackageDuration();
@@ -166,7 +193,6 @@ const Booking = () => {
       const formattedEndTime = dateUtils.formatWithLocalTimezone(endTime);
       const currentUser = JSON.parse(localStorage.getItem('user'));
       const userId = currentUser?.id || 1;
-
       const bookingPromises = selectedComputers.map(computerId =>
         bookingService.createBooking({
           user_id: userId,
@@ -177,7 +203,6 @@ const Booking = () => {
           status: "pending"
         })
       );
-
       await Promise.all(bookingPromises);
       handleBookingSuccess();
     } catch (error) {
@@ -189,23 +214,25 @@ const Booking = () => {
     setBookingSuccess(true);
     setErrorMessage(null);
     setInfoMessage(null);
-
     const updated = computers.map(c =>
       selectedComputers.includes(c.id) ? { ...c, status: 'busy' } : c
     );
-
     setComputers(updated);
     setFilteredComputers(updated);
-
     await refetchBookings();
     setSelectedComputers([]);
     setIsFiltered(true);
     setModalVisible(false);
-
     setTimeout(() => setBookingSuccess(false), 3000);
   };
 
   const handleBookingError = (error) => {
+    if (error.response?.status === 401) {
+      handleAuthError("Your session has expired. Please log in again.");
+      setTimeout(() => navigate("/login"), 2000);
+      setInfoMessage(null);
+      return;
+    }
     let errorMsg = "Error creating booking. Please try again.";
     if (error.response?.data?.message) {
       errorMsg = error.response.data.message;
@@ -219,9 +246,12 @@ const Booking = () => {
   };
 
   const handleComputerClick = (computerId) => {
+    if (!isAuth) {
+      checkAuthBeforeAction("select computers");
+      return;
+    }
     const computer = filteredComputers.find(c => c.id === computerId);
     if (!computer || excludedStatuses.includes(computer.status) || computer.status === 'busy') return;
-
     setSelectedComputers((prev) =>
       prev.includes(computerId) ? prev.filter((id) => id !== computerId) : [...prev, computerId]
     );
@@ -229,6 +259,7 @@ const Booking = () => {
   };
 
   const handleBookComputer = async (computerId) => {
+    if (!checkAuthBeforeAction("book this computer")) return;
     const computer = filteredComputers.find(c => c.id === computerId);
     if (!computer || excludedStatuses.includes(computer.status)) {
       setErrorMessage("This computer is not available for booking.");
@@ -239,7 +270,6 @@ const Booking = () => {
       setErrorMessage("Please select a package.");
       return;
     }
-
     try {
       setInfoMessage("Processing your booking...");
       const duration = getCurrentPackageDuration();
@@ -249,7 +279,6 @@ const Booking = () => {
       const formattedEndTime = dateUtils.formatWithLocalTimezone(endTime);
       const currentUser = JSON.parse(localStorage.getItem('user'));
       const userId = currentUser?.id || 1;
-
       await bookingService.createBooking({
         user_id: userId,
         computer_id: computerId,
@@ -258,15 +287,12 @@ const Booking = () => {
         package_id: selectedPackage, 
         status: "pending"
       });
-
       const updated = computers.map(c =>
         c.id === computerId ? { ...c, status: 'busy' } : c
       );
-
       setComputers(updated);
       setFilteredComputers(updated);
       await refetchBookings();
-
       setSelectedComputers((prev) => prev.filter((id) => id !== computerId));
       setInfoMessage(null);
       setErrorMessage(null);
@@ -278,22 +304,18 @@ const Booking = () => {
   };
 
   const handleAutoSelectComputers = (count) => {
-    // Фильтруем компьютеры только из выбранного зала
+    if (!checkAuthBeforeAction("auto-select computers")) return;
     const roomComputers = filteredComputers.filter((c) => c.room === currentRoom);
     const available = roomComputers.filter((c) => c.status === 'available');
-
     if (available.length === 0) {
       setErrorMessage(`No available computers in ${currentRoom} room for auto-selection.`);
       setInfoMessage(null);
       return;
     }
-
     const adjustedCount = Math.min(count, available.length);
-
     if (count > available.length) {
       setInfoMessage(`Requested ${count}, but only ${available.length} available in ${currentRoom} room. All available computers have been selected.`);
     }
-
     const autoSelected = available.slice(0, adjustedCount).map((c) => c.id);
     setSelectedComputers(autoSelected);
     setErrorMessage(null);
@@ -340,6 +362,8 @@ const Booking = () => {
           availableComputersCount={getAvailableComputersCount()}
           currentRoom={currentRoom}
           setCurrentRoom={setCurrentRoom}
+          isAuthenticated={isAuth}
+          authWarning={!isAuth}
         />
 
         <div className="computers__container">
@@ -350,6 +374,7 @@ const Booking = () => {
             selectedComputers={selectedComputers}
             onBook={handleBookComputer}
             selectedRoom={currentRoom}
+            isAuthenticated={isAuth}
           />
           {isFiltered && getFilteredComputersForDisplay().length === 0 && (
             <p className="no-computers-message">No available computers for selected time</p>
@@ -367,6 +392,7 @@ const Booking = () => {
           packages={packages}
           onBookComputer={handleBookComputer}
           bookings={bookings}
+          isAuthenticated={isAuth}
         />
       </div>
     </section>
