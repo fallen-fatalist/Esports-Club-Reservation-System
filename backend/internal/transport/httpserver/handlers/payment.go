@@ -8,6 +8,7 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/transport/dto"
@@ -32,7 +33,7 @@ func (h *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, redirectURL, err := h.service.PaymentService.Deposit(context.Background(), req.UserID, req.Amount)
+	_, redirectURL, err := h.service.PaymentService.RequestDeposit(context.Background(), req.UserID, req.Amount)
 	if err != nil {
 		log.Println(err)
 		jsonResponse(w, 400, dto.JSONAnswer{Message: err.Error()})
@@ -106,7 +107,7 @@ func (s *Handler) handleBookingRefund(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	if err := s.service.PaymentService.CancelBooking(r.Context(), req.BookingID); err != nil {
-		slog.Error("Error processing booking refund:", "error", err, "id", req.BookingID)
+		s.logger.Error("Error processing booking refund:", "error", err, "id", req.BookingID)
 		http.Error(w, "Refund failed", http.StatusInternalServerError)
 		return
 	}
@@ -133,9 +134,42 @@ func (h *Handler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	switch eventType {
 	case "PAYMENT.CAPTURE.COMPLETED":
-		// amount := event[""].(string)
-		// h.service.PaymentService.Deposit(r.Context(), ,)
+		resource := event["resource"].(map[string]interface{})
+
+		rawUserID, exists := resource["custom_id"].(string)
+		if !exists {
+			// IMPORTANT: implement refund logic here
+			h.logger.Error("user completed payment, but didn't recieve funds", "metadata", resource)
+			http.Error(w, "user completed payment, but didn't recieve funds", 400)
+			return
+		}
+
+		userID, err := strconv.ParseInt(rawUserID, 10, 64)
+		if err != nil {
+			h.logger.Error("user completed payment, but didn't recieve funds", "metadata", resource)
+			http.Error(w, "user completed payment, but didn't recieve funds", 400)
+			return
+		}
+
+		rawAmount := event["resource"].(map[string]interface{})["amount"].(map[string]interface{})["value"].(string)
+		amount, err := strconv.ParseFloat(rawAmount, 64)
+		if err != nil {
+			h.logger.Error("user completed payment, but didn't recieve funds", "metadata", resource)
+			http.Error(w, "user completed payment, but didn't recieve funds", 400)
+			return
+		}
+
+		err = h.service.PaymentService.Deposit(r.Context(), userID, amount)
+		if err != nil {
+			h.logger.Error("user completed payment, but didn't recieve funds", "metadata", resource)
+			http.Error(w, "user completed payment, but didn't recieve funds", 400)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
 	default:
+		// This practically never happens, our wehook only sends
+		// successfully captured payments
 		fmt.Println("📦 Unhandled event:", eventType)
 	}
 

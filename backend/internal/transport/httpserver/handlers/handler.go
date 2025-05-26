@@ -61,6 +61,7 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("POST /payment/deposit", h.handleDeposit)
 	mux.HandleFunc("POST /payment/booking", h.handleBookingPayment)
 	mux.HandleFunc("POST /payment/cancel", h.handleBookingRefund)
+	mux.HandleFunc("POST /payment/webhook", h.handleWebhook)
 }
 
 type JSONAnswer struct {

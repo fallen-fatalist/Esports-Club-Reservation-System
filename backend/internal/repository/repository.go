@@ -95,5 +95,5 @@ type PaymentRepository interface {
 }
 
 type PayPalClient interface {
-	Deposit(amount float64, receiverEmail string, description string) (string, string, error)
+	Deposit(amount float64, userID int64, description string) (string, string, error)
 }

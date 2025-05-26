@@ -30,18 +30,28 @@ func NewPaymentService(client *paypal.PayPalClient, repo repository.Repository) 
 	}
 }
 
-func (s *PaymentService) Deposit(ctx context.Context, userID int64, amount float64) (string, string, error) {
+func (s *PaymentService) RequestDeposit(ctx context.Context, userID int64, amount float64) (string, string, error) {
 	user, err := s.repo.UserRepository.GetByID(userID)
 	if err != nil {
 		return "", "", fmt.Errorf("couldn't fetch user by id %w", err)
 	}
 
-	orderID, redirectURL, err := s.paypalClient.Deposit(amount, user.Email, "Deposit to your account")
+	orderID, redirectURL, err := s.paypalClient.Deposit(amount, user.ID, "Deposit to your account")
 	if err != nil {
 		return "", "", fmt.Errorf("paypal deposit failed: %w", err)
 	}
 
 	return orderID, redirectURL, nil
+}
+
+func (s *PaymentService) Deposit(ctx context.Context, userID int64, amount float64) error {
+	user, err := s.repo.UserRepository.GetByID(userID)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.repo.PaymentRepository.Deposit(ctx, user, amount)
+	return err
 }
 
 func (s *PaymentService) PayBooking(ctx context.Context, booking *entities.Booking) error {

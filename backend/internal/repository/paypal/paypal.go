@@ -4,8 +4,9 @@ import (
 	"context"
 	"esports_club_booking/internal/repository"
 	"fmt"
+	"strconv"
 
-	"github.com/plutov/paypal/v4"
+	paypal "github.com/plutov/paypal/v4"
 )
 
 var _ repository.PayPalClient = (*PayPalClient)(nil)
@@ -14,7 +15,7 @@ type PayPalClient struct {
 	Client *paypal.Client
 }
 
-func NewPayPalClient(clientID, secret string) (*PayPalClient, error) {
+func NewPayPalClient(clientID, secret, URL string) (*PayPalClient, error) {
 	client, err := paypal.NewClient(clientID, secret, paypal.APIBaseSandBox)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create client: %w", err)
@@ -25,20 +26,34 @@ func NewPayPalClient(clientID, secret string) (*PayPalClient, error) {
 		return nil, fmt.Errorf("failed to get access token: %w", err)
 	}
 
+	req := &paypal.CreateWebhookRequest{
+		URL: URL + "/api/payment/webhook",
+		EventTypes: []paypal.WebhookEventType{
+			{Name: "PAYMENT.CAPTURE.COMPLETED"},
+		},
+	}
+
+	_, err = client.CreateWebhook(context.Background(), req)
+	if err != nil {
+		return nil, err
+	}
+
 	// Turn on only for debugging purposes
 	// client.SetLog(os.Stdout)
 	return &PayPalClient{Client: client}, nil
 }
 
-func (p *PayPalClient) Deposit(amount float64, receiverEmail string, description string) (string, string, error) {
+func (p *PayPalClient) Deposit(amount float64, userID int64, description string) (string, string, error) {
 	unit := []paypal.PurchaseUnitRequest{
 		{
 			Amount: &paypal.PurchaseUnitAmount{
 				Currency: "USD",
 				Value:    fmt.Sprintf("%.2f", amount),
 			},
+			CustomID: strconv.FormatInt(userID, 10),
 		},
 	}
+
 	ApplicationContext := &paypal.ApplicationContext{
 		ReturnURL:  "https://github.com", // Payment success
 		CancelURL:  "https://guthib.com", // Payment cancelled
@@ -67,6 +82,7 @@ func (p *PayPalClient) Deposit(amount float64, receiverEmail string, description
 
 func (p *PayPalClient) CheckOrderStatus(orderID string) (string, error) {
 	order, err := p.Client.GetOrder(context.Background(), orderID)
+
 	if err != nil {
 		return "", fmt.Errorf("failed to get order status: %w", err)
 	}
