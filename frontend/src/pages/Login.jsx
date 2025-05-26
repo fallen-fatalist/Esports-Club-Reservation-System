@@ -3,10 +3,9 @@ import MyInput from "../components/UI/input/MyInput";
 import MyModal from "../components/UI/modal/MyModal";
 import { AuthContext } from "../context/contextIndex";
 import { useNavigate } from "react-router-dom";
-import { signIn } from "../services/authService";
+import { requestPasswordReset, confirmPasswordReset } from "../services/authService";
 
 const Login = () => {
-  const { login, showModal } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [form, setForm] = useState({ identifier: "", password: "" });
@@ -14,10 +13,10 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalContent, setModalContent] = useState({ title: "", message: "" });
-  
-  // Forgot Password states
+  const { login, showModal } = useContext(AuthContext);
+
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [forgotPasswordStep, setForgotPasswordStep] = useState(1); // 1: email, 2: code, 3: new password
+  const [forgotPasswordStep, setForgotPasswordStep] = useState(1);
   const [forgotPasswordForm, setForgotPasswordForm] = useState({
     email: "",
     code: "",
@@ -28,6 +27,7 @@ const Login = () => {
   const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
 
   const showLocalModal = (title, message) => {
+    console.log("Modal shown:", title, message);
     setModalContent({ title, message });
     setModalVisible(true);
   };
@@ -42,32 +42,19 @@ const Login = () => {
     if (forgotPasswordError) setForgotPasswordError("");
   };
 
-  const validateForm = () => {
-    if (!form.identifier.trim()) {
-      setError("Email or login cannot be empty.");
-      return false;
-    }
-    if (!form.password.trim()) {
-      setError("Password cannot be empty.");
-      return false;
-    }
-    return true;
-  };
+  const validateForm = () => form.identifier.trim() && form.password.trim();
 
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
+  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  const validatePassword = (password) => {
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
-    return passwordRegex.test(password);
-  };
+  const validatePassword = (password) => /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/.test(password);
 
   const handleLogin = async (event) => {
     event.preventDefault();
+    console.log("Attempting login with:", form.identifier);
+    setError("");
 
     if (!validateForm()) {
+      setError("Email/login and password are required.");
       return;
     }
 
@@ -75,10 +62,11 @@ const Login = () => {
 
     try {
       await login(form);
+      showModal("Login Successful", "You have successfully logged in!");
+      console.log("Login successful");
       navigate("/");
     } catch (err) {
       let msg = "Login failed. Please try again.";
-
       if (err.response) {
         switch (err.response.status) {
           case 400:
@@ -100,42 +88,14 @@ const Login = () => {
         msg = "No internet connection.";
       }
 
+      console.error("Login error:", msg);
       setError(msg);
+      setModalContent({ title: "Login Error", message: msg });
+      setModalVisible(true);
+      setForm((prev) => ({ ...prev, password: "" }));
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Mock Forgot Password Functions
-  const mockSendResetCode = async (email) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        console.log(`Mock: Reset code sent to ${email}`);
-        resolve({ success: true });
-      }, 1000);
-    });
-  };
-
-  const mockVerifyResetCode = async (email, code) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (code === "123456") {
-          console.log(`Mock: Code ${code} verified for ${email}`);
-          resolve({ success: true });
-        } else {
-          reject(new Error("Invalid verification code"));
-        }
-      }, 1000);
-    });
-  };
-
-  const mockResetPassword = async (email, code, newPassword) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        console.log(`Mock: Password reset for ${email}`);
-        resolve({ success: true });
-      }, 1000);
-    });
   };
 
   const handleForgotPasswordSubmit = async (e) => {
@@ -145,52 +105,82 @@ const Login = () => {
 
     try {
       if (forgotPasswordStep === 1) {
+        console.log("Requesting password reset for:", forgotPasswordForm.email);
         if (!forgotPasswordForm.email.trim()) {
           setForgotPasswordError("Email is required");
           return;
         }
-        
         if (!validateEmail(forgotPasswordForm.email)) {
           setForgotPasswordError("Please enter a valid email address");
           return;
         }
-
-        await mockSendResetCode(forgotPasswordForm.email);
+        await requestPasswordReset(forgotPasswordForm.email);
         setForgotPasswordStep(2);
-        showLocalModal("Reset Code Sent", `We've sent a reset code to ${forgotPasswordForm.email}. Use code: 123456 for demo.`);
-        
+        showLocalModal("Reset Code Sent", `We've sent a reset code to ${forgotPasswordForm.email}. Please check your email.`);
       } else if (forgotPasswordStep === 2) {
+        console.log("Verification code entered:", forgotPasswordForm.code);
         if (!forgotPasswordForm.code.trim()) {
           setForgotPasswordError("Verification code is required");
           return;
         }
-
-        await mockVerifyResetCode(forgotPasswordForm.email, forgotPasswordForm.code);
         setForgotPasswordStep(3);
         showLocalModal("Code Verified", "Please enter your new password.");
-        
       } else if (forgotPasswordStep === 3) {
-        if (!forgotPasswordForm.newPassword || !forgotPasswordForm.confirmPassword) {
+        console.log("Submitting new password for:", forgotPasswordForm.email);
+        const { newPassword, confirmPassword } = forgotPasswordForm;
+        if (!newPassword || !confirmPassword) {
           setForgotPasswordError("Both password fields are required");
           return;
         }
-
-        if (!validatePassword(forgotPasswordForm.newPassword)) {
+        if (!validatePassword(newPassword)) {
           setForgotPasswordError("Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one digit, and one special character");
           return;
         }
-
-        if (forgotPasswordForm.newPassword !== forgotPasswordForm.confirmPassword) {
+        if (newPassword !== confirmPassword) {
           setForgotPasswordError("Passwords do not match");
           return;
         }
 
-        await mockResetPassword(forgotPasswordForm.email, forgotPasswordForm.code, forgotPasswordForm.newPassword);
+        const resetData = {
+          code: forgotPasswordForm.code,
+          email: forgotPasswordForm.email,
+          new_password: newPassword
+        };
+
+        await confirmPasswordReset(resetData);
         showLocalModal("Password Reset Successful", "Your password has been reset successfully. You can now login with your new password.");
         handleCloseForgotPassword();
       }
     } catch (err) {
-      setForgotPasswordError(err.message || "An error occurred. Please try again.");
+      console.error("Password reset error:", err);
+      let errorMessage = "An error occurred. Please try again.";
+      if (err.response) {
+        const { status, data } = err.response;
+        switch (status) {
+          case 404:
+            errorMessage = "Password reset service is currently unavailable. Please contact support or try again later.";
+            break;
+          case 400:
+            errorMessage = data?.message || data?.error || "Invalid request. Please check your input.";
+            break;
+          case 401:
+            errorMessage = "Authentication failed. Please try again.";
+            break;
+          case 429:
+            errorMessage = "Too many requests. Please wait a moment before trying again.";
+            break;
+          case 500:
+            errorMessage = "Server error. Please try again later.";
+            break;
+          default:
+            errorMessage = data?.message || data?.error || `Server error (${status}). Please try again.`;
+        }
+      } else if (err.request) {
+        errorMessage = "Unable to connect to the server. Please check your internet connection.";
+      } else {
+        errorMessage = err.message || "An unexpected error occurred.";
+      }
+      setForgotPasswordError(errorMessage);
     } finally {
       setForgotPasswordLoading(false);
     }
@@ -199,17 +189,15 @@ const Login = () => {
   const handleCloseForgotPassword = () => {
     setShowForgotPassword(false);
     setForgotPasswordStep(1);
-    setForgotPasswordForm({
-      email: "",
-      code: "",
-      newPassword: "",
-      confirmPassword: ""
-    });
+    setForgotPasswordForm({ email: "", code: "", newPassword: "", confirmPassword: "" });
     setForgotPasswordError("");
   };
 
   const handleModalClose = () => {
     setModalVisible(false);
+    if (modalContent.title === "Login Successful") {
+      navigate("/");
+    }
   };
 
   const renderForgotPasswordStep = () => {
@@ -217,10 +205,8 @@ const Login = () => {
       case 1:
         return (
           <>
-            <h3 className="forgot-password-title">Reset Password</h3>
-            <p className="forgot-password-description">
-              Enter your email address and we'll send you a code to reset your password.
-            </p>
+            <h3 className="login__header">Reset Password</h3>
+            <p className="auth-footer">Enter your email address and we'll send you a code to reset your password.</p>
             <MyInput
               name="email"
               type="email"
@@ -234,11 +220,9 @@ const Login = () => {
       case 2:
         return (
           <>
-            <h3 className="forgot-password-title">Enter Verification Code</h3>
-            <p className="forgot-password-description">
-              We sent a verification code to: <strong>{forgotPasswordForm.email}</strong>
-            </p>
-            <p className="demo-note">Demo code: <strong>123456</strong></p>
+            <h3 className="login__header">Enter Verification Code</h3>
+            <p className="auth-footer">We sent a verification code to: <strong>{forgotPasswordForm.email}</strong></p>
+            <p className="auth-footer">Please check your email and enter the code below.</p>
             <MyInput
               name="code"
               type="text"
@@ -252,14 +236,12 @@ const Login = () => {
       case 3:
         return (
           <>
-            <h3 className="forgot-password-title">Set New Password</h3>
-            <p className="forgot-password-description">
-              Enter your new password below.
-            </p>
+            <h3 className="login__header">Set New Password</h3>
+            <p className="auth-footer">Enter your new password below.</p>
             <MyInput
               name="newPassword"
               type="password"
-              placeholder="New password (8+ chars, upper, lower, digit, special)"
+              placeholder="New password"
               value={forgotPasswordForm.newPassword}
               onChange={handleForgotPasswordChange}
               required
@@ -304,13 +286,10 @@ const Login = () => {
                 onChange={handleChange}
                 required
               />
-              {error && (
-                <div className="error-message"><p>{error}</p></div>
-              )}
+              {error && <div className="error-message"><p>{error}</p></div>}
               <button className="auth-btn" type="submit" disabled={isLoading}>
                 {isLoading ? "Logging in..." : "Login"}
               </button>
-              
               <div className="auth-links">
                 <button
                   type="button"
@@ -320,7 +299,6 @@ const Login = () => {
                   Forgot Password?
                 </button>
               </div>
-              
               <div className="auth-footer">
                 <p>
                   Don't have an account?{" "}
@@ -339,59 +317,59 @@ const Login = () => {
       </section>
 
       <MyModal visible={showForgotPassword} setVisible={setShowForgotPassword}>
-        <div className="forgot-password-modal">
-          <form onSubmit={handleForgotPasswordSubmit}>
-            {renderForgotPasswordStep()}
-            
-            {forgotPasswordError && (
-              <div className="error-message">
-                <p>{forgotPasswordError}</p>
-              </div>
-            )}
-            
-            <div className="forgot-password-buttons">
-              <button 
-                className="auth-btn" 
-                type="submit" 
-                disabled={forgotPasswordLoading}
-              >
-                {forgotPasswordLoading ? "Processing..." : 
-                 forgotPasswordStep === 1 ? "Send Code" :
-                 forgotPasswordStep === 2 ? "Verify Code" :
-                 "Reset Password"}
-              </button>
-              
-              {forgotPasswordStep > 1 && (
+        <div className="auth__container">
+          <div className="login__email">
+            <form onSubmit={handleForgotPasswordSubmit}>
+              {renderForgotPasswordStep()}
+              {forgotPasswordError && (
+                <div className="error-message">
+                  <p>{forgotPasswordError}</p>
+                </div>
+              )}
+              <div className="auth-links">
+                <button
+                  className="auth-btn"
+                  type="submit"
+                  disabled={forgotPasswordLoading}
+                >
+                  {forgotPasswordLoading ? "Processing..." :
+                    forgotPasswordStep === 1 ? "Send Code" :
+                      forgotPasswordStep === 2 ? "Next" :
+                        "Reset Password"}
+                </button>
+                {forgotPasswordStep > 1 && (
+                  <button
+                    type="button"
+                    className="details-button"
+                    onClick={() => setForgotPasswordStep(forgotPasswordStep - 1)}
+                    disabled={forgotPasswordLoading}
+                  >
+                    Back
+                  </button>
+                )}
                 <button
                   type="button"
                   className="details-button"
-                  onClick={() => setForgotPasswordStep(forgotPasswordStep - 1)}
+                  onClick={handleCloseForgotPassword}
                   disabled={forgotPasswordLoading}
                 >
-                  Back
+                  Cancel
                 </button>
-              )}
-              
-              <button
-                type="button"
-                className="details-button"
-                onClick={handleCloseForgotPassword}
-                disabled={forgotPasswordLoading}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
+              </div>
+            </form>
+          </div>
         </div>
       </MyModal>
 
       <MyModal visible={modalVisible} setVisible={setModalVisible}>
-        <div className="info-modal">
-          <h3 className={modalContent.title?.includes("Error") ? "error-title" : "success-title"}>
-            {modalContent.title}
-          </h3>
-          <p>{modalContent.message}</p>
-          <button className="auth-btn" onClick={handleModalClose}>OK</button>
+        <div className="auth__container">
+          <div className="login__email">
+            <h3 className={modalContent.title.includes("Error") ? "error-title" : "success-title"}>
+              {modalContent.title}
+            </h3>
+            <p>{modalContent.message}</p>
+            <button className="auth-btn" onClick={handleModalClose}>OK</button>
+          </div>
         </div>
       </MyModal>
     </>

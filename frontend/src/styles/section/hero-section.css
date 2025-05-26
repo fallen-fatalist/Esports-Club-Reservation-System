@@ -70,9 +70,9 @@
     display: flex;
     align-items: flex-start;
     gap: var(--space-md);
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--color-bg-secondary);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--color-border);
     padding: var(--space-lg);
     border-radius: var(--radius-lg);
     transition: var(--transition-normal);
@@ -222,7 +222,7 @@
 .keyboard {
     width: 150px;
     height: 60px;
-    background: var(--color-bg-secondary);
+    background: rgb(62, 62, 63);;
     border: 2px solid var(--color-border);
     border-radius: var(--radius-md);
     margin: 10px auto;
@@ -249,7 +249,7 @@
 .mouse {
     width: 40px;
     height: 60px;
-    background: var(--color-bg-secondary);
+    background: rgb(62, 62, 63);;
     border: 2px solid var(--color-border);
     border-radius: 20px 20px var(--radius-md) var(--radius-md);
     margin: 0 auto;
@@ -287,7 +287,7 @@
 .controller {
     width: 60px;
     height: 30px;
-    background: var(--color-bg-secondary);
+    background: rgb(62, 62, 63);
     border: 2px solid var(--color-border);
     border-radius: 15px;
     margin: 0 auto;
@@ -389,6 +389,7 @@
 .package-card {
     background: var(--color-bg-secondary);
     border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
     padding: var(--space-xl);
     transition: var(--transition-normal);
     position: relative;

@@ -24,15 +24,6 @@ function App() {
     showModal("Authentication Error", message);
   };
 
-  const login = async (credentials) => {
-    try {
-      await signIn(credentials);
-      await checkUserAuth();
-    } catch (error) {
-      showModal("Login Error", error?.response?.data?.error || "Unknown error");
-    }
-  };
-
   const logout = async () => {
     try {
       await logoutRequest(); 
@@ -60,6 +51,38 @@ function App() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const checkUserAuthForLogin = async () => {
+    try {
+      const res = await checkAuth();
+      if (res.data?.role) {
+        setIsAuth(true);
+        return true;
+      } else {
+        setIsAuth(false);
+        throw new Error('No user role in response');
+      }
+    } catch (error) {
+      setIsAuth(false);
+      throw error;
+    }
+  };
+
+  const login = async (credentials) => {
+    
+    try {
+      const signInResponse = await signIn(credentials);
+      
+      if (signInResponse.status !== 200) {
+        throw new Error('Sign in failed');
+      }
+      await checkUserAuthForLogin();
+      
+    } catch (error) {
+      throw error;
+    }
+    
   };
 
   useEffect(() => {

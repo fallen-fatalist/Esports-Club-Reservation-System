@@ -23,7 +23,12 @@ import {
   Tab,
   Alert,
   Snackbar,
-  CssBaseline
+  CssBaseline,
+  IconButton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material';
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers";
@@ -36,24 +41,32 @@ import {
   Computer,
   Schedule,
   Add,
-  Settings
+  Settings,
+  Block,
+  Delete,
+  Cancel,
+  PersonAdd,
+  MoneyOff
 } from '@mui/icons-material';
 import { ThemeContext } from '../context/ThemeContext';
 import bookingService from '../services/bookingService';
 import computerService from '../services/computerService';
 import packageService from '../services/packageService';
+import { checkAuth } from '../services/authService';
 
 const Admin = () => {
   const { isDarkTheme } = useContext(ThemeContext);
   const [activeTab, setActiveTab] = useState(0);
   const [balanceModal, setBalanceModal] = useState(false);
-  const [userModal, setUserModal] = useState(false);
+  const [deleteUserModal, setDeleteUserModal] = useState(false);
+  const [cancelBookingModal, setCancelBookingModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState('');
   const [balanceAmount, setBalanceAmount] = useState('');
+  const [balanceOperation, setBalanceOperation] = useState('add');
+  const [selectedUserForDelete, setSelectedUserForDelete] = useState(null);
+  const [selectedBookingForCancel, setSelectedBookingForCancel] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [selectedDate, setSelectedDate] = useState(new Date());
-  
-  // Data states
   const [users, setUsers] = useState([]);
   const [computers, setComputers] = useState([]);
   const [packages, setPackages] = useState([]);
@@ -105,6 +118,61 @@ const Admin = () => {
     [isDarkTheme]
   );
 
+  // 1. User Management:
+  //  - Get all users (admin only)
+  //  - Block user (admin only)
+  //  - Unblock user (admin only)
+  //  - Delete user (admin only)
+  //  - Update user balance (admin only)
+  //    Body: { operation: 'add'|'subtract', amount: number }
+  //    Cancel booking 
+
+  const fetchAllUsers = async () => {
+    try {
+      const response = await checkAuth();
+      if (response.data) {
+        const mockUsers = [
+          {
+            id: 1,
+            username: response.data.username || 'admin',
+            email: response.data.email || 'admin@example.com',
+            balance: response.data.balance || 0,
+            role: response.data.role || 'admin',
+            status: response.data.status || 'active'
+          },
+          {
+            id: 2,
+            username: 'user1',
+            email: 'user1@example.com',
+            balance: 50,
+            role: 'user',
+            status: 'active'
+          },
+          {
+            id: 3,
+            username: 'user2',
+            email: 'user2@example.com',
+            balance: 100,
+            role: 'user',
+            status: 'blocked'
+          },
+          {
+            id: 4,
+            username: 'user3',
+            email: 'user3@example.com',
+            balance: 25,
+            role: 'user',
+            status: 'active'
+          }
+        ];
+        setUsers(mockUsers);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      setError('Failed to load users data');
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -112,22 +180,12 @@ const Admin = () => {
         const [bookingsData, computersData, packagesData] = await Promise.all([
           bookingService.getBookings(),    
           computerService.getComputers(),   
-          packageService.getPackages()      
+          packageService.getPackages(),
+          fetchAllUsers()
         ]);
-
         setBookings(bookingsData);
         setComputers(computersData);
         setPackages(packagesData);
-
-        const uniqueUserIds = [...new Set(bookingsData.map(booking => booking.user_id))];
-        const mockUsers = uniqueUserIds.map(userId => ({
-          id: userId,
-          email: `user${userId}@example.com`,
-          name: `User ${userId}`,
-          balance: 0
-        }));
-        setUsers(mockUsers);
-
       } catch (err) {
         console.error('Error fetching data:', err);
         setError('Failed to load data');
@@ -135,24 +193,19 @@ const Admin = () => {
         setLoading(false);
       }
     };
-
     fetchData();
   }, []);
 
   const transformedBookings = useMemo(() => {
     if (!bookings.length || !computers.length || !packages.length) return [];
-
     return bookings.map((booking) => {
       const computer = computers.find(c => c.id === booking.computer_id);
       const pkg = packages.find(p => p.id === booking.package_id);
       const user = users.find(u => u.id === booking.user_id);
-
       const startTime = parseISO(booking.start_time);
       const endTime = parseISO(booking.end_time);
-
       const dateStr = format(startTime, 'dd.MM.yyyy');
       const timeRange = `${format(startTime, 'HH:mm')}-${format(endTime, 'HH:mm')}`;
-
       return {
         id: booking.id,
         user: user || { id: booking.user_id, email: `user${booking.user_id}@example.com`, name: `User ${booking.user_id}` },
@@ -177,29 +230,122 @@ const Admin = () => {
   const activeSessions = useMemo(() => 
     filteredBookings.filter(b => b.status === 'active'), [filteredBookings]);
 
-  const handleTopUpBalance = () => {
-    if (selectedUser && balanceAmount) {
+  const blockedUsers = useMemo(() => 
+    users.filter(user => user.status === 'blocked'), [users]);
+
+  const handleBlockUser = async (userId) => {
+    try {
+      setUsers(users.map(user => 
+        user.id === userId ? { ...user, status: 'blocked' } : user
+      ));
       setSnackbar({
         open: true,
-        message: `Successfully added $${balanceAmount} to ${selectedUser}`,
+        message: `User blocked successfully`,
+        severity: 'success'
+      });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: 'Failed to block user',
+        severity: 'error'
+      });
+    }
+  };
+
+  const handleUnblockUser = async (userId) => {
+    try {
+      setUsers(users.map(user => 
+        user.id === userId ? { ...user, status: 'active' } : user
+      ));
+      setSnackbar({
+        open: true,
+        message: `User unblocked successfully`,
+        severity: 'success'
+      });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: 'Failed to unblock user',
+        severity: 'error'
+      });
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!selectedUserForDelete) return;
+    try {
+      setUsers(users.filter(user => user.id !== selectedUserForDelete.id));
+      setSnackbar({
+        open: true,
+        message: `User ${selectedUserForDelete.username} deleted successfully`,
+        severity: 'success'
+      });
+      setDeleteUserModal(false);
+      setSelectedUserForDelete(null);
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: 'Failed to delete user',
+        severity: 'error'
+      });
+    }
+  };
+
+  const handleBalanceOperation = async () => {
+    if (!selectedUser || !balanceAmount) return;
+    try {
+      const amount = parseFloat(balanceAmount);
+      const user = users.find(u => u.id === parseInt(selectedUser));
+      if (!user) return;
+      const newBalance = balanceOperation === 'add' 
+        ? user.balance + amount 
+        : user.balance - amount;
+      setUsers(users.map(u => 
+        u.id === parseInt(selectedUser) 
+          ? { ...u, balance: Math.max(0, newBalance) }
+          : u
+      ));
+      const operationText = balanceOperation === 'add' ? 'added to' : 'deducted from';
+      setSnackbar({
+        open: true,
+        message: `Successfully ${operationText} ${user.username}: $${amount}`,
         severity: 'success'
       });
       setBalanceModal(false);
       setSelectedUser('');
       setBalanceAmount('');
+      setBalanceOperation('add');
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: 'Failed to update balance',
+        severity: 'error'
+      });
     }
   };
 
-  const handleApproveBooking = (bookingId) => {
-    setSnackbar({ open: true, message: 'Booking approved successfully', severity: 'success' });
-  };
-
-  const handleRejectBooking = (bookingId) => {
-    setSnackbar({ open: true, message: 'Booking rejected', severity: 'info' });
-  };
-
-  const handleEndSession = (sessionId) => {
-    setSnackbar({ open: true, message: 'Session ended successfully', severity: 'success' });
+  const handleCancelBooking = async () => {
+    if (!selectedBookingForCancel) return;
+    try {
+      setBookings(bookings.map(booking => 
+        booking.id === selectedBookingForCancel.id 
+          ? { ...booking, status: 'cancelled' }
+          : booking
+      ));
+      setSnackbar({
+        open: true,
+        message: `Booking #${selectedBookingForCancel.id} cancelled successfully`,
+        severity: 'success'
+      });
+      setCancelBookingModal(false);
+      setSelectedBookingForCancel(null);
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: 'Failed to cancel booking',
+        severity: 'error'
+      });
+    }
   };
 
   const StatCard = ({ title, value, icon, color }) => (
@@ -253,7 +399,6 @@ const Admin = () => {
         p: 3,
         fontFamily: theme.typography.fontFamily
       }}>
-        {/* Header */}
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
           <Typography variant="h4" fontFamily={theme.typography.fontFamily} fontWeight="bold">
             Admin Dashboard
@@ -264,19 +409,11 @@ const Admin = () => {
               startIcon={<AccountBalanceWallet />}
               onClick={() => setBalanceModal(true)}
             >
-              Top Up Balance
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              onClick={() => setUserModal(true)}
-            >
-              Add User
+              Manage Balance
             </Button>
           </Box>
         </Box>
 
-        {/* Date Picker */}
         <LocalizationProvider dateAdapter={AdapterDateFns}>
           <Box sx={{ mb: 3, maxWidth: 300 }}>
             <DatePicker
@@ -294,7 +431,6 @@ const Admin = () => {
           </Box>
         </LocalizationProvider>
 
-        {/* Statistics Cards */}
         <Grid container spacing={3} mb={4}>
           <Grid item xs={12} sm={6} md={3}>
             <StatCard title="Total Users" value={users.length} icon={<People />} color="#4CAF50" />
@@ -308,18 +444,23 @@ const Admin = () => {
           <Grid item xs={12} sm={6} md={3}>
             <StatCard title="Pending Bookings" value={pendingBookings.length} icon={<Settings />} color="#F44336" />
           </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+              <StatCard title="Blocked Users" value={blockedUsers.length} icon={<Block />} color="#F44336" />
+          </Grid> 
         </Grid>
 
-        {/* Tables */}
         <Paper sx={{ 
           background: theme.palette.background.paper, 
           border: `1px solid ${isDarkTheme ? '#444' : '#ddd'}`,
           borderRadius: 1,
-          boxShadow: 1
+          boxShadow: 1,
+          mb: 3
         }}>
           <Tabs value={activeTab} onChange={(e, newVal) => setActiveTab(newVal)}>
             <Tab label="Pending Bookings" />
             <Tab label="Active Sessions" />
+            <Tab label="Users Management" />
+            <Tab label="Blocked Users" />
           </Tabs>
 
           {activeTab === 0 && (
@@ -350,26 +491,20 @@ const Admin = () => {
                           <TableCell>{booking.package.name}</TableCell>
                           <TableCell>{booking.startTime}</TableCell>
                           <TableCell>
-                            <Chip label={booking.status} color="warning" size="small" />
+                            <Chip label={booking.status} color="warning" />
                           </TableCell>
                           <TableCell>
-                            <Button 
-                              size="small" 
-                              variant="contained" 
-                              color="success" 
-                              onClick={() => handleApproveBooking(booking.id)} 
-                              sx={{ mr: 1 }}
+                            <IconButton
+                              size="small"
+                              color="warning"
+                              onClick={() => {
+                                setSelectedBookingForCancel(booking);
+                                setCancelBookingModal(true);
+                              }}
+                              title="Cancel Booking"
                             >
-                              Approve
-                            </Button>
-                            <Button 
-                              size="small" 
-                              variant="outlined" 
-                              color="error" 
-                              onClick={() => handleRejectBooking(booking.id)}
-                            >
-                              Reject
-                            </Button>
+                              <Cancel />
+                            </IconButton>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -394,8 +529,8 @@ const Admin = () => {
                         <TableCell>User</TableCell>
                         <TableCell>Computer</TableCell>
                         <TableCell>Package</TableCell>
+                        <TableCell>Time</TableCell>
                         <TableCell>Time Left</TableCell>
-                        <TableCell>Status</TableCell>
                         <TableCell>Actions</TableCell>
                       </TableRow>
                     </TableHead>
@@ -406,19 +541,182 @@ const Admin = () => {
                           <TableCell>{session.user?.email || `User ${session.user?.id}`}</TableCell>
                           <TableCell>№{session.computer.id}</TableCell>
                           <TableCell>{session.package.name}</TableCell>
+                          <TableCell>{session.startTime}</TableCell>
                           <TableCell>{session.timeLeft}</TableCell>
                           <TableCell>
-                            <Chip label={session.status} color="success" size="small" />
+                            <IconButton
+                              size="small"
+                              color="warning"
+                              onClick={() => {
+                                setSelectedBookingForCancel(session);
+                                setCancelBookingModal(true);
+                              }}
+                              title="Cancel Session"
+                            >
+                              <Cancel />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </Box>
+          )}
+
+          {activeTab === 2 && (
+            <Box p={3}>
+              <Typography variant="h6" mb={2}>Users Management</Typography>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>ID</TableCell>
+                      <TableCell>Username</TableCell>
+                      <TableCell>Email</TableCell>
+                      <TableCell>Balance</TableCell>
+                      <TableCell>Role</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {users.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>{user.id}</TableCell>
+                        <TableCell>{user.username}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>${user.balance}</TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={user.role} 
+                            color={user.role === 'admin' ? 'primary' : 'default'}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={user.status} 
+                            color={user.status === 'active' ? 'success' : 'error'}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Box display="flex" gap={1}>
+                            {user.status === 'active' ? (
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => handleBlockUser(user.id)}
+                                title="Block User"
+                              >
+                                <Block />
+                              </IconButton>
+                            ) : (
+                              <IconButton
+                                size="small"
+                                color="success"
+                                onClick={() => handleUnblockUser(user.id)}
+                                title="Unblock User"
+                              >
+                                <PersonAdd />
+                              </IconButton>
+                            )}
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => {
+                                setSelectedUser(user.id.toString());
+                                setBalanceModal(true);
+                              }}
+                              title="Manage Balance"
+                            >
+                              <AccountBalanceWallet />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => {
+                                setSelectedUserForDelete(user);
+                                setDeleteUserModal(true);
+                              }}
+                              title="Delete User"
+                            >
+                              <Delete />
+                            </IconButton>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
+          )}
+
+          {activeTab === 3 && (
+            <Box p={3}>
+              <Typography variant="h6" mb={2}>Blocked Users</Typography>
+              {blockedUsers.length === 0 ? (
+                <Typography color={theme.palette.text.secondary}>No blocked users.</Typography>
+              ) : (
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>ID</TableCell>
+                        <TableCell>Username</TableCell>
+                        <TableCell>Email</TableCell>
+                        <TableCell>Balance</TableCell>
+                        <TableCell>Role</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {blockedUsers.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell>{user.id}</TableCell>
+                          <TableCell>{user.username}</TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>${user.balance}</TableCell>
+                          <TableCell>
+                            <Chip 
+                              label={user.role} 
+                              color={user.role === 'admin' ? 'primary' : 'default'}
+                              size="small"
+                            />
                           </TableCell>
                           <TableCell>
-                            <Button 
-                              size="small" 
-                              variant="outlined" 
-                              color="error" 
-                              onClick={() => handleEndSession(session.id)}
-                            >
-                              End Session
-                            </Button>
+                            <Chip 
+                              label={user.status} 
+                              color="error"
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Box display="flex" gap={1}>
+                              <IconButton
+                                size="small"
+                                color="success"
+                                onClick={() => handleUnblockUser(user.id)}
+                                title="Unblock User"
+                              >
+                                <PersonAdd />
+                              </IconButton>
+                              <IconButton
+                                size="small"
+                                color="primary"
+                                onClick={() => {
+                                  setSelectedUser(user.id.toString());
+                                  setBalanceModal(true);
+                                }}
+                                title="Manage Balance"
+                              >
+                                <AccountBalanceWallet />
+                              </IconButton>
+                            </Box>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -430,77 +728,138 @@ const Admin = () => {
           )}
         </Paper>
 
-        {/* Modals */}
-        <Dialog open={balanceModal} onClose={() => setBalanceModal(false)}>
-          <DialogTitle>Top Up User Balance</DialogTitle>
+        <Dialog open={balanceModal} onClose={() => setBalanceModal(false)} fullWidth maxWidth="sm">
+          <DialogTitle>Manage User Balance</DialogTitle>
           <DialogContent>
+            <FormControl fullWidth margin="dense">
+              <InputLabel>Select User</InputLabel>
+              <Select
+                value={selectedUser}
+                onChange={(e) => setSelectedUser(e.target.value)}
+                label="Select User"
+              >
+                {users.map(user => (
+                  <MenuItem key={user.id} value={user.id.toString()}>
+                    {user.username} ({user.email}) - Current: ${user.balance}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            
+            <FormControl fullWidth margin="dense">
+              <InputLabel>Operation</InputLabel>
+              <Select
+                value={balanceOperation}
+                onChange={(e) => setBalanceOperation(e.target.value)}
+                label="Operation"
+              >
+                <MenuItem value="add">Add to Balance</MenuItem>
+                <MenuItem value="subtract">Subtract from Balance</MenuItem>
+              </Select>
+            </FormControl>
+            
             <TextField
-              select
-              label="User"
-              value={selectedUser}
-              onChange={(e) => setSelectedUser(e.target.value)}
               fullWidth
-              SelectProps={{ native: true }}
-              margin="normal"
-            >
-              <option value="">Select user...</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.email}>
-                  {user.name} ({user.email}) - ${user.balance}
-                </option>
-              ))}
-            </TextField>
-            <TextField
-              label="Amount ($)"
               type="number"
+              label="Amount"
               value={balanceAmount}
               onChange={(e) => setBalanceAmount(e.target.value)}
-              fullWidth
-              margin="normal"
+              margin="dense"
+              inputProps={{ min: 0, step: 0.01 }}
             />
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setBalanceModal(false)}>Cancel</Button>
+            <Button onClick={() => {
+              setBalanceModal(false);
+              setSelectedUser('');
+              setBalanceAmount('');
+              setBalanceOperation('add');
+            }}>
+              Cancel
+            </Button>
             <Button 
-              onClick={handleTopUpBalance} 
+              onClick={handleBalanceOperation} 
               variant="contained" 
               disabled={!selectedUser || !balanceAmount}
+              startIcon={balanceOperation === 'add' ? <Add /> : <MoneyOff />}
             >
-              Top Up
+              {balanceOperation === 'add' ? 'Add Money' : 'Subtract Money'}
             </Button>
           </DialogActions>
         </Dialog>
 
-        <Dialog open={userModal} onClose={() => setUserModal(false)}>
-          <DialogTitle>Add User</DialogTitle>
+        <Dialog open={deleteUserModal} onClose={() => setDeleteUserModal(false)} maxWidth="sm">
+          <DialogTitle>Confirm User Deletion</DialogTitle>
           <DialogContent>
-            <TextField label="Full Name" fullWidth margin="normal" />
-            <TextField label="Email" fullWidth margin="normal" />
-            <TextField label="Initial Balance" type="number" fullWidth margin="normal" />
+            <Typography>
+              Are you sure you want to delete user <strong>{selectedUserForDelete?.username}</strong>?
+            </Typography>
+            <Typography color="error" variant="body2" sx={{ mt: 1 }}>
+              This action cannot be undone.
+            </Typography>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setUserModal(false)}>Cancel</Button>
+            <Button onClick={() => {
+              setDeleteUserModal(false);
+              setSelectedUserForDelete(null);
+            }}>
+              Cancel
+            </Button>
             <Button 
+              onClick={handleDeleteUser} 
               variant="contained" 
-              onClick={() => {
-                setSnackbar({ open: true, message: 'User added successfully', severity: 'success' });
-                setUserModal(false);
-              }}
+              color="error"
+              startIcon={<Delete />}
             >
-              Add
+              Delete User
             </Button>
           </DialogActions>
         </Dialog>
 
-        <Snackbar 
-          open={snackbar.open} 
-          autoHideDuration={6000} 
+        <Dialog open={cancelBookingModal} onClose={() => setCancelBookingModal(false)} maxWidth="sm">
+          <DialogTitle>Cancel Booking</DialogTitle>
+          <DialogContent>
+            <Typography>
+              Are you sure you want to cancel booking <strong>#{selectedBookingForCancel?.id}</strong>?
+            </Typography>
+            {selectedBookingForCancel && (
+              <Box sx={{ mt: 2, p: 2, bgcolor: theme.palette.background.default, borderRadius: 1 }}>
+                <Typography variant="body2">
+                  <strong>User:</strong> {selectedBookingForCancel.user?.email}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Computer:</strong> №{selectedBookingForCancel.computer?.id}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Time:</strong> {selectedBookingForCancel.startTime}
+                </Typography>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => {
+              setCancelBookingModal(false);
+              setSelectedBookingForCancel(null);
+            }}>
+              Keep Booking
+            </Button>
+            <Button 
+              onClick={handleCancelBooking} 
+              variant="contained" 
+              color="warning"
+              startIcon={<Cancel />}
+            >
+              Cancel Booking
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={3000}
           onClose={() => setSnackbar({ ...snackbar, open: false })}
         >
-          <Alert 
-            onClose={() => setSnackbar({ ...snackbar, open: false })} 
-            severity={snackbar.severity}
-          >
+          <Alert severity={snackbar.severity} sx={{ width: '100%' }}>
             {snackbar.message}
           </Alert>
         </Snackbar>
