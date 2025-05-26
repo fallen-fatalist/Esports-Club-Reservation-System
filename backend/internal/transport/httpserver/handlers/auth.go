@@ -74,7 +74,7 @@ func (s *Handler) register(w http.ResponseWriter, r *http.Request) {
 // @Accept			json
 // @Produce		json
 // @Param			credentials	body		dto.LoginUser		true	"Login credentials"
-// @Success		200			{object}	dto.TokenResponse	"JWT token"
+// @Success		204			"No Content, JWT set in HTTPOnly cookie"
 // @Failure		400			{object}	utils.HTTPError		"Bad request, validation error"
 // @Failure		401			{object}	utils.HTTPError		"Unauthorized, invalid credentials or blocked user"
 // @Router			/auth/sign-in [post]
@@ -134,7 +134,7 @@ func (s *Handler) login(w http.ResponseWriter, r *http.Request) {
 // @Tags			Auth
 // @Accept			json
 // @Produce		json
-// @Param			verificationRequest	body		dto.VerificationRequest	true	"Verification code request"
+// @Param			verificationRequest	body		dto.EmailVerificationRequest	true	"Verification code request"
 // @Success		200					{object}	JSONAnswer				"Verification code sent"
 // @Failure		400					{object}	utils.HTTPError			"Invalid request"
 // @Failure		500					{object}	utils.HTTPError			"Internal server error"

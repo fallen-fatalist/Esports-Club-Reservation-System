@@ -1,5 +1,13 @@
 basePath: /api
 definitions:
+  dto.EmailVerificationRequest:
+    properties:
+      email:
+        description: |-
+          required: true
+          example: user@example.com
+        type: string
+    type: object
   dto.LoginUser:
     properties:
       identifier:
@@ -31,9 +39,13 @@ definitions:
           example: securePassword123
         type: string
     type: object
-  dto.TokenResponse:
+  dto.ResetPasswordConfirm:
     properties:
-      token:
+      code:
+        type: string
+      email:
+        type: string
+      new_password:
         type: string
     type: object
   dto.UserDTO:
@@ -47,14 +59,6 @@ definitions:
       status:
         type: string
       username:
-        type: string
-    type: object
-  dto.VerificationRequest:
-    properties:
-      email:
-        description: |-
-          required: true
-          example: user@example.com
         type: string
     type: object
   dto.VerifyEmailRequest:
@@ -643,7 +647,7 @@ paths:
         name: verificationRequest
         required: true
         schema:
-          $ref: '#/definitions/dto.VerificationRequest'
+          $ref: '#/definitions/dto.EmailVerificationRequest'
       produces:
       - application/json
       responses:
@@ -677,6 +681,44 @@ paths:
       summary: Check if user is authorized
       tags:
       - Auth
+  /auth/reset/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Resets user's password using email, code and new password
+      parameters:
+      - description: Password reset confirmation
+        in: body
+        name: resetConfirm
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ResetPasswordConfirm'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password reset successfully
+          schema:
+            $ref: '#/definitions/handlers.JSONAnswer'
+        "400":
+          description: Invalid request or verification code
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "429":
+          description: Too many attempts
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      summary: Reset password
+      tags:
+      - Auth
   /auth/sign-in:
     post:
       consumes:
@@ -692,10 +734,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: JWT token
-          schema:
-            $ref: '#/definitions/dto.TokenResponse'
+        "204":
+          description: No Content, JWT set in HTTPOnly cookie
         "400":
           description: Bad request, validation error
           schema:
