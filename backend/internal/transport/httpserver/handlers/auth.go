@@ -5,6 +5,7 @@ import (
 	"errors"
 	"esports_club_booking/internal/auth"
 	"esports_club_booking/internal/service"
+	authService "esports_club_booking/internal/service/implementation"
 	"esports_club_booking/internal/transport/dto"
 	"esports_club_booking/internal/utils"
 	"fmt"
@@ -41,18 +42,6 @@ func (s *Handler) register(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	// if userPayload.Email == "" {
-	// 	utils.WriteError(w, http.StatusBadRequest, errors.New("empty email"))
-	// 	return
-	// }
-	// if userPayload.Login == "" {
-	// 	utils.WriteError(w, http.StatusBadRequest, errors.New("empty login"))
-	// 	return
-	// }
-	// if userPayload.Password == "" {
-	// 	utils.WriteError(w, http.StatusBadRequest, errors.New("empty password"))
-	// 	return
-	// }
 
 	_, err := s.service.UserService.Register(userPayload)
 	if err != nil {
@@ -74,7 +63,7 @@ func (s *Handler) register(w http.ResponseWriter, r *http.Request) {
 // @Accept			json
 // @Produce		json
 // @Param			credentials	body		dto.LoginUser		true	"Login credentials"
-// @Success		200			{object}	dto.TokenResponse	"JWT token"
+// @Success		204			"No Content, JWT set in HTTPOnly cookie"
 // @Failure		400			{object}	utils.HTTPError		"Bad request, validation error"
 // @Failure		401			{object}	utils.HTTPError		"Unauthorized, invalid credentials or blocked user"
 // @Router			/auth/sign-in [post]
@@ -94,7 +83,6 @@ func (s *Handler) login(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-
 	token, err := s.service.UserService.Login(userPayload)
 	if err != nil {
 		if errors.Is(err, service.ErrUserBlockedOrUnverified) {
@@ -135,7 +123,7 @@ func (s *Handler) login(w http.ResponseWriter, r *http.Request) {
 // @Tags			Auth
 // @Accept			json
 // @Produce		json
-// @Param			verificationRequest	body		dto.VerificationRequest	true	"Verification code request"
+// @Param			verificationRequest	body		dto.EmailVerificationRequest	true	"Verification code request"
 // @Success		200					{object}	JSONAnswer				"Verification code sent"
 // @Failure		400					{object}	utils.HTTPError			"Invalid request"
 // @Failure		500					{object}	utils.HTTPError			"Internal server error"
@@ -151,7 +139,7 @@ func (h *Handler) HandleRequestCode(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) requestCode(w http.ResponseWriter, r *http.Request) {
-	var req dto.VerificationRequest
+	var req dto.EmailVerificationRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
@@ -258,6 +246,122 @@ func (h *Handler) IsAuthorized(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteJSON(w, http.StatusOK, userDTO)
+}
+
+// @Summary		Request password reset code
+// @Description	Sends a password reset code to the user's email
+// @Tags			Auth
+// @Accept			json
+// @Produce		json
+// @Param			resetRequest	body		dto.ResetPasswordRequest	true	"Password reset request"
+// @Success		200				{object}	JSONAnswer					"Reset code sent"
+// @Failure		400				{object}	utils.HTTPError				"Invalid request or user not found"
+// @Failure		500				{object}	utils.HTTPError				"Internal server error"
+// @Router			/auth/reset/request [post]
+func (h *Handler) HandleRequestPasswordResetCode(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		h.requestPasswordResetCode(w, r)
+	default:
+		w.Header().Set("Allow", "POST")
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func (h *Handler) requestPasswordResetCode(w http.ResponseWriter, r *http.Request) {
+	var req dto.ResetPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.service.UserService.SendPasswordResetCode(req.Email); err != nil {
+		if errors.Is(err, service.ErrUserNotFound) {
+			utils.WriteError(w, http.StatusBadRequest, err)
+			return
+		} else if errors.Is(err, service.ErrPasswordRecentlyChanged) {
+			utils.WriteError(w, http.StatusBadRequest, err)
+			return
+		}
+		h.logger.Error("failed to send reset code", slog.Any("error", err))
+		http.Error(w, "failed to send reset code", http.StatusInternalServerError)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, JSONAnswer{Message: "reset code sent"})
+}
+
+// @Summary		Reset password
+// @Description	Resets user's password using email, code and new password
+// @Tags			Auth
+// @Accept			json
+// @Produce		json
+// @Param			resetConfirm	body		dto.ResetPasswordConfirm	true	"Password reset confirmation"
+// @Success		200				{object}	JSONAnswer					"Password reset successfully"
+// @Failure		400				{object}	utils.HTTPError				"Invalid request or verification code"
+// @Failure		404				{object}	utils.HTTPError				"User not found"
+// @Failure		429				{object}	utils.HTTPError				"Too many attempts"
+// @Failure		500				{object}	utils.HTTPError				"Internal server error"
+// @Failure		400				{object}	utils.HTTPError				"Password recently changed"
+// @Failure		400				{object}	utils.HTTPError				"Invalid username or password"
+// @Router			/auth/reset/confirm [post]
+func (h *Handler) HandleResetPassword(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		h.resetPassword(w, r)
+	default:
+		w.Header().Set("Allow", "POST")
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func (h *Handler) resetPassword(w http.ResponseWriter, r *http.Request) {
+	var req dto.ResetPasswordConfirm
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+	err := h.service.UserService.ConfirmPasswordReset(req)
+	switch {
+	case err == nil:
+		h.Logout(w, r)
+		utils.WriteJSON(w, http.StatusOK, JSONAnswer{Message: "password changed"})
+
+	case errors.Is(err, service.ErrInvalidVerificationCode):
+		utils.WriteError(w, http.StatusBadRequest, err)
+
+	case errors.Is(err, service.ErrTooManyAttempts):
+		utils.WriteError(w, http.StatusTooManyRequests, err)
+
+	case errors.Is(err, service.ErrNoNeedVerification):
+		utils.WriteError(w, http.StatusBadGateway, err)
+
+	case errors.Is(err, service.ErrUserNotFound):
+		utils.WriteError(w, http.StatusNotFound, err)
+
+	case errors.Is(err, authService.ErrUsernameEmpty),
+		errors.Is(err, authService.ErrUsernameLength),
+		errors.Is(err, authService.ErrUsernameWhitespace),
+		errors.Is(err, authService.ErrUsernameStartLetter),
+		errors.Is(err, authService.ErrUsernameInvalidCharacters),
+		errors.Is(err, authService.ErrUsernameConsecutiveSpecials),
+		errors.Is(err, authService.ErrUsernameEndsWithSpecial),
+		errors.Is(err, authService.ErrEmailEmpty),
+		errors.Is(err, authService.ErrEmailWhitespace),
+		errors.Is(err, authService.ErrEmailInvalidFormat),
+		errors.Is(err, authService.ErrPasswordEmpty),
+		errors.Is(err, authService.ErrPasswordTooShort),
+		errors.Is(err, authService.ErrPasswordWhitespace),
+		errors.Is(err, authService.ErrPasswordMissingLowercase),
+		errors.Is(err, authService.ErrPasswordMissingUppercase),
+		errors.Is(err, authService.ErrPasswordMissingDigit),
+		errors.Is(err, authService.ErrPasswordMissingSpecial):
+		utils.WriteError(w, http.StatusBadRequest, err)
+
+	default:
+		h.logger.Error("internal error", slog.Any("error", err))
+		utils.WriteJSON(w, http.StatusInternalServerError, JSONAnswer{Message: "internal error"})
+	}
 }
 
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {

@@ -85,7 +85,7 @@ func startWorkers(svc service.Service, ctx context.Context, emailSender email.Em
 	refresherTicker := time.NewTicker(1 * time.Minute)
 	go worker.RefresherCallback(refresherTicker, svc.BookingService)
 
-	cleanupTicker := time.NewTicker(time.Minute)
+	cleanupTicker := time.NewTicker(time.Second * 30)
 	go worker.StartUserCleanupWorker(cleanupTicker, ctx, svc.UserService)
 
 	notificationTicker := time.NewTicker(30 * time.Second)

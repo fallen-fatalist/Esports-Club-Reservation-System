@@ -42,13 +42,14 @@ type UserRepository interface {
 	GetCredentialsByLogin(login string) (entities.UserCredentials, error)
 	Create(entity *entities.User, hashedPassword string) (int64, error)
 	Update(*entities.Booking) (int64, error)
+	UpdatePassword(userID int64, hashedPassword string) error
 	Delete(int64) error
-	GetVerificationByEmail(email string) (postgres.EmailVerification, error)
-	SaveEmailVerification(email string, code string, expiresAt time.Time) error
+	GetVerification(email, vType string) (postgres.EmailVerification, error)
+	SaveVerification(email, code, vType string, expiresAt time.Time) error
 	MarkEmailVerified(userID int64) error
-	BlockEmail(email string, duration time.Duration) error
-	IncrementAttempt(email string) error
-	DeleteVerification(email string) error
+	BlockEmail(email, typ string, duration time.Duration) error
+	IncrementAttempt(email, typ string) error
+	DeleteVerification(email, vType string) error
 	DeleteUnverifiedUsers(olderThan time.Time) error
 }
 

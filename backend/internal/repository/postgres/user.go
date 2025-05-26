@@ -84,7 +84,7 @@ func (r *UserRepository) GetByID(id int64) (*entities.User, error) {
 }
 
 func (r *UserRepository) GetCredentialsByEmail(email string) (entities.UserCredentials, error) {
-	query := `SELECT user_id, hashed_password, role, status FROM users WHERE email = $1`
+	query := `SELECT user_id, hashed_password, role, status,password_updated_at FROM users WHERE email = $1`
 
 	var uc entities.UserCredentials
 	err := r.db.QueryRow(query, email).Scan(
@@ -92,6 +92,7 @@ func (r *UserRepository) GetCredentialsByEmail(email string) (entities.UserCrede
 		&uc.HashedPassword,
 		&uc.Role,
 		&uc.Status,
+		&uc.PasswordUpdatedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -198,5 +199,31 @@ func (r *UserRepository) Update(booking *entities.Booking) (int64, error) {
 }
 
 func (r *UserRepository) Delete(id int64) error {
+	return nil
+}
+
+func (r *UserRepository) UpdatePassword(userID int64, hashedPassword string) error {
+	const op = "repo.UpdatePassword"
+
+	query := `
+		UPDATE users
+		SET hashed_password = $1,
+		    password_updated_at = NOW()
+		WHERE user_id = $2
+	`
+
+	res, err := r.db.Exec(query, hashedPassword, userID)
+	if err != nil {
+		return fmt.Errorf("%s: failed to update password: %w", op, err)
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("%s: failed to check rows affected: %w", op, err)
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("%s: user not found", op)
+	}
+
 	return nil
 }
