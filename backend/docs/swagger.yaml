@@ -1,5 +1,38 @@
 basePath: /api
 definitions:
+  dto.Booking:
+    properties:
+      computer_id:
+        description: |-
+          ComputerID is the ID of the computer being booked.
+          required: true
+        example: 67890
+        type: integer
+      end_time:
+        description: |-
+          EndTime is the end time of the booking in RFC3339 format.
+          required: true
+        example: "2025-05-27T12:00:00+07:00"
+        type: string
+      package_id:
+        description: |-
+          PackageID is the ID of the selected package for the booking.
+          required: true
+        example: 111
+        type: integer
+      start_time:
+        description: |-
+          StartTime is the start time of the booking in RFC3339 format.
+          required: true
+        example: "2025-05-27T10:00:00+07:00"
+        type: string
+      user_id:
+        description: |-
+          UserID is the ID of the user making the booking.
+          required: true
+        example: 12345
+        type: integer
+    type: object
   dto.EmailVerificationRequest:
     properties:
       email:
@@ -53,7 +86,7 @@ definitions:
       email:
         type: string
     type: object
-  dto.UserDTO:
+  dto.User:
     properties:
       balance:
         type: integer
@@ -216,14 +249,15 @@ paths:
     post:
       consumes:
       - application/json
-      description: Creates a new booking with the given details
+      description: Creates a new booking with the provided start and end times, computer
+        ID and user ID
       parameters:
-      - description: Booking details
+      - description: Booking to create
         in: body
         name: booking
         required: true
         schema:
-          $ref: '#/definitions/entities.Booking'
+          $ref: '#/definitions/dto.Booking'
       produces:
       - application/json
       responses:
@@ -234,14 +268,56 @@ paths:
         "400":
           description: Invalid request body
           schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
+            $ref: '#/definitions/utils.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: Computer not found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
         "500":
           description: Internal server error
           schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-      security:
-      - BearerAuth: []
+            $ref: '#/definitions/utils.HTTPError'
       summary: Create a new booking
+      tags:
+      - Bookings
+  /api/bookings/{id}/cancel:
+    delete:
+      consumes:
+      - application/json
+      description: Cancels a booking with the given ID. The user must have the correct
+        role to cancel the booking.
+      parameters:
+      - description: Booking ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Invalid booking ID or non own booking cancel
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: Booking not found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      summary: Cancel a booking
       tags:
       - Bookings
   /api/bookings/active:
@@ -682,7 +758,7 @@ paths:
         "200":
           description: User authorized
           schema:
-            $ref: '#/definitions/dto.UserDTO'
+            $ref: '#/definitions/dto.User'
       summary: Check if user is authorized
       tags:
       - Auth

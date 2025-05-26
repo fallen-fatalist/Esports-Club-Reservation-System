@@ -219,7 +219,7 @@ func (h *Handler) verifyEmail(w http.ResponseWriter, r *http.Request) {
 // @Tags			Auth
 // @Accept			json
 // @Produce		json
-// @Success		200		{object}	dto.UserDTO	"User authorized"
+// @Success		200		{object}	dto.User	"User authorized"
 // @Router			/auth/authorized [get]
 func (h *Handler) IsAuthorized(w http.ResponseWriter, r *http.Request) {
 	userIDStr, _ := auth.GetUserIDFromContext(r.Context())
@@ -237,7 +237,7 @@ func (h *Handler) IsAuthorized(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userDTO := dto.UserDTO{
+	userDTO := dto.User{
 		Username: user.Login,
 		Email:    user.Email,
 		Status:   user.Status,

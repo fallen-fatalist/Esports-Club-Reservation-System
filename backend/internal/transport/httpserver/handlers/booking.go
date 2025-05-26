@@ -3,16 +3,18 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"esports_club_booking/internal/auth"
 	"esports_club_booking/internal/entities"
-	"esports_club_booking/internal/service"
+	"esports_club_booking/internal/transport/dto"
+	"esports_club_booking/internal/utils"
 	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
 )
 
-// @Summary		Get all bookings with time format "2006-01-02T15:04:05Z07:00"
+// @Summary		Get all bookings 
 // @Description	Returns a list of bookings with various statuses
 // @Tags			Bookings
 // @Accept			json
@@ -47,19 +49,20 @@ func (s *Handler) Bookings(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary		Create a new booking
-// @Description	Creates a new booking with the given details
+// @Description	Creates a new booking with the provided start and end times, computer ID and user ID
 // @Tags			Bookings
-// @Security BearerAuth
 // @Accept			json
 // @Produce		json
-// @Param			booking	body		entities.Booking	true	"Booking details"
+// @Param			booking	body		dto.Booking	true	"Booking to create"
 // @Success		201		{object}	handlers.JSONAnswer	"Booking created successfully"
-// @Failure		400		{object}	handlers.JSONAnswer	"Invalid request body"
-// @Failure		500		{object}	handlers.JSONAnswer	"Internal server error"
+// @Failure		400		{object}	utils.HTTPError	"Invalid request body"
+// @Failure		401		{object}	utils.HTTPError	"Unauthorized"
+// @Failure		404		{object}	utils.HTTPError	"Computer not found"
+// @Failure		500		{object}	utils.HTTPError	"Internal server error"
 // @Router			/api/bookings [post]
 func (s *Handler) PostBooking(w http.ResponseWriter, r *http.Request) {
 
-	var booking entities.Booking
+	var booking dto.Booking
 
 	// Parse the JSON body into the struct
 	if err := json.NewDecoder(r.Body).Decode(&booking); err != nil {
@@ -88,24 +91,43 @@ func (s *Handler) PostBooking(w http.ResponseWriter, r *http.Request) {
 
 	id, err := s.service.BookingService.CreateBooking(ctx, &booking)
 	if err != nil {
-		if err == service.ErrUnhandledError {
+		switch {
+		case errors.Is(err, entities.ErrInvalidUserID),
+			errors.Is(err, entities.ErrNegativeComputerID),
+			errors.Is(err, entities.ErrInvalidPackageZero),
+			errors.Is(err, entities.ErrInvalidPackageNegative),
+			errors.Is(err, entities.ErrInvalidStartTimeFormat),
+			errors.Is(err, entities.ErrInvalidEndTimeFormat),
+			errors.Is(err, entities.ErrStartTimeInPast),
+			errors.Is(err, entities.ErrEndBeforeStart),
+			errors.Is(err, entities.ErrNonHourlyDuration),
+			errors.Is(err, entities.ErrEmptyStatus),
+			errors.Is(err, entities.ErrInvalidStatus):
+			utils.WriteError(w, http.StatusBadRequest, err)
+			return
+
+		case errors.Is(err, entities.ErrPackageNotFound):
+			utils.WriteError(w, http.StatusBadRequest, err)
+			return
+
+		case errors.Is(err, entities.ErrComputerNotFound):
+			utils.WriteError(w, http.StatusBadRequest, err)
+			return
+
+		case errors.Is(err, entities.ErrBookingOverlap):
+			utils.WriteError(w, http.StatusBadRequest, err)
+			return
+
+		case errors.Is(err, entities.ErrNotCorrespondenceOfRoom):
+			utils.WriteError(w, http.StatusBadRequest, err)
+			return
+
+		default:
+			slog.Error("Error creating booking:", slog.Any("error", err))
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
-		} else {
-			jsonPayload := JSONAnswer{
-				Message: err.Error(),
-			}
-
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusBadRequest)
-			err = json.NewEncoder(w).Encode(jsonPayload)
-			if err != nil {
-				slog.Error("Error encoding JSON:", err)
-				http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-				return
-			}
-			return
 		}
+
 	}
 
 	jsonPayload := JSONAnswer{
@@ -211,6 +233,7 @@ func (s *Handler) getFinishedBookings(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
+
 func (s *Handler) HandleFinishedBookings(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -480,4 +503,45 @@ func (s *Handler) UserBookings(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 		return
 	}
+}
+
+// @Summary		Cancel a booking
+// @Description	Cancels a booking with the given ID. The user must have the correct role to cancel the booking.
+// @Tags			Bookings
+// @Accept			json
+// @Produce		json
+// @Param			id	path		int64				true	"Booking ID"
+// @Success		204
+// @Failure		400	{object}	utils.HTTPError	"Invalid booking ID or non own booking cancel"
+// @Failure		401	{object}	utils.HTTPError	"Unauthorized"
+// @Failure		404	{object}	utils.HTTPError	"Booking not found"
+// @Failure		500	{object}	utils.HTTPError	"Internal server error"
+// @Router			/api/bookings/{id}/cancel [delete]
+func (s *Handler) HandleCancel(w http.ResponseWriter, r *http.Request) {
+	bookingIDStr := r.PathValue("id")
+
+	bookingID, err := strconv.ParseInt(bookingIDStr, 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, errors.New("invalid booking ID"))
+		return
+	}
+
+	err = s.service.BookingService.Cancel(r.Context(), bookingID)
+	if err != nil {
+		switch {
+		case errors.Is(err, entities.ErrUnauthorized):
+			utils.WriteError(w, http.StatusUnauthorized, err)
+			return
+		case errors.Is(err, entities.ErrBookingNotExists):
+			utils.WriteError(w, http.StatusNotFound, err)
+			return
+		case errors.Is(err, entities.ErrNonOwnBookingCancel):
+			utils.WriteError(w, http.StatusBadRequest, err)
+		}
+		slog.Error("unhandled error cancelling booking:", slog.Any("error", err))
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

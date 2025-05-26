@@ -59,7 +59,6 @@ func (s *UserService) Register(userDTO dto.RegisterUser) (int64, error) {
 		ID:     -1, // if user id didnt change then repository layer is not doing its job
 		Login:  userDTO.Login,
 		Email:  userDTO.Email,
-		Role:   "client",
 		Status: "unverified",
 	}
 
@@ -97,7 +96,8 @@ func (s *UserService) Login(userDTO dto.LoginUser) (string, error) {
 	if !auth.VerifyPassword(user.HashedPassword, userDTO.Password) {
 		return "", service.ErrInvalidCredentials
 	}
-	if user.Status == "blocked" || user.Status == "unverified" {
+	if user.Status == entities.BlockedStatus ||
+		user.Status == entities.UnverifiedStatus {
 		return "", service.ErrUserBlockedOrUnverified
 	}
 	//generate jwt token and sign it (auth.CreateJWT already signs it for you)

@@ -14,10 +14,11 @@ import (
 
 type (
 	Config struct {
-		Server      Server
-		DataBase    DataBase
-		JWT         JWTConfig
-		EmailSender EmailSender
+		Server           Server
+		DataBase         DataBase
+		JWT              JWTConfig
+		EmailSender      EmailSender
+		OwnerCredentials OwnerCredentials
 	}
 
 	Server struct {
@@ -44,6 +45,12 @@ type (
 		SMTPHost    string
 		SMTPPort    int64
 		Password    string
+	}
+
+	OwnerCredentials struct {
+		Email    string
+		Username string
+		Password string
 	}
 )
 
@@ -86,6 +93,11 @@ func NewConfig() *Config {
 			SMTPHost:    getEnvStr("EMAIL_SENDER_SMTP_HOST", "smtp.gmail.com"),
 			SMTPPort:    getEnvInt64("EMAIL_SENDER_SMTP_PORT", 587),
 			Password:    getEnvStr("EMAIL_SENDER_APP_PASSWORD", ""),
+		},
+		OwnerCredentials: OwnerCredentials{
+			Email:    getEnvStr("EMAIL", "owner@mail.com"),
+			Username: getEnvStr("USERNAME", "owner"),
+			Password: getEnvStr("PASSWORD", "change_me"),
 		},
 	}
 }

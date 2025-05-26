@@ -47,12 +47,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Creates a new booking with the given details",
+                "description": "Creates a new booking with the provided start and end times, computer ID and user ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -65,12 +60,12 @@ const docTemplate = `{
                 "summary": "Create a new booking",
                 "parameters": [
                     {
-                        "description": "Booking details",
+                        "description": "Booking to create",
                         "name": "booking",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/entities.Booking"
+                            "$ref": "#/definitions/dto.Booking"
                         }
                     }
                 ],
@@ -84,13 +79,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request body",
                         "schema": {
-                            "$ref": "#/definitions/handlers.JSONAnswer"
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Computer not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.JSONAnswer"
+                            "$ref": "#/definitions/utils.HTTPError"
                         }
                     }
                 }
@@ -219,6 +226,59 @@ const docTemplate = `{
                         "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bookings/{id}/cancel": {
+            "delete": {
+                "description": "Cancels a booking with the given ID. The user must have the correct role to cancel the booking.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Cancel a booking",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Booking ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid booking ID or non own booking cancel",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Booking not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
                         }
                     }
                 }
@@ -757,7 +817,7 @@ const docTemplate = `{
                     "200": {
                         "description": "User authorized",
                         "schema": {
-                            "$ref": "#/definitions/dto.UserDTO"
+                            "$ref": "#/definitions/dto.User"
                         }
                     }
                 }
@@ -1022,6 +1082,36 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "dto.Booking": {
+            "type": "object",
+            "properties": {
+                "computer_id": {
+                    "description": "ComputerID is the ID of the computer being booked.\nrequired: true",
+                    "type": "integer",
+                    "example": 67890
+                },
+                "end_time": {
+                    "description": "EndTime is the end time of the booking in RFC3339 format.\nrequired: true",
+                    "type": "string",
+                    "example": "2025-05-27T12:00:00+07:00"
+                },
+                "package_id": {
+                    "description": "PackageID is the ID of the selected package for the booking.\nrequired: true",
+                    "type": "integer",
+                    "example": 111
+                },
+                "start_time": {
+                    "description": "StartTime is the start time of the booking in RFC3339 format.\nrequired: true",
+                    "type": "string",
+                    "example": "2025-05-27T10:00:00+07:00"
+                },
+                "user_id": {
+                    "description": "UserID is the ID of the user making the booking.\nrequired: true",
+                    "type": "integer",
+                    "example": 12345
+                }
+            }
+        },
         "dto.EmailVerificationRequest": {
             "type": "object",
             "properties": {
@@ -1083,7 +1173,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.UserDTO": {
+        "dto.User": {
             "type": "object",
             "properties": {
                 "balance": {

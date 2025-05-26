@@ -174,8 +174,8 @@ func (r *UserRepository) GetByLogin(login string) (entities.User, error) {
 
 func (r *UserRepository) Create(user *entities.User, hashedPassword string) (int64, error) {
 	query := `
-		INSERT INTO users (login, email, hashed_password, status, role, balance, promotion)
-		VALUES ($1, $2, $3, $4, $5, $6, '')
+		INSERT INTO users (login, email, hashed_password, status, role, balance)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING user_id
 	`
 	err := r.db.QueryRow(query,

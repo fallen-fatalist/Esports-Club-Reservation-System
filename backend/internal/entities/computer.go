@@ -52,7 +52,7 @@ func (s Status) IsValid() bool {
 }
 
 var (
-	ErrInvalidStatus = errors.New("invalid status for computer provided")
+	ErrInvalidStatus = errors.New("invalid status")
 )
 
 func (computer *Computer) Validate() error {
@@ -95,3 +95,7 @@ func (computer *Computer) Validate() error {
 
 	return nil
 }
+
+var (
+	ErrComputerNotFound = errors.New("computer does not exist")
+)

@@ -32,3 +32,19 @@ var (
 	ErrFailedToGetUser    = errors.New("failed to get user")
 	ErrFailedToInsertUser = errors.New("failed to insert user")
 )
+
+// Roles
+var (
+	OwnerRole   = "owner"
+	ManagerRole = "manager"
+	AdminRole   = "admin"
+	AnalystRole = "analyst"
+	ClientRole  = "user"
+)
+
+// Statuses
+var (
+	ActiveStatus     = "active"
+	BlockedStatus    = "blocked"
+	UnverifiedStatus = "unverified"
+)

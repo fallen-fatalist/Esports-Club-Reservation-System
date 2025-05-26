@@ -6,8 +6,15 @@ import (
 	"net/http"
 )
 
+// @Summary		Get all users
+// @Description	Returns a list of all users
+// @Tags			Users
+// @Produce		json
+// @Success		200	{array}		entities.User	"List of users"
+// @Failure		500	{object}	handlers.JSONAnswer	"Internal server error"
+// @Router			/api/users [get]
 func (s *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := s.service.UserService.GetAllUsers()
+	users, err := s.service.UserService.GetUsers()
 	if err != nil {
 		s.logger.Error("failed to get users", slog.Any("error", err))
 		http.Error(w, "Internal server error, Please message administrators", http.StatusInternalServerError)
@@ -20,7 +27,6 @@ func (s *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
 }
-
 
 func (s *Handler) AllBookings(w http.ResponseWriter, r *http.Request) {
 	bookings, err := s.service.BookingService.GetAllBookings()
