@@ -40,6 +40,7 @@ const Navbar = () => {
         <div className="navbar__links">
           <Link to="/booking">Booking</Link>
           {isAuth && <Link to="/profile">Profile</Link>}
+          {isAuth && <Link to="/admin">Admin</Link>}
 
           {!isAuth && (
             <>

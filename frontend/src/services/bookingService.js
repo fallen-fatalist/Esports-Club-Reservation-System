@@ -20,7 +20,6 @@ const bookingService = {
         }
     },
 
-
     async createBooking(bookingData) {
       try {
         console.log('Request payload:', JSON.stringify(bookingData, null, 2));

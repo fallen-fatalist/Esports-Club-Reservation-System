@@ -28,13 +28,11 @@ import bookingService from "../services/bookingService";
 import computerService from "../services/computerService";
 import packageService from "../services/packageService";
 
-// Функция форматирования первой буквы в верхний регистр
 const capitalizeFirst = (str) => {
   if (!str) return '';
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 };
 
-// Определение цвета по комнате
 const getRoomColor = (room) => {
   switch (room?.toLowerCase()) {
     case "vip":
