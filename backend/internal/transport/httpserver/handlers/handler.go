@@ -23,13 +23,13 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	/* Computers */
 
 	mux.HandleFunc("GET /computers", h.Computers)
-	mux.HandleFunc("POST /computers", h.PostComputers)
+	mux.HandleFunc("POST /computers", auth.WithAuth(h.jwtMng, entities.ManagementRoles, h.PostComputers))
 	mux.HandleFunc("GET /computers/remaining", h.ComputersRemaining)
 	mux.HandleFunc("GET /computers/status", h.HandleComputerStatuses)
 	mux.HandleFunc("GET /computers/{id}/remaining", h.HandleComputerRemaining)
 	mux.HandleFunc("GET /computers/{id}/status", h.HandleComputerStatus)
 	mux.HandleFunc("GET /computers/{id}", h.Computer)
-	mux.HandleFunc("DELETE /computers/{id}", h.DeleteComputer)
+	mux.HandleFunc("DELETE /computers/{id}", auth.WithAuth(h.jwtMng, entities.ManagementRoles, h.DeleteComputer))
 
 	/* Packages */
 	mux.HandleFunc("GET /packages", h.Packages)
@@ -47,7 +47,7 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("POST /block/{id}", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.HandleBlock))
 	mux.HandleFunc("POST /unblock/{id}", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.HandleUnblock))
 	mux.HandleFunc("POST /users/{id}/credit", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.HandleUserCredit))
-	mux.HandleFunc("POST /users/{id}/admin", auth.WithAuth(h.jwtMng, entities.AdminGranters, h.HandleGrantAdmin))
+	mux.HandleFunc("POST /users/{id}/admin", auth.WithAuth(h.jwtMng, entities.ManagementRoles, h.HandleGrantAdmin))
 	mux.HandleFunc("DELETE /users/{id}", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.HandleUserDelete))
 
 	//Auth

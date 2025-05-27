@@ -34,7 +34,6 @@ func (s *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 // @Summary		Delete a user
 // @Description	Deletes a user with the given ID.
 // @Tags			Users
@@ -141,7 +140,7 @@ func (s *Handler) HandleUserCredit(w http.ResponseWriter, r *http.Request) {
 // @Failure      400  {object}  utils.HTTPError  "Invalid user ID"
 // @Failure      404  {object}  utils.HTTPError  "User not found"
 // @Failure      500  {object}  utils.HTTPError  "Internal server error"
-// @Router       /api/users/{id}/grant-admin [post]
+// @Router       /api/users/{id}/admin [post]
 func (s *Handler) HandleGrantAdmin(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	userID, err := strconv.ParseInt(idStr, 10, 64)

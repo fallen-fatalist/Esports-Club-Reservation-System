@@ -17,7 +17,7 @@ const docTemplate = `{
     "paths": {
         "/api/bookings": {
             "get": {
-                "description": "Returns a list of bookings with various statuses",
+                "description": "Returns a list of bookings with filtering by status",
                 "consumes": [
                     "application/json"
                 ],
@@ -171,7 +171,7 @@ const docTemplate = `{
         },
         "/api/computers": {
             "get": {
-                "description": "Returns a list of all computers",
+                "description": "Returns a list of filtered by room computers",
                 "produces": [
                     "application/json"
                 ],
@@ -206,6 +206,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Creates a new computer",
                 "consumes": [
                     "application/json"
@@ -732,6 +737,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/users/{id}/admin": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Grants admin privileges to a user with the given ID, only Owner and Manager can grant admin role.",
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Grant admin privileges to a user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid user ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/users/{id}/block": {
             "post": {
                 "security": [
@@ -812,52 +863,6 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Invalid user ID or balance",
-                        "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
-                        }
-                    },
-                    "404": {
-                        "description": "User not found",
-                        "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/users/{id}/grant-admin": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Grants admin privileges to a user with the given ID, only Owner and Manager can grant admin role.",
-                "tags": [
-                    "Users"
-                ],
-                "summary": "Grant admin privileges to a user",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "User ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Invalid user ID",
                         "schema": {
                             "$ref": "#/definitions/utils.HTTPError"
                         }
