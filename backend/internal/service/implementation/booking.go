@@ -115,6 +115,7 @@ func (s *BookingService) CreateBooking(ctx context.Context, bookingDTO *dto.Book
 	if err != nil {
 		return 0, err
 	}
+
 	if conflict {
 		return 0, entities.ErrBookingOverlap
 	}
@@ -122,7 +123,7 @@ func (s *BookingService) CreateBooking(ctx context.Context, bookingDTO *dto.Book
 	packageMap := s.packageService.PackagesMap()
 	computerMap := s.computerService.ComputersMap()
 
-	packageRoom, packageExists := packageMap[booking.PackageID]
+	bookingPackage, packageExists := packageMap[booking.PackageID]
 	if !packageExists {
 		return 0, entities.ErrPackageNotFound
 	}
@@ -132,9 +133,25 @@ func (s *BookingService) CreateBooking(ctx context.Context, bookingDTO *dto.Book
 	}
 
 	if packageExists && computerExists {
-		if packageRoom.Room != computerPackage.Room {
+		if bookingPackage.Room != computerPackage.Room {
 			return 0, entities.ErrNotCorrespondenceOfRoom
 		}
+
+		// Parse StartTime and EndTime
+		start, err := time.Parse(time.RFC3339, bookingDTO.StartTime)
+		if err != nil {
+			return -1, entities.ErrInvalidTimeFormat
+		}
+		end, err := time.Parse(time.RFC3339, booking.EndTime)
+		if err != nil {
+			return -1, entities.ErrInvalidTimeFormat
+		}
+
+		// Check that packet duration corresponds to the duration from the start_time till end_time
+		if float64(bookingPackage.Duration)-(end.Sub(start).Hours()) > entities.EPS {
+			return 0, entities.ErrInvalidDuration
+		}
+
 		if id, err := s.repository.Create(ctx, booking); err != nil {
 			slog.Error("Unhandled error creating booking:", slog.Any("error", err))
 			return 0, service.ErrUnhandledError

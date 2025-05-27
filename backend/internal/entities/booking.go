@@ -65,6 +65,8 @@ var (
 	ErrNonHourlyDuration      = errors.New("booking duration must be a whole number of hours")
 	ErrInvalidFilter          = errors.New("invalid filter")
 	ErrEmptyStatus            = errors.New("status must not be empty")
+	ErrInvalidTimeFormat      = errors.New("invalid time format, must be RFC3339 format")
+	ErrInvalidDuration        = errors.New("booking duration must correspond to the package duration")
 )
 
 func (b *Booking) Validate() error {
