@@ -13,7 +13,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalContent, setModalContent] = useState({ title: "", message: "" });
-  const { login, showModal } = useContext(AuthContext);
+  const { login, showModal, isAdmin, userRole } = useContext(AuthContext);
 
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordStep, setForgotPasswordStep] = useState(1);
@@ -61,10 +61,21 @@ const Login = () => {
     setIsLoading(true);
 
     try {
+      // Выполняем логин и получаем информацию о пользователе
       await login(form);
-      showModal("Login Successful", "You have successfully logged in!");
+      
       console.log("Login successful");
-      navigate("/");
+      
+      // Показываем модальное окно с успехом
+      showModal("Login Successful", "You have successfully logged in!");
+      
+      // Небольшая задержка перед навигацией для показа модального окна
+      setTimeout(() => {
+        setModalVisible(false);
+        // AppRouter автоматически перенаправит на нужную страницу
+        // благодаря AuthRoute компоненту
+      }, 1500);
+      
     } catch (err) {
       let msg = "Login failed. Please try again.";
       if (err.response) {
@@ -195,8 +206,12 @@ const Login = () => {
 
   const handleModalClose = () => {
     setModalVisible(false);
+    
+    // Если это успешный логин, AppRouter автоматически перенаправит
+    // благодаря AuthRoute компоненту, который проверяет isAuth
     if (modalContent.title === "Login Successful") {
-      navigate("/");
+      // Просто закрываем модал, перенаправление произойдет автоматически
+      console.log("Login modal closed, redirect will happen automatically");
     }
   };
 

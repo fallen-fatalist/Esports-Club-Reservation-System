@@ -49,13 +49,16 @@ import {
   MoneyOff
 } from '@mui/icons-material';
 import { ThemeContext } from '../context/ThemeContext';
+import { AuthContext } from '../context/contextIndex';
 import bookingService from '../services/bookingService';
 import computerService from '../services/computerService';
 import packageService from '../services/packageService';
-import { checkAuth } from '../services/authService';
+import usersService from '../services/usersService';
+import { checkAuth, checkIsPriveleged } from '../services/authService';
 
 const Admin = () => {
   const { isDarkTheme } = useContext(ThemeContext);
+  const { handleAuthError, showModal } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState(0);
   const [balanceModal, setBalanceModal] = useState(false);
   const [deleteUserModal, setDeleteUserModal] = useState(false);
@@ -73,6 +76,7 @@ const Admin = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isPrivileged, setIsPrivileged] = useState(false);
 
   const theme = useMemo(
     () =>
@@ -118,58 +122,52 @@ const Admin = () => {
     [isDarkTheme]
   );
 
-  // 1. User Management:
-  //  - Get all users (admin only)
-  //  - Block user (admin only)
-  //  - Unblock user (admin only)
-  //  - Delete user (admin only)
-  //  - Update user balance (admin only)
-  //    Body: { operation: 'add'|'subtract', amount: number }
-  //    Cancel booking 
+  const checkAdminPrivileges = async () => {
+    try {
+      const response = await checkIsPriveleged();
+      setIsPrivileged(response.status === 200);
+      return response.status === 200;
+    } catch (error) {
+      console.error('Error checking admin privileges:', error);
+      if (error.response?.status === 401) {
+        handleAuthError('Admin access required');
+      } else if (error.response?.status === 403) {
+        setSnackbar({
+          open: true,
+          message: 'Access denied. Admin privileges required.',
+          severity: 'error'
+        });
+      }
+      setIsPrivileged(false);
+      return false;
+    }
+  };
 
   const fetchAllUsers = async () => {
     try {
-      const response = await checkAuth();
-      if (response.data) {
-        const mockUsers = [
-          {
-            id: 1,
-            username: response.data.username || 'admin',
-            email: response.data.email || 'admin@example.com',
-            balance: response.data.balance || 0,
-            role: response.data.role || 'admin',
-            status: response.data.status || 'active'
-          },
-          {
-            id: 2,
-            username: 'user1',
-            email: 'user1@example.com',
-            balance: 50,
-            role: 'user',
-            status: 'active'
-          },
-          {
-            id: 3,
-            username: 'user2',
-            email: 'user2@example.com',
-            balance: 100,
-            role: 'user',
-            status: 'blocked'
-          },
-          {
-            id: 4,
-            username: 'user3',
-            email: 'user3@example.com',
-            balance: 25,
-            role: 'user',
-            status: 'active'
-          }
-        ];
-        setUsers(mockUsers);
-      }
+      const userData = await usersService.getUsers();
+      setUsers(userData);
     } catch (error) {
       console.error('Error fetching users:', error);
-      setError('Failed to load users data');
+      if (error.message === 'Insufficient privileges') {
+        setSnackbar({
+          open: true,
+          message: 'Insufficient privileges to view users',
+          severity: 'error'
+        });
+      } else {
+        setError('Failed to load users data');
+      }
+    }
+  };
+
+  // Функция для обновления данных пользователя после операций с балансом
+  const refreshUserData = async (userId) => {
+    try {
+      const updatedUsers = await usersService.getUsers();
+      setUsers(updatedUsers);
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
     }
   };
 
@@ -177,12 +175,21 @@ const Admin = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        
+        // First check if user has admin privileges
+        const hasPrivileges = await checkAdminPrivileges();
+        if (!hasPrivileges) {
+          setError('Admin access required');
+          return;
+        }
+
         const [bookingsData, computersData, packagesData] = await Promise.all([
           bookingService.getBookings(),    
           computerService.getComputers(),   
           packageService.getPackages(),
           fetchAllUsers()
         ]);
+        
         setBookings(bookingsData);
         setComputers(computersData);
         setPackages(packagesData);
@@ -235,18 +242,22 @@ const Admin = () => {
 
   const handleBlockUser = async (userId) => {
     try {
-      setUsers(users.map(user => 
-        user.id === userId ? { ...user, status: 'blocked' } : user
-      ));
-      setSnackbar({
-        open: true,
-        message: `User blocked successfully`,
-        severity: 'success'
-      });
+      const success = await usersService.blockUserByID(userId);
+      if (success) {
+        setUsers(users.map(user => 
+          user.id === userId ? { ...user, status: 'blocked' } : user
+        ));
+        setSnackbar({
+          open: true,
+          message: `User blocked successfully`,
+          severity: 'success'
+        });
+      }
     } catch (error) {
+      console.error('Error blocking user:', error);
       setSnackbar({
         open: true,
-        message: 'Failed to block user',
+        message: error.message || 'Failed to block user',
         severity: 'error'
       });
     }
@@ -254,18 +265,22 @@ const Admin = () => {
 
   const handleUnblockUser = async (userId) => {
     try {
-      setUsers(users.map(user => 
-        user.id === userId ? { ...user, status: 'active' } : user
-      ));
-      setSnackbar({
-        open: true,
-        message: `User unblocked successfully`,
-        severity: 'success'
-      });
+      const success = await usersService.unblockUserByID(userId);
+      if (success) {
+        setUsers(users.map(user => 
+          user.id === userId ? { ...user, status: 'active' } : user
+        ));
+        setSnackbar({
+          open: true,
+          message: `User unblocked successfully`,
+          severity: 'success'
+        });
+      }
     } catch (error) {
+      console.error('Error unblocking user:', error);
       setSnackbar({
         open: true,
-        message: 'Failed to unblock user',
+        message: error.message || 'Failed to unblock user',
         severity: 'error'
       });
     }
@@ -274,18 +289,22 @@ const Admin = () => {
   const handleDeleteUser = async () => {
     if (!selectedUserForDelete) return;
     try {
-      setUsers(users.filter(user => user.id !== selectedUserForDelete.id));
-      setSnackbar({
-        open: true,
-        message: `User ${selectedUserForDelete.username} deleted successfully`,
-        severity: 'success'
-      });
-      setDeleteUserModal(false);
-      setSelectedUserForDelete(null);
+      const success = await usersService.deleteUserByID(selectedUserForDelete.id);
+      if (success) {
+        setUsers(users.filter(user => user.id !== selectedUserForDelete.id));
+        setSnackbar({
+          open: true,
+          message: `User ${selectedUserForDelete.username} deleted successfully`,
+          severity: 'success'
+        });
+        setDeleteUserModal(false);
+        setSelectedUserForDelete(null);
+      }
     } catch (error) {
+      console.error('Error deleting user:', error);
       setSnackbar({
         open: true,
-        message: 'Failed to delete user',
+        message: error.message || 'Failed to delete user',
         severity: 'error'
       });
     }
@@ -297,28 +316,31 @@ const Admin = () => {
       const amount = parseFloat(balanceAmount);
       const user = users.find(u => u.id === parseInt(selectedUser));
       if (!user) return;
-      const newBalance = balanceOperation === 'add' 
-        ? user.balance + amount 
-        : user.balance - amount;
-      setUsers(users.map(u => 
-        u.id === parseInt(selectedUser) 
-          ? { ...u, balance: Math.max(0, newBalance) }
-          : u
-      ));
-      const operationText = balanceOperation === 'add' ? 'added to' : 'deducted from';
-      setSnackbar({
-        open: true,
-        message: `Successfully ${operationText} ${user.username}: $${amount}`,
-        severity: 'success'
-      });
-      setBalanceModal(false);
-      setSelectedUser('');
-      setBalanceAmount('');
-      setBalanceOperation('add');
+
+      // Для вычитания передаем отрицательную сумму
+      const finalAmount = balanceOperation === 'add' ? amount : -amount;
+      
+      const success = await usersService.creditUserByID(user.id, finalAmount);
+      if (success) {
+        // Обновляем данные пользователей с сервера вместо клиентского расчета
+        await refreshUserData(user.id);
+        
+        setSnackbar({
+          open: true,
+          message: `Successfully ${balanceOperation === 'add' ? 'added' : 'deducted'} $${amount} ${balanceOperation === 'add' ? 'to' : 'from'} ${user.username}`,
+          severity: 'success'
+        });
+
+        setBalanceModal(false);
+        setSelectedUser('');
+        setBalanceAmount('');
+        setBalanceOperation('add');
+      }
     } catch (error) {
+      console.error('Error updating balance:', error);
       setSnackbar({
         open: true,
-        message: 'Failed to update balance',
+        message: error.message || 'Failed to update balance',
         severity: 'error'
       });
     }
@@ -327,22 +349,26 @@ const Admin = () => {
   const handleCancelBooking = async () => {
     if (!selectedBookingForCancel) return;
     try {
-      setBookings(bookings.map(booking => 
-        booking.id === selectedBookingForCancel.id 
-          ? { ...booking, status: 'cancelled' }
-          : booking
-      ));
-      setSnackbar({
-        open: true,
-        message: `Booking #${selectedBookingForCancel.id} cancelled successfully`,
-        severity: 'success'
-      });
-      setCancelBookingModal(false);
-      setSelectedBookingForCancel(null);
+      const status = await bookingService.cancelBookingByID(selectedBookingForCancel.id);
+      if (status === 200) {
+        setBookings(bookings.map(booking => 
+          booking.id === selectedBookingForCancel.id 
+            ? { ...booking, status: 'cancelled' }
+            : booking
+        ));
+        setSnackbar({
+          open: true,
+          message: `Booking #${selectedBookingForCancel.id} cancelled successfully`,
+          severity: 'success'
+        });
+        setCancelBookingModal(false);
+        setSelectedBookingForCancel(null);
+      }
     } catch (error) {
+      console.error('Error cancelling booking:', error);
       setSnackbar({
         open: true,
-        message: 'Failed to cancel booking',
+        message: error.response?.data?.message || 'Failed to cancel booking',
         severity: 'error'
       });
     }
@@ -384,6 +410,25 @@ const Admin = () => {
         <CssBaseline />
         <Box sx={{ minHeight: '100vh', background: theme.palette.background.default, color: theme.palette.text.primary, p: 3 }}>
           <Typography color="error">{error}</Typography>
+          {error === 'Admin access required' && (
+            <Typography variant="body2" sx={{ mt: 2 }}>
+              You don't have permission to access this page. Please contact an administrator.
+            </Typography>
+          )}
+        </Box>
+      </ThemeProvider>
+    );
+  }
+
+  if (!isPrivileged) {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Box sx={{ minHeight: '100vh', background: theme.palette.background.default, color: theme.palette.text.primary, p: 3 }}>
+          <Typography color="error">Access Denied</Typography>
+          <Typography variant="body2" sx={{ mt: 2 }}>
+            You don't have administrator privileges to access this page.
+          </Typography>
         </Box>
       </ThemeProvider>
     );

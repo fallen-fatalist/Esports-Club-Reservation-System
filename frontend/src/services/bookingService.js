@@ -116,7 +116,17 @@ const bookingService = {
         console.error(`Error cancelling booking #${id}:`, error);
         throw error;
       }
+    },
+    async getCancelledBookings() {
+      try {
+        const response = await api.get('/api/bookings/cancelled');
+        return response.data;
+      } catch (error) {
+        console.error('Error getting cancelled bookings:', error);
+        throw error;
+      }
     }
+
 };
 
 export default bookingService;
