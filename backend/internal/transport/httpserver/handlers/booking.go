@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-// @Summary		Get all bookings 
+// @Summary		Get all bookings
 // @Description	Returns a list of bookings with various statuses
 // @Tags			Bookings
 // @Accept			json
@@ -357,42 +357,36 @@ func (s *Handler) HandleCancelledBookings(w http.ResponseWriter, r *http.Request
 // @Failure		500			{object}	handlers.JSONAnswer					"Internal server error"
 // @Router			/api/computers/{id}/remaining [get]
 func (s *Handler) HandleComputerRemaining(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		computerIDStr := r.PathValue("id")
-		computerID, err := strconv.ParseInt(computerIDStr, 10, 64)
-		if err != nil {
-			http.Error(w, "Invalid computer ID", http.StatusBadRequest)
-			return
-		}
+	computerIDStr := r.PathValue("id")
+	computerID, err := strconv.ParseInt(computerIDStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid computer ID", http.StatusBadRequest)
+		return
+	}
 
-		packageIDStr := r.URL.Query().Get("packageID")
-		if packageIDStr == "" {
-			http.Error(w, "Missing packageID parameter", http.StatusBadRequest)
-			return
-		}
+	packageIDStr := r.URL.Query().Get("packageID")
+	if packageIDStr == "" {
+		http.Error(w, "Missing packageID parameter", http.StatusBadRequest)
+		return
+	}
 
-		packageID, err := strconv.ParseInt(packageIDStr, 10, 64)
-		if err != nil {
-			http.Error(w, "Invalid packageID parameter", http.StatusBadRequest)
-			return
-		}
+	packageID, err := strconv.ParseInt(packageIDStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid packageID parameter", http.StatusBadRequest)
+		return
+	}
 
-		computerLeftTime, err := s.service.BookingService.GetComputerLeftOccupiedTime(computerID, packageID)
-		if err != nil {
-			slog.Error("Error fetching computer left time:", slog.Any("error", err))
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-			return
-		}
+	computerLeftTime, err := s.service.BookingService.GetComputerLeftOccupiedTime(computerID, packageID)
+	if err != nil {
+		slog.Error("Error fetching computer left time:", slog.Any("error", err))
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
 
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(computerLeftTime); err != nil {
-			slog.Error("Error encoding JSON:", err)
-			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		}
-	default:
-		w.Header().Set("Allow", "GET")
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(computerLeftTime); err != nil {
+		slog.Error("Error encoding JSON:", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
 }
 
@@ -407,35 +401,29 @@ func (s *Handler) HandleComputerRemaining(w http.ResponseWriter, r *http.Request
 // @Failure		500			{object}	handlers.JSONAnswer					"Internal server error"
 // @Router			/api/computers/remaining [get]
 func (s *Handler) ComputersRemaining(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		packageIDStr := r.URL.Query().Get("packageID")
-		if packageIDStr == "" {
-			http.Error(w, "Missing packageID parameter", http.StatusBadRequest)
-			return
-		}
+	packageIDStr := r.URL.Query().Get("packageID")
+	if packageIDStr == "" {
+		http.Error(w, "Missing packageID parameter", http.StatusBadRequest)
+		return
+	}
 
-		packageID, err := strconv.ParseInt(packageIDStr, 10, 64)
-		if err != nil {
-			http.Error(w, "Invalid packageID parameter", http.StatusBadRequest)
-			return
-		}
+	packageID, err := strconv.ParseInt(packageIDStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid packageID parameter", http.StatusBadRequest)
+		return
+	}
 
-		computersLeftTime, err := s.service.BookingService.GetComputersLeftOccupiedTime(packageID)
-		if err != nil {
-			slog.Error("Error fetching computers left time:", slog.Any("error", err))
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-			return
-		}
+	computersLeftTime, err := s.service.BookingService.GetComputersLeftOccupiedTime(packageID)
+	if err != nil {
+		slog.Error("Error fetching computers left time:", slog.Any("error", err))
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
 
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(computersLeftTime); err != nil {
-			slog.Error("Error encoding JSON:", err)
-			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		}
-	default:
-		w.Header().Set("Allow", "GET")
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(computersLeftTime); err != nil {
+		slog.Error("Error encoding JSON:", err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
 }
 
@@ -508,6 +496,7 @@ func (s *Handler) UserBookings(w http.ResponseWriter, r *http.Request) {
 // @Summary		Cancel a booking
 // @Description	Cancels a booking with the given ID. The user must have the correct role to cancel the booking.
 // @Tags			Bookings
+// @Security BearerAuth
 // @Accept			json
 // @Produce		json
 // @Param			id	path		int64				true	"Booking ID"
@@ -516,7 +505,7 @@ func (s *Handler) UserBookings(w http.ResponseWriter, r *http.Request) {
 // @Failure		401	{object}	utils.HTTPError	"Unauthorized"
 // @Failure		404	{object}	utils.HTTPError	"Booking not found"
 // @Failure		500	{object}	utils.HTTPError	"Internal server error"
-// @Router			/api/bookings/{id}/cancel [delete]
+// @Router			/api/bookings/{id}/cancel [post]
 func (s *Handler) HandleCancel(w http.ResponseWriter, r *http.Request) {
 	bookingIDStr := r.PathValue("id")
 

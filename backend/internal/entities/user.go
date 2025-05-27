@@ -31,6 +31,7 @@ var (
 	ErrUserNotFound       = errors.New("user not found")
 	ErrFailedToGetUser    = errors.New("failed to get user")
 	ErrFailedToInsertUser = errors.New("failed to insert user")
+	ErrNonNumericID       = errors.New("id is not numeric")
 )
 
 // Roles
@@ -39,7 +40,7 @@ var (
 	ManagerRole = "manager"
 	AdminRole   = "admin"
 	AnalystRole = "analyst"
-	ClientRole  = "user"
+	ClientRole  = "client"
 )
 
 // Statuses

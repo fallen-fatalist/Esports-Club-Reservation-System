@@ -201,6 +201,25 @@ definitions:
       start_time:
         type: string
     type: object
+  entities.User:
+    properties:
+      balance:
+        type: integer
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      login:
+        type: string
+      passwordUpdatedAt:
+        type: string
+      role:
+        type: string
+      status:
+        type: string
+    type: object
   handlers.JSONAnswer:
     properties:
       id:
@@ -243,7 +262,7 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/handlers.JSONAnswer'
-      summary: Get all bookings with time format "2006-01-02T15:04:05Z07:00"
+      summary: Get all bookings
       tags:
       - Bookings
     post:
@@ -285,7 +304,7 @@ paths:
       tags:
       - Bookings
   /api/bookings/{id}/cancel:
-    delete:
+    post:
       consumes:
       - application/json
       description: Cancels a booking with the given ID. The user must have the correct
@@ -317,6 +336,8 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
       summary: Cancel a booking
       tags:
       - Bookings
@@ -480,11 +501,13 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/handlers.JSONAnswer'
+      security:
+      - BearerAuth: []
       summary: Delete a specific computer
       tags:
       - Computers
     get:
-      description: Returns a specific computer by ID
+      description: Returns a specific Computer by ID
       parameters:
       - description: Computer ID
         in: path
@@ -499,7 +522,7 @@ paths:
           schema:
             $ref: '#/definitions/entities.Computer'
         "400":
-          description: Invalid computer ID
+          description: Invalid Computer ID
           schema:
             $ref: '#/definitions/handlers.JSONAnswer'
         "404":
@@ -510,7 +533,7 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/handlers.JSONAnswer'
-      summary: Get a specific computer
+      summary: Get a specific Computer
       tags:
       - Computers
   /api/computers/{id}/bookings:
@@ -686,6 +709,27 @@ paths:
       summary: Get all packages
       tags:
       - Packages
+  /api/users:
+    get:
+      description: Returns a list of all users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of users
+          schema:
+            items:
+              $ref: '#/definitions/entities.User'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.JSONAnswer'
+      security:
+      - BearerAuth: []
+      summary: Get all users
+      tags:
+      - Users
   /api/users//bookings:
     get:
       consumes:
@@ -717,6 +761,64 @@ paths:
       summary: Get bookings for a specific user
       tags:
       - Bookings
+  /api/users/{id}/block:
+    post:
+      description: Blocks a user with the given ID.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Block a user
+      tags:
+      - Users
+  /api/users/{id}/unblock:
+    post:
+      description: Unblocks a user with the given ID.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Unblock a user
+      tags:
+      - Users
   /auth/activate:
     post:
       consumes:
@@ -759,7 +861,20 @@ paths:
           description: User authorized
           schema:
             $ref: '#/definitions/dto.User'
+      security:
+      - BearerAuth: []
       summary: Check if user is authorized
+      tags:
+      - Auth
+  /auth/priveleged:
+    get:
+      description: Returns a 200 status if user is privileged
+      responses:
+        "200":
+          description: OK
+      security:
+      - BearerAuth: []
+      summary: Check if user is privileged
       tags:
       - Auth
   /auth/reset/confirm:

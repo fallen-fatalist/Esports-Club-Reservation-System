@@ -9,6 +9,7 @@ import (
 // @Summary		Get all users
 // @Description	Returns a list of all users
 // @Tags			Users
+// @Security BearerAuth
 // @Produce		json
 // @Success		200	{array}		entities.User	"List of users"
 // @Failure		500	{object}	handlers.JSONAnswer	"Internal server error"

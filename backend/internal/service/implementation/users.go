@@ -6,7 +6,9 @@ import (
 	"esports_club_booking/internal/email"
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/repository"
+	"esports_club_booking/internal/transport/dto"
 	"log"
+	"log/slog"
 )
 
 type UserService struct {
@@ -57,9 +59,48 @@ func (s *UserService) GetUser(id int64) (*entities.User, error) {
 	return user, nil
 }
 
-func (s *UserService) CreateUser(user *entities.User) (int64, error) {
-	// s.repo.Create(usefr, user.HashedPassword)
-	return 0, nil
+func (s *UserService) CreateUser(userDTO *dto.RegisterUser) (int64, error) {
+	if err := validateEmail(userDTO.Email); err != nil {
+		return -1, err
+	}
+
+	if err := validateUsername(userDTO.Login); err != nil {
+		return -1, err
+	}
+
+	if err := validatePassword(userDTO.Password); err != nil {
+		return -1, err
+	}
+
+	hashedPassword, err := auth.HashPassword(userDTO.Password)
+	if err != nil {
+		slog.Error("Error while creating owner: hashing password", slog.Any("error", err))
+		return -1, err
+	}
+
+	user := entities.User{
+		Login:   userDTO.Login,
+		Email:   userDTO.Email,
+		Status:  entities.ActiveStatus,
+		Role:    entities.ClientRole,
+		Balance: 0,
+	}
+
+	return s.repo.Create(&user, hashedPassword)
+}
+
+func (s *UserService) Block(userID int64) error {
+	if err := entities.ValidateID(userID); err != nil {
+		return err
+	}
+	return s.repo.Block(userID)
+}
+
+func (s *UserService) Unblock(userID int64) error {
+	if err := entities.ValidateID(userID); err != nil {
+		return err
+	}
+	return s.repo.Unblock(userID)
 }
 
 func (s *UserService) createOwner(ownerCredentials *config.OwnerCredentials) error {
@@ -84,6 +125,10 @@ func (s *UserService) createOwner(ownerCredentials *config.OwnerCredentials) err
 	}
 
 	hashedPassword, err := auth.HashPassword(ownerCredentials.Password)
+	if err != nil {
+		log.Fatal("Error while creating owner: hashing password", slog.Any("error", err))
+
+	}
 
 	_, err = s.repo.Create(owner, hashedPassword)
 	if err != nil {

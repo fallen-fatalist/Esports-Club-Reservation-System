@@ -22,12 +22,19 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 
 	/* Priveleged endpoints */
 	mux.HandleFunc("GET /priveleged", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.IsPriveleged))
+	mux.HandleFunc("POST /priveleged/block/{id}", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.HandleBlock))
+	mux.HandleFunc("POST /priveleged/unblock/{id}", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.HandleUnblock))
 
 	/* Computers */
-	mux.HandleFunc("/computers", h.HandleComputers)
-	mux.HandleFunc("/computers/{id}", h.HandleComputer)
-	mux.HandleFunc("/computers/status", h.HandleComputerStatuses)
-	mux.HandleFunc("/computers/{id}/status", h.HandleComputerStatus)
+
+	mux.HandleFunc("GET /computers", h.Computers)
+	mux.HandleFunc("POST /computers", h.PostComputers)
+	mux.HandleFunc("GET /computers/remaining", h.ComputersRemaining)
+	mux.HandleFunc("GET /computers/status", h.HandleComputerStatuses)
+	mux.HandleFunc("GET /computers/{id}/remaining", h.HandleComputerRemaining)
+	mux.HandleFunc("GET /computers/{id}/status", h.HandleComputerStatus)
+	mux.HandleFunc("GET /computers/{id}", h.Computer)
+	mux.HandleFunc("DELETE /computers/{id}", h.DeleteComputer)
 
 	/* Packages */
 	mux.HandleFunc("GET /packages", h.Packages)
@@ -45,16 +52,13 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("GET /users/bookings", auth.WithAuth(h.jwtMng, entities.AllRoles, h.UserBookings))
 	mux.HandleFunc("POST /bookings/{id}/cancel", auth.WithAuth(h.jwtMng, entities.AllRoles, h.HandleCancel))
 
-	mux.HandleFunc("/computers/remaining", h.ComputersRemaining)
-	mux.HandleFunc("/computers/{id}/remaining", h.HandleComputerRemaining)
-
 	mux.HandleFunc("GET /users", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.GetUsers))
 
 	//User & Auth
-	mux.HandleFunc("/auth/sign-up", h.HandleRegistration)
-	mux.HandleFunc("/auth/sign-in", h.HandleLogin)
-	mux.HandleFunc("/auth/activate", h.HandleRequestCode)
-	mux.HandleFunc("/auth/verify", h.HandleVerifyEmail)
+	mux.HandleFunc("POST /auth/sign-up", h.Register)
+	mux.HandleFunc("POST /auth/sign-in", h.Login)
+	mux.HandleFunc("POST /auth/activate", h.RequestCode)
+	mux.HandleFunc("POST /auth/verify", h.VerifyEmail)
 
 	// TODO: Possibility to spam without AUTH token, need different endpoints with call timeouts
 	mux.HandleFunc("/auth/reset/request", h.HandleRequestPasswordResetCode)

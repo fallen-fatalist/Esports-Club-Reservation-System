@@ -5,6 +5,7 @@ import (
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/service"
 	"fmt"
+	"log/slog"
 )
 
 type UserRepository struct {
@@ -188,6 +189,7 @@ func (r *UserRepository) Create(user *entities.User, hashedPassword string) (int
 	).Scan(&user.ID)
 
 	if err != nil {
+		slog.Error("Failed to insert user", slog.Any("error", err))
 		return -1, entities.ErrFailedToInsertUser
 	}
 
@@ -223,6 +225,52 @@ func (r *UserRepository) UpdatePassword(userID int64, hashedPassword string) err
 	}
 	if rowsAffected == 0 {
 		return fmt.Errorf("%s: user not found", op)
+	}
+
+	return nil
+}
+
+func (r *UserRepository) Block(userID int64) error {
+	const op = "postgres.UserRepository.Block"
+
+	res, err := r.db.Exec(`
+				UPDATE users
+				SET status = $1
+				WHERE user_id = $2
+			`, entities.BlockedStatus, userID)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("%s: failed to check rows affected: %w", op, err)
+	}
+	if rowsAffected == 0 {
+		return entities.ErrUserNotFound
+	}
+
+	return nil
+}
+
+func (r *UserRepository) Unblock(userID int64) error {
+	const op = "postgres.UserRepository.Unblock"
+
+	res, err := r.db.Exec(`
+				UPDATE users
+				SET status = $1
+				WHERE user_id = $2
+			`, entities.ActiveStatus, userID)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("%s: failed to check rows affected: %w", op, err)
+	}
+	if rowsAffected == 0 {
+		return entities.ErrUserNotFound
 	}
 
 	return nil

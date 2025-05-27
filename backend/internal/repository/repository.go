@@ -44,6 +44,8 @@ type UserRepository interface {
 	Update(*entities.Booking) (int64, error)
 	UpdatePassword(userID int64, hashedPassword string) error
 	Delete(int64) error
+	Block(userID int64) error
+	Unblock(userID int64) error
 	GetVerification(email, vType string) (postgres.EmailVerification, error)
 	SaveVerification(email, code, vType string, expiresAt time.Time) error
 	MarkEmailVerified(userID int64) error

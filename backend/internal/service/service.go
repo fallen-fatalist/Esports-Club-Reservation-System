@@ -42,7 +42,9 @@ type ComputerService interface {
 type UserService interface {
 	GetUsers() ([]*entities.User, error)
 	GetUser(int64) (*entities.User, error)
-	CreateUser(*entities.User) (int64, error)
+	CreateUser(*dto.RegisterUser) (int64, error)
+	Block(userID int64) error
+	Unblock(userID int64) error
 	// AuthUser()
 	Register(userDTO dto.RegisterUser) (int64, error)
 	Login(userDTO dto.LoginUser) (string, error)

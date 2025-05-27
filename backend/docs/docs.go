@@ -27,7 +27,7 @@ const docTemplate = `{
                 "tags": [
                     "Bookings"
                 ],
-                "summary": "Get all bookings with time format \"2006-01-02T15:04:05Z07:00\"",
+                "summary": "Get all bookings",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -232,7 +232,12 @@ const docTemplate = `{
             }
         },
         "/api/bookings/{id}/cancel": {
-            "delete": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Cancels a booking with the given ID. The user must have the correct role to cancel the booking.",
                 "consumes": [
                     "application/json"
@@ -438,14 +443,14 @@ const docTemplate = `{
         },
         "/api/computers/{id}": {
             "get": {
-                "description": "Returns a specific computer by ID",
+                "description": "Returns a specific Computer by ID",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Computers"
                 ],
-                "summary": "Get a specific computer",
+                "summary": "Get a specific Computer",
                 "parameters": [
                     {
                         "type": "integer",
@@ -463,7 +468,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid computer ID",
+                        "description": "Invalid Computer ID",
                         "schema": {
                             "$ref": "#/definitions/handlers.JSONAnswer"
                         }
@@ -483,6 +488,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Deletes a specific computer by ID",
                 "produces": [
                     "application/json"
@@ -705,6 +715,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/users": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a list of all users",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get all users",
+                "responses": {
+                    "200": {
+                        "description": "List of users",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entities.User"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    }
+                }
+            }
+        },
         "/api/users//bookings": {
             "get": {
                 "security": [
@@ -749,6 +793,98 @@ const docTemplate = `{
                         "description": "Internal server error or unhandled error",
                         "schema": {
                             "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{id}/block": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Blocks a user with the given ID.",
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Block a user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid user ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{id}/unblock": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Unblocks a user with the given ID.",
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Unblock a user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid user ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
                         }
                     }
                 }
@@ -802,6 +938,11 @@ const docTemplate = `{
         },
         "/auth/authorized": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Returns the user's data if they are authorized",
                 "consumes": [
                     "application/json"
@@ -819,6 +960,25 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/dto.User"
                         }
+                    }
+                }
+            }
+        },
+        "/auth/priveleged": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a 200 status if user is privileged",
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Check if user is privileged",
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     }
                 }
             }
@@ -1338,6 +1498,35 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "start_time": {
+                    "type": "string"
+                }
+            }
+        },
+        "entities.User": {
+            "type": "object",
+            "properties": {
+                "balance": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "login": {
+                    "type": "string"
+                },
+                "passwordUpdatedAt": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "status": {
                     "type": "string"
                 }
             }

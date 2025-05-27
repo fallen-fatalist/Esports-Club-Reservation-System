@@ -60,6 +60,7 @@ func (s *UserService) Register(userDTO dto.RegisterUser) (int64, error) {
 		Login:  userDTO.Login,
 		Email:  userDTO.Email,
 		Status: "unverified",
+		Role:   entities.ClientRole,
 	}
 
 	// call create register method to register new user
@@ -83,6 +84,11 @@ func (s *UserService) Login(userDTO dto.LoginUser) (string, error) {
 		user, err = s.repo.GetCredentialsByEmail(userDTO.Identifier)
 	} else {
 		user, err = s.repo.GetCredentialsByLogin(userDTO.Identifier)
+	}
+
+	// Check that user is blocked
+	if user.Status == entities.BlockedStatus {
+		return "", entities.ErrUserBlocked
 	}
 
 	if err != nil {

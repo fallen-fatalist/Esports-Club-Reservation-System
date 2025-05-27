@@ -28,5 +28,6 @@ type HTTPError struct {
 }
 
 func WriteError(w http.ResponseWriter, status int, err error) {
+	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(HTTPError{Error: err.Error()})
 }
