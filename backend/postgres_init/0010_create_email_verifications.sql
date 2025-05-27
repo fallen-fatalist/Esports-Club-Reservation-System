@@ -5,6 +5,7 @@ CREATE TYPE email_code_type AS ENUM (
   'delete_account'
 );
 
+
 CREATE TABLE email_verifications (
     email TEXT NOT NULL,
     type email_code_type NOT NULL,
@@ -14,5 +15,6 @@ CREATE TABLE email_verifications (
     blocked_until TIMESTAMP,
     created_at TIMESTAMP DEFAULT now(),
     expires_at TIMESTAMP,
-    PRIMARY KEY (email, type)
+    PRIMARY KEY (email, type),
+    FOREIGN KEY (email) REFERENCES users(email) ON DELETE CASCADE
 );
