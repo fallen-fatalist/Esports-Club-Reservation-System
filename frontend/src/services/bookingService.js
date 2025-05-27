@@ -109,11 +109,20 @@ const bookingService = {
     }, 
     async cancelBookingByID(id) {
       try {
-        /* Requires Admin role or higher, or the 401 403 status codes */
         const response = await api.post(`/api/bookings/${id}/cancel`);
-        return response.status;
+        return response.status === 200; 
       } catch (error) {
         console.error(`Error cancelling booking #${id}:`, error);
+        if (error.response?.status === 401) {
+          throw new Error('Authentication required');
+        }
+        if (error.response?.status === 403) {
+          throw new Error('Insufficient privileges to cancel booking');
+        }
+        if (error.response?.status === 404) {
+          throw new Error('Booking not found');
+        }
+        
         throw error;
       }
     },

@@ -11,7 +11,7 @@ const usersService = {
     }
   },
 
-  async getUsers() {
+   async getUsers() {
     try {
       const response = await api.get('/api/users');
       return response.data;
@@ -24,12 +24,12 @@ const usersService = {
     }
   },
 
-  async deleteUserByID(userId) {
+  async deleteUserByID(id) {
     try {
-      const response = await api.delete(`/api/users/${userId}`);
+      const response = await api.delete(`/api/users/${id}`);
       return response.status === 200;
     } catch (error) {
-      console.error(`Error deleting user ${userId}:`, error);
+      console.error(`Error deleting user ${id}:`, error);
       if (error.response?.status === 403) {
         throw new Error('Insufficient privileges to delete user');
       }
@@ -40,28 +40,40 @@ const usersService = {
     }
   },
 
-  async blockUserByID(userId) {
-    try {
-      const response = await api.post(`/api/users/${userId}/block`);
-      return response.status === 200;
-    } catch (error) {
-      console.error(`Error blocking user ${userId}:`, error);
-      if (error.response?.status === 403) {
-        throw new Error('Insufficient privileges to block user');
-      }
-      if (error.response?.status === 404) {
-        throw new Error('User not found');
-      }
-      throw error;
+async blockUserByID(id) {
+  try {
+    console.log(`Attempting to block user ID: ${id}`);
+    console.log(`URL: /api/users/${id}/block`);
+    console.log('Auth headers:', api.defaults.headers.common);
+    
+    const response = await api.post(`/api/users/${id}/block`);
+    console.log('Block response:', response);
+    return response.status === 200 || response.status === 204;
+  } catch (error) {
+    console.error(`Full error details for user ${id}:`, {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      url: error.config?.url,
+      method: error.config?.method,
+      headers: error.config?.headers
+    });
+    
+    if (error.response?.status === 403) {
+      throw new Error('Insufficient privileges to block user');
     }
-  },
-
-  async unblockUserByID(userId) {
+    if (error.response?.status === 404) {
+      throw new Error('User not found or endpoint not available');
+    }
+    throw error;
+  }
+},
+  async unblockUserByID(id) {
     try {
-      const response = await api.post(`/api/users/${userId}/unblock`);
+      const response = await api.post(`/api/users/${id}/unblock`);
       return response.status === 200;
     } catch (error) {
-      console.error(`Error unblocking user ${userId}:`, error);
+      console.error(`Error unblocking user ${id}:`, error);
       if (error.response?.status === 403) {
         throw new Error('Insufficient privileges to unblock user');
       }
@@ -72,14 +84,12 @@ const usersService = {
     }
   },
 
-  async creditUserByID(userId, amount) {
+  async creditUserByID(id, amount) {
     try {
-      const response = await api.post(`/api/users/${userId}/credit`, {
-        amount: amount
-      });
+      const response = await api.post(`/api/users/${id}/credit?amount=${amount}`);
       return response.status === 200;
     } catch (error) {
-      console.error(`Error crediting user ${userId} with amount ${amount}:`, error);
+      console.error(`Error crediting user ${id} with amount ${amount}:`, error);
       if (error.response?.status === 403) {
         throw new Error('Insufficient privileges to credit user');
       }
@@ -93,12 +103,30 @@ const usersService = {
     }
   },
 
-  async getUserBookings(userId) {
+  async grantAdminByID(id) {
     try {
-      const response = await api.get(`/api/users/${userId}/bookings`);
+      const response = await api.post(`/api/users/${id}/admin`);
+      return response.status === 200;
+    } catch (error) {
+      console.error(`Error granting admin privileges to user ${id}:`, error);
+      if (error.response?.status === 403) {
+        throw new Error('Insufficient privileges to grant admin access');
+      }
+      if (error.response?.status === 404) {
+        throw new Error('User not found');
+      }
+      if (error.response?.status === 400) {
+        throw new Error('User already has admin privileges');
+      }
+      throw error;
+    }
+  },
+
+  async getUserBookings() {
+    try {
+      const response = await api.get(`/api/users/bookings`);
       return response.data;
     } catch (error) {
-      console.error(`Error getting bookings for user ${userId}:`, error);
       throw error;
     }
   }
