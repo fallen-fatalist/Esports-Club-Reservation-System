@@ -8,8 +8,6 @@ import Profile from "../pages/Profile"
 import Admin from "../pages/Admin"
 
 export const privateRoutes = [
-    {path: '/', page: Main, exact: true},
-    {path: '/booking', page: Booking, exact: true},
     {path: '/profile', page: Profile, exact: true},
 ]
 

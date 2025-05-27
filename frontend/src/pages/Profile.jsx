@@ -22,6 +22,7 @@ import {
   TextField,
   Alert,
   CircularProgress,
+  Snackbar
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers";
@@ -77,6 +78,14 @@ const Profile = ({ onLogout }) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  const [selectedBookingForCancel, setSelectedBookingForCancel] = useState(null);
+  const [cancelBookingModal, setCancelBookingModal] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'info'
+  });
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -100,9 +109,80 @@ const Profile = ({ onLogout }) => {
   }, []);
 
   const handleCancelBooking = (bookingId) => {
-    // TODO: Implement cancel booking functionality
-    console.log('Cancel booking:', bookingId);
+    const bookingToCancel = transformedBookings.find(b => b.id === bookingId);
+    if (!bookingToCancel) return;
+
+    setSelectedBookingForCancel(bookingToCancel);
+    setCancelBookingModal(true);
   };
+
+  const confirmCancelBooking = async () => {
+    if (!selectedBookingForCancel) return;
+
+    try {
+      setLoading(true);
+
+      const success = await bookingService.cancelBookingByID(selectedBookingForCancel.id);
+
+      if (success) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        const updatedBookings = await bookingService.getUserBookings();
+        const cancelledBooking = updatedBookings.find(b => b.id === selectedBookingForCancel.id);
+
+        if (!cancelledBooking || cancelledBooking.status === 'cancelled') {
+          setBookings(updatedBookings);
+          setSnackbar({
+            open: true,
+            message: `Booking #${selectedBookingForCancel.id} cancelled successfully`,
+            severity: 'success'
+          });
+        } else {
+          setSnackbar({
+            open: true,
+            message: `Booking cancellation failed - status not updated on server`,
+            severity: 'error'
+          });
+        }
+      }
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: `Failed to cancel booking: ${error.message}`,
+        severity: 'error'
+      });
+    } finally {
+      setLoading(false);
+      setCancelBookingModal(false);
+      setSelectedBookingForCancel(null);
+    }
+  };
+
+  const transformedBookings = useMemo(() => {
+    if (!bookings.length || !computers.length || !packages.length) return [];
+
+    return bookings
+      .filter(b => b.status !== 'cancelled')
+      .map(b => {
+        const computer = computers.find(c => c.id === b.computer_id);
+        const pkg = packages.find(p => p.id === b.package_id);
+
+        const start = parseISO(b.start_time);
+        const end = parseISO(b.end_time);
+
+        return {
+          id: b.id,
+          dateTime: `${format(start, 'dd.MM.yyyy')} ${format(start, 'HH:mm')}-${format(end, 'HH:mm')}`,
+          computerNumber: `№${computer?.id || b.computer_id}`,
+          package: pkg?.name || 'Unknown Package',
+          room: capitalizeFirst(computer?.room || pkg?.room || 'Unknown'),
+          status: b.status,
+          price: pkg?.price ? `${pkg.price}₸` : '-',
+          date: format(start, 'yyyy-MM-dd'),
+        };
+      });
+  }, [bookings, computers, packages]);
+
 
   // Password reset functions
   const resetPasswordModalState = () => {
@@ -264,35 +344,6 @@ const Profile = ({ onLogout }) => {
     setPasswordSuccess('');
   };
 
-  const transformedBookings = useMemo(() => {
-    if (!bookings.length || !computers.length || !packages.length) return [];
-
-    return bookings.map((booking) => {
-      const computer = computers.find(c => c.id === booking.computer_id);
-      const pkg = packages.find(p => p.id === booking.package_id);
-
-      const startTime = parseISO(booking.start_time);
-      const endTime = parseISO(booking.end_time);
-
-      const dateStr = format(startTime, 'dd.MM.yyyy');
-      const timeRange = `${format(startTime, 'HH:mm')}-${format(endTime, 'HH:mm')}`;
-      const dateTime = `${dateStr} ${timeRange}`;
-
-      const roomRaw = computer?.room || pkg?.room || 'Unknown';
-      const room = capitalizeFirst(roomRaw);
-
-      return {
-        id: booking.id,
-        dateTime: dateTime,
-        computerNumber: `№${computer?.id || booking.computer_id}`,
-        package: pkg?.name || 'Unknown Package',
-        room: room,
-        status: booking.status,
-        price: pkg?.price ? `${pkg.price}₸` : '-',
-        date: format(startTime, 'yyyy-MM-dd'),
-      };
-    });
-  }, [bookings, computers, packages]);
 
   const filteredBookings = useMemo(() => {
     const selected = format(selectedDate, "yyyy-MM-dd");
@@ -371,7 +422,7 @@ const Profile = ({ onLogout }) => {
                 </Typography>
               </Box>
               <Button
-                variant="outlined"
+                variant="contained"
                 startIcon={<LockIcon />}
                 onClick={handleOpenPasswordModal}
               >
@@ -427,7 +478,7 @@ const Profile = ({ onLogout }) => {
                         <TableCell>{booking.price}</TableCell>
                         <TableCell>
                           <Button
-                            variant="outlined"
+                            variant="contained"
                             color="error"
                             size="small"
                             onClick={() => handleCancelBooking(booking.id)}
@@ -611,6 +662,46 @@ const Profile = ({ onLogout }) => {
             )}
           </DialogActions>
         </Dialog>
+        <Dialog
+          open={cancelBookingModal}
+          onClose={() => setCancelBookingModal(false)}
+        >
+          <DialogTitle>Confirm Cancellation</DialogTitle>
+          <DialogContent>
+            <Typography>
+              Are you sure you want to cancel booking #{selectedBookingForCancel?.id}?
+            </Typography>
+            {selectedBookingForCancel && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                {selectedBookingForCancel.dateTime} - {selectedBookingForCancel.computerNumber}
+              </Typography>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setCancelBookingModal(false)}>No, Keep It</Button>
+            <Button 
+              onClick={confirmCancelBooking} 
+              color="error"
+              disabled={loading}
+              startIcon={loading ? <CircularProgress size={20} /> : null}
+            >
+              Yes, Cancel
+            </Button>
+          </DialogActions>
+        </Dialog>
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={() => setSnackbar({...snackbar, open: false})}
+        >
+          <Alert 
+            onClose={() => setSnackbar({...snackbar, open: false})}
+            severity={snackbar.severity}
+            sx={{ width: '100%' }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Box>
     </ThemeProvider>
   );

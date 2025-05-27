@@ -95,7 +95,7 @@ const Admin = () => {
             paper: isDarkTheme ? "rgb(62, 62, 63)" : "#fafafa",
           },
           primary: { 
-            main: "rgb(33, 53, 88)",
+            main: "#3872ff",
             dark: "#215385"
           },
           text: {

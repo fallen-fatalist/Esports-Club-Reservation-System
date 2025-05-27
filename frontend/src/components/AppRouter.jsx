@@ -9,7 +9,6 @@ import {
 import { privateRoutes, publicRoutes, adminRoutes } from "../router/index"
 import { AuthContext } from "../context/contextIndex";
 
-// Импортируем компоненты страниц
 import Main from "../pages/Main";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
@@ -43,7 +42,6 @@ const ProtectedRoute = ({ children }) => {
 const AuthRoute = ({ children }) => {
   const { isAuth, isAdmin } = useContext(AuthContext);
   
-  // Если пользователь уже аутентифицирован, перенаправляем его
   if (isAuth) {
     return <Navigate to={isAdmin() ? "/admin" : "/"} replace />;
   }
@@ -56,7 +54,6 @@ const AppRouter = () => {
    
   return (
     <Routes>
-      {/* Админские роуты */}
       {adminRoutes.map(route => 
         <Route
           key={route.path}
@@ -70,7 +67,6 @@ const AppRouter = () => {
         />
       )}
       
-      {/* Приватные роуты (для всех аутентифицированных пользователей) */}
       {privateRoutes.map(route => 
         <Route
           key={route.path}
@@ -84,7 +80,6 @@ const AppRouter = () => {
         />
       )}
       
-      {/* Роуты аутентификации (логин/регистрация) */}
       <Route
         path="/login"
         element={
@@ -103,11 +98,9 @@ const AppRouter = () => {
         }
       />
       
-      {/* Публичные роуты */}
       <Route path="/" element={<Main/>} />
       <Route path="/booking" element={<Booking/>} />
       
-      {/* 404 роут */}
       <Route path="*" element={<Error/>} />
     </Routes>
   )
