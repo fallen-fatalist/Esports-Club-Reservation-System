@@ -9,36 +9,37 @@ import (
 	"esports_club_booking/internal/service"
 )
 
-func (r *UserRepository) SaveEmailVerification(email, code string, expiresAt time.Time) error {
-	const op = "postgres.UserRepository.SaveEmailVerification"
+func (r *UserRepository) SaveVerification(email, code, vType string, expiresAt time.Time) error {
+	const op = "postgres.UserRepository.SaveVerification"
 
 	_, err := r.db.Exec(`
-        INSERT INTO email_verifications(email, code, expires_at, created_at, attempts)
-        VALUES ($1, $2, $3, NOW(), 0)
-        ON CONFLICT (email) DO UPDATE
-          SET code          = EXCLUDED.code,
-              expires_at    = EXCLUDED.expires_at,
-              attempts      = 0,
-              last_attempt  = NULL,
-              blocked_until = NULL
-    `, email, code, expiresAt)
+		INSERT INTO email_verifications (email, type, code, expires_at, created_at, attempts)
+		VALUES ($1, $2, $3, $4, NOW(), 0)
+		ON CONFLICT (email, type) DO UPDATE
+		  SET code = EXCLUDED.code,
+		      expires_at = EXCLUDED.expires_at,
+		      attempts = 0,
+		      last_attempt = NULL,
+		      blocked_until = NULL
+	`, email, vType, code, expiresAt)
+
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil
 }
 
-func (r *UserRepository) GetVerificationByEmail(email string) (entities.EmailVerification, error) {
-	const op = "postgres.UserRepository.GetVerificationByEmail"
+func (r *UserRepository) GetVerification(email, vType string) (entities.EmailVerification, error) {
+	const op = "postgres.UserRepository.GetVerification"
 
 	row := r.db.QueryRow(`
-        SELECT email, code, attempts, last_attempt, blocked_until, created_at, expires_at
-        FROM email_verifications
-        WHERE email = $1
-    `, email)
+		SELECT email, type, code, attempts, last_attempt, blocked_until, created_at, expires_at
+		FROM email_verifications
+		WHERE email = $1 AND type = $2
+	`, email, vType)
 
 	var v entities.EmailVerification
-	if err := row.Scan(&v.Email, &v.Code, &v.Attempts, &v.LastAttempt, &v.BlockedUntil, &v.CreatedAt, &v.ExpiresAt); err != nil {
+	if err := row.Scan(&v.Email, &v.Type, &v.Code, &v.Attempts, &v.LastAttempt, &v.BlockedUntil, &v.CreatedAt, &v.ExpiresAt); err != nil {
 		if err == sql.ErrNoRows {
 			return v, service.ErrNoNeedVerification
 		}
@@ -47,10 +48,10 @@ func (r *UserRepository) GetVerificationByEmail(email string) (entities.EmailVer
 	return v, nil
 }
 
-func (r *UserRepository) DeleteVerification(email string) error {
+func (r *UserRepository) DeleteVerification(email, vType string) error {
 	const op = "postgres.UserRepository.DeleteVerification"
 
-	_, err := r.db.Exec(`DELETE FROM email_verifications WHERE email = $1`, email)
+	_, err := r.db.Exec(`DELETE FROM email_verifications WHERE email = $1 AND type = $2`, email, vType)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -71,29 +72,39 @@ func (r *UserRepository) MarkEmailVerified(userID int64) error {
 	return nil
 }
 
-func (r *UserRepository) IncrementAttempt(email string) error {
+func (r *UserRepository) IncrementAttempt(email, typ string) error {
 	const op = "postgres.UserRepository.IncrementAttempt"
 
 	_, err := r.db.Exec(`
 		UPDATE email_verifications
 		SET attempts = attempts + 1,
 		    last_attempt = NOW()
-		WHERE email = $1
-	`, email)
+		WHERE email = $1 AND type = $2
+	`, email, typ)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil
 }
 
-func (r *UserRepository) BlockEmail(email string, duration time.Duration) error {
+func (r *UserRepository) BlockEmail(email, typ string, duration time.Duration) error {
 	const op = "postgres.UserRepository.BlockEmail"
 
 	_, err := r.db.Exec(`
 		UPDATE email_verifications
 		SET blocked_until = $1
-		WHERE email = $2
-	`, time.Now().Add(duration), email)
+		WHERE email = $2 AND type = $3
+	`, time.Now().Add(duration), email, typ)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	return nil
+}
+
+func (r *UserRepository) DeleteExpiredVerifications(olderThan time.Time) error {
+	const op = "postgres.UserRepository.DeleteExpiredVerifications"
+
+	_, err := r.db.Exec(`DELETE FROM email_verifications WHERE expires_at <= $1`, olderThan)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -114,13 +125,15 @@ func (r *UserRepository) DeleteUnverifiedUsers(olderThan time.Time) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	_, err = tx.Exec(`
-		DELETE FROM users u
-		WHERE u.status = 'unverified'
-		AND NOT EXISTS (
-			SELECT 1 FROM email_verifications ev
-			WHERE ev.email = u.email
-		)
-	`)
+	DELETE FROM users u
+	WHERE u.status = 'unverified'
+	AND NOT EXISTS (
+		SELECT 1 FROM email_verifications ev
+		WHERE ev.email = u.email
+	)
+	AND u.created_at < $1
+`, olderThan.Add(time.Minute*-1))
+
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}

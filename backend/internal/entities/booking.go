@@ -2,6 +2,7 @@ package entities
 
 import (
 	"errors"
+	"esports_club_booking/internal/utils"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -25,62 +26,11 @@ type ComputerOccupiedLeftTime struct {
 	LeftSeconds int64 `json:"left_time"`
 }
 
-func (b *Booking) Validate() error {
-	allowedStatuses := map[string]bool{
-		"pending":   true,
-		"active":    true,
-		"finished":  true,
-		"cancelled": true,
-	}
-
-	// Validate IDs
-	if b.UserID <= 0 {
-		return errors.New("user_id must be a positive number")
-	}
-	if b.ComputerID <= 0 {
-		return errors.New("computer_id must be a positive number")
-	}
-
-	// Validate Package
-	if b.PackageID == 0 {
-		return errors.New("package must not be zero")
-	}
-	if b.PackageID < 0 {
-		return errors.New("package must not be negative")
-	}
-
-	// Parse StartTime and EndTime (ISO 8601 format)
-	start, err := time.Parse(time.RFC3339, b.StartTime)
-	if err != nil {
-		return fmt.Errorf("start_time must be in ISO 8601 format: %w", err)
-	}
-	end, err := time.Parse(time.RFC3339, b.EndTime)
-	if err != nil {
-		return fmt.Errorf("end_time must be in ISO 8601 format: %w", err)
-	}
-
-	now := time.Now().UTC()
-
-	if !start.After(now) {
-		return errors.New("start_time must be in the future")
-	}
-	if !end.After(start) {
-		return errors.New("end_time must be after start_time")
-	}
-
-	if end.Sub(start)%time.Hour != 0 {
-		return errors.New("booking duration must be a whole number of hours")
-	}
-
-	// Validate Status
-	if strings.TrimSpace(b.Status) == "" {
-		return errors.New("status must not be empty")
-	}
-	if !allowedStatuses[b.Status] {
-		return fmt.Errorf("invalid status: %s", b.Status)
-	}
-
-	return nil
+var bookingStatuses = []string{
+	"pending",
+	"active",
+	"finished",
+	"cancelled",
 }
 
 // One class is compared with another, compared with what is passed as an argument
@@ -99,6 +49,72 @@ func (b *Booking) Compare(secondBooking *Booking) int {
 
 // Errors
 var (
+	ErrBookingNotExists        = errors.New("booking not exists")
 	ErrNotCorrespondenceOfRoom = errors.New("package in booking must correspond to the computer room")
 	ErrBookingOverlap          = errors.New("booking overlaps with another booking")
 )
+
+var (
+	ErrNegativeUserID         = errors.New("user_id must be a positive number")
+	ErrNegativeComputerID     = errors.New("computer_id must be a positive number")
+	ErrInvalidPackageZero     = errors.New("package must not be zero")
+	ErrInvalidPackageNegative = errors.New("package must not be negative")
+	ErrInvalidStartTimeFormat = errors.New("start_time must be in ISO 8601 format")
+	ErrInvalidEndTimeFormat   = errors.New("end_time must be in ISO 8601 format")
+	ErrStartTimeInPast        = errors.New("start_time must be in the future")
+	ErrEndBeforeStart         = errors.New("end_time must be after start_time")
+	ErrNonHourlyDuration      = errors.New("booking duration must be a whole number of hours")
+	ErrInvalidFilter          = errors.New("invalid filter")
+	ErrEmptyStatus            = errors.New("status must not be empty")
+	ErrInvalidTimeFormat      = errors.New("invalid time format, must be RFC3339 format")
+	ErrInvalidDuration        = errors.New("booking duration must correspond to the package duration")
+)
+
+func (b *Booking) Validate() error {
+	// Validate IDs
+	if b.UserID <= 0 {
+		return ErrInvalidUserID
+	}
+	if b.ComputerID <= 0 {
+		return ErrNegativeComputerID
+	}
+
+	// Validate Package
+	if b.PackageID == 0 {
+		return ErrInvalidPackageZero
+	}
+	if b.PackageID < 0 {
+		return ErrInvalidPackageNegative
+	}
+
+	// Parse StartTime and EndTime
+	start, err := time.Parse(time.RFC3339, b.StartTime)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrInvalidStartTimeFormat, err)
+	}
+	end, err := time.Parse(time.RFC3339, b.EndTime)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrInvalidEndTimeFormat, err)
+	}
+
+	now := time.Now().UTC()
+	if !start.After(now) {
+		return ErrStartTimeInPast
+	}
+	if !end.After(start) {
+		return ErrEndBeforeStart
+	}
+	if end.Sub(start)%time.Hour != 0 {
+		return ErrNonHourlyDuration
+	}
+
+	// Validate Status
+	if strings.TrimSpace(b.Status) == "" {
+		return ErrEmptyStatus
+	}
+	if !utils.In(b.Status, bookingStatuses) {
+		return ErrInvalidStatus
+	}
+
+	return nil
+}

@@ -253,6 +253,11 @@ func (r *BookingRepository) Delete(id int64) error {
 	return nil
 }
 
+func (r *BookingRepository) Cancel(id int64) error {
+	_, err := r.db.Exec("UPDATE bookings SET status = 'cancelled' WHERE booking_id = $1", id)
+	return err
+}
+
 func (r *BookingRepository) RefreshBookings() {
 	now := time.Now().UTC()
 

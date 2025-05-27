@@ -2,17 +2,19 @@ package implementation
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"log/slog"
-	"math/rand"
 	"sort"
+	"strconv"
 	"time"
 
+	"esports_club_booking/internal/auth"
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/repository"
 	"esports_club_booking/internal/service"
+	"esports_club_booking/internal/transport/dto"
+	"esports_club_booking/internal/utils"
 )
 
 var _ service.BookingService = (*BookingService)(nil)
@@ -21,11 +23,12 @@ type BookingService struct {
 	repository      repository.BookingRepository
 	computerService service.ComputerService
 	packageService  service.PackageService
+	userService     service.UserService
 	computerNumber  int
 }
 
 func NewBookingService(repository repository.BookingRepository, computerService service.ComputerService,
-	packageService service.PackageService,
+	packageService service.PackageService, userService service.UserService,
 ) (*BookingService, error) {
 	if repository == nil {
 		log.Fatal("Nil repository provided to booking service")
@@ -33,11 +36,13 @@ func NewBookingService(repository repository.BookingRepository, computerService 
 		log.Fatal("Nil package service provided to booking service")
 	} else if computerService == nil {
 		log.Fatal("Nil computer service provided to booking service")
+	} else if userService == nil {
+		log.Fatal("Nil user service provided to booking service")
 	}
 
 	// Fetch the number of computers
 	var computerNum int
-	computers, err := computerService.GetAllComputers()
+	computers, err := computerService.Computers("")
 	if err == nil {
 		computerNum = len(computers)
 	}
@@ -47,22 +52,62 @@ func NewBookingService(repository repository.BookingRepository, computerService 
 		computerService: computerService,
 		packageService:  packageService,
 		computerNumber:  computerNum,
+		userService:     userService,
 	}
 
 	return service, nil
 }
 
-func (s *BookingService) GetAllBookings() ([]*entities.Booking, error) {
-	if bookings, err := s.repository.GetAll(); err != nil {
-		return nil, err
-	} else {
-		return bookings, nil
+func (s *BookingService) Bookings(filter string) ([]*entities.Booking, error) {
+	if filter == "" {
+		filter = "non-cancelled"
 	}
+
+	if filter != "non-cancelled" && filter != "pending" && filter != "finished" &&
+		filter != "active" && filter != "cancelled" {
+		return nil, entities.ErrInvalidFilter
+	}
+
+	bookings, err := s.repository.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	filtered := make([]*entities.Booking, 0)
+	for _, booking := range bookings {
+		if filter == "non-cancelled" && booking.Status != "cancelled" {
+			filtered = append(filtered, booking)
+		} else if filter == "pending" && booking.Status == "pending" {
+			filtered = append(filtered, booking)
+		} else if filter == "finished" && booking.Status == "finished" {
+			filtered = append(filtered, booking)
+		} else if filter == "active" && booking.Status == "active" {
+			filtered = append(filtered, booking)
+		} else if filter == "cancelled" && booking.Status == "cancelled" {
+			filtered = append(filtered, booking)
+		}
+	}
+	return filtered, nil
 }
 
-func (s *BookingService) CreateBooking(ctx context.Context, booking *entities.Booking) (int64, error) {
+func (s *BookingService) CreateBooking(ctx context.Context, bookingDTO *dto.Booking) (int64, error) {
 	if ctx.Err() != nil {
 		return 0, ctx.Err()
+	}
+	user, err := s.userService.GetUser(bookingDTO.UserID)
+	if err != nil {
+		return 0, err
+	} else if user.Status == entities.BlockedStatus {
+		return 0, entities.ErrUserBlocked
+	}
+
+	booking := &entities.Booking{
+		UserID:     bookingDTO.UserID,
+		ComputerID: bookingDTO.ComputerID,
+		PackageID:  bookingDTO.PackageID,
+		StartTime:  bookingDTO.StartTime,
+		EndTime:    bookingDTO.EndTime,
+		Status:     "pending",
 	}
 
 	if err := booking.Validate(); err != nil {
@@ -73,25 +118,53 @@ func (s *BookingService) CreateBooking(ctx context.Context, booking *entities.Bo
 	if err != nil {
 		return 0, err
 	}
+
 	if conflict {
 		return 0, entities.ErrBookingOverlap
 	}
 
 	packageMap := s.packageService.PackagesMap()
-	computersMap := s.computerService.ComputersMap()
+	computerMap := s.computerService.ComputersMap()
 
-	if packageMap[booking.PackageID].Room != computersMap[booking.ComputerID].Room {
-		return 0, entities.ErrNotCorrespondenceOfRoom
+	bookingPackage, packageExists := packageMap[booking.PackageID]
+	if !packageExists {
+		return 0, entities.ErrPackageNotFound
+	}
+	computerPackage, computerExists := computerMap[booking.ComputerID]
+	if !computerExists {
+		return 0, entities.ErrComputerNotFound
 	}
 
-	booking.Status = "pending"
+	if packageExists && computerExists {
+		if bookingPackage.Room != computerPackage.Room {
+			return 0, entities.ErrNotCorrespondenceOfRoom
+		}
 
-	if id, err := s.repository.Create(ctx, booking); err != nil {
-		slog.Error("Unhandled error creating booking:", slog.Any("error", err))
-		return 0, service.ErrUnhandledError
-	} else {
-		return id, nil
+		// Parse StartTime and EndTime
+		start, err := time.Parse(time.RFC3339, bookingDTO.StartTime)
+		if err != nil {
+			return -1, entities.ErrInvalidTimeFormat
+		}
+		end, err := time.Parse(time.RFC3339, booking.EndTime)
+		if err != nil {
+			return -1, entities.ErrInvalidTimeFormat
+		}
+
+		// Check that packet duration corresponds to the duration from the start_time till end_time
+		if float64(bookingPackage.Duration)-(end.Sub(start).Hours()) > entities.EPS {
+			return 0, entities.ErrInvalidDuration
+		}
+
+		if id, err := s.repository.Create(ctx, booking); err != nil {
+			slog.Error("Unhandled error creating booking:", slog.Any("error", err))
+			return 0, service.ErrUnhandledError
+		} else {
+			return id, nil
+		}
 	}
+
+	return 0, service.ErrUnhandledError
+
 }
 
 func (s *BookingService) BookingNotified(booking *entities.Booking) error {
@@ -117,9 +190,9 @@ func (s *BookingService) GetComputerBookings(id int64) ([]*entities.Booking, err
 		return nil, err
 	}
 
-	bookings, err := s.GetAllBookings()
+	bookings, err := s.Bookings("non-cancelled")
 	if err != nil {
-		slog.Error("Unhandled Error fetching pending bookings:", err)
+		slog.Error("Unhandled Error fetching pending bookings:", "error", err)
 		return nil, service.ErrUnhandledError
 	}
 
@@ -405,54 +478,54 @@ func (s *BookingService) RefreshBookings() {
 
 const eps = 0.0000000001
 
-func (s *BookingService) GenerateBooking(ctx context.Context) {
-	retryNum := 0
-	userID := int64(rand.Intn(43) + 1)
-	computerID := int64(rand.Intn(40) + 1)
+// func (s *BookingService) GenerateBooking(ctx context.Context) {
+// 	retryNum := 0
+// 	userID := int64(rand.Intn(43) + 1)
+// 	computerID := int64(rand.Intn(40) + 1)
 
-	startTime := time.Now().UTC().Add(time.Duration(rand.Intn(30)+1) * time.Minute)
-	endTime := startTime.Add(time.Duration(rand.Intn(3)+1) * time.Hour)
+// 	startTime := time.Now().UTC().Add(time.Duration(rand.Intn(30)+1) * time.Minute)
+// 	endTime := startTime.Add(time.Duration(rand.Intn(3)+1) * time.Hour)
 
-	var packageID int
-	diff := endTime.Sub(startTime).Hours()
-	switch {
-	case diff-1.0 < eps:
-		packageID = 1
-	case diff-2.0 < eps:
-		packageID = 2
-	case diff-3.0 < eps:
-		packageID = 3
-	}
+// 	var packageID int
+// 	diff := endTime.Sub(startTime).Hours()
+// 	switch {
+// 	case diff-1.0 < eps:
+// 		packageID = 1
+// 	case diff-2.0 < eps:
+// 		packageID = 2
+// 	case diff-3.0 < eps:
+// 		packageID = 3
+// 	}
 
-	generatedBooking := &entities.Booking{
-		UserID:     userID,
-		ComputerID: computerID,
-		PackageID:  int64(packageID),
-		StartTime:  startTime.Format(time.RFC3339),
-		EndTime:    endTime.Format(time.RFC3339),
-		Status:     "pending",
-	}
+// 	generatedBooking := &entities.Booking{
+// 		UserID:     userID,
+// 		ComputerID: computerID,
+// 		PackageID:  int64(packageID),
+// 		StartTime:  startTime.Format(time.RFC3339),
+// 		EndTime:    endTime.Format(time.RFC3339),
+// 		Status:     "pending",
+// 	}
 
-	_, err := s.CreateBooking(ctx, generatedBooking)
-	if err != nil {
-		if errors.Is(err, entities.ErrBookingOverlap) {
-			s.GenerateBooking(ctx)
-		}
+// 	_, err := s.CreateBooking(ctx, generatedBooking)
+// 	if err != nil {
+// 		if errors.Is(err, entities.ErrBookingOverlap) {
+// 			s.GenerateBooking(ctx)
+// 		}
 
-		retryNum++
-		if retryNum >= 5 {
-			return
-		} else {
-			s.GenerateBooking(ctx)
-		}
-		// If incorrect values while validation should retry
+// 		retryNum++
+// 		if retryNum >= 5 {
+// 			return
+// 		} else {
+// 			s.GenerateBooking(ctx)
+// 		}
+// 		// If incorrect values while validation should retry
 
-		slog.Error("Unhandled error creating booking:", slog.Any("error", err))
-		if ctx.Err() != nil {
-			return
-		}
-	}
-}
+// 		slog.Error("Unhandled error creating booking:", slog.Any("error", err))
+// 		if ctx.Err() != nil {
+// 			return
+// 		}
+// 	}
+// }
 
 func (s *BookingService) hasBookingConflict(ctx context.Context, newBooking *entities.Booking) (bool, error) {
 	newStart, err := time.Parse(time.RFC3339, newBooking.StartTime)
@@ -496,4 +569,42 @@ func (s *BookingService) UserBookings(id int64) ([]*entities.Booking, error) {
 	}
 
 	return bookings, nil
+}
+
+func (s *BookingService) Cancel(ctx context.Context, bookingdID int64) error {
+	if err := entities.ValidateID(bookingdID); err != nil {
+		return err
+	}
+
+	booking, err := s.repository.GetByID(bookingdID)
+	if err != nil {
+		return entities.ErrBookingNotExists
+	}
+
+	// TODO: In case of invalid token, show it or block the user's ip in middleware
+	role, ok := auth.GetRoleFromContext(ctx)
+	if !ok {
+		return entities.ErrUnauthorized
+	}
+
+	userID, ok := auth.GetUserIDFromContext(ctx)
+	if !ok {
+		return entities.ErrUnauthorized
+	}
+
+	TokenUserID, err := strconv.ParseInt(userID, 10, 64)
+	if err != nil {
+		return entities.ErrUnauthorized
+	}
+
+	// Check if non privelleged must cancel only own booking
+	if utils.In(role, entities.NonPrivellegedRoles) && booking.UserID != TokenUserID {
+		return entities.ErrNonOwnBookingCancel
+	} else if utils.In(role, entities.PrivellegedRoles) {
+		return s.repository.Cancel(booking.ID)
+	} else {
+		slog.Error("Unhandled role:", slog.Any("role", role))
+	}
+
+	return nil
 }

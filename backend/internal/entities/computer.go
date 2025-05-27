@@ -51,7 +51,9 @@ func (s Status) IsValid() bool {
 	}
 }
 
-var ErrInvalidStatus = errors.New("invalid status for computer provided")
+var (
+	ErrInvalidStatus = errors.New("invalid status")
+)
 
 func (computer *Computer) Validate() error {
 	allowedStatuses := map[string]bool{
@@ -92,3 +94,16 @@ func (computer *Computer) Validate() error {
 
 	return nil
 }
+
+var (
+	ErrComputerNotFound = errors.New("computer does not exist")
+	ErrInvalidRoom      = errors.New("invalid room")
+)
+
+var (
+	StandardRoom = "Standard"
+	VIPRoom      = "VIP"
+	ConsoleRoom  = "Console"
+)
+
+var Rooms = []string{StandardRoom, VIPRoom, ConsoleRoom}

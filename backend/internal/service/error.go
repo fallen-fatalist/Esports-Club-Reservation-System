@@ -4,7 +4,6 @@ import "errors"
 
 var (
 	ErrUserAlreadyExists       = errors.New("user with this email already exists")
-	ErrUserNotFound            = errors.New("user not found")
 	ErrInvalidCredentials      = errors.New("invalid credentials")
 	ErrInvalidVerificationCode = errors.New("invalid or expired verification code ")
 	ErrTooManyAttempts         = errors.New("too many attempts, try later")
@@ -12,4 +11,5 @@ var (
 	ErrUserBlockedOrUnverified = errors.New("user not verified or blocked")
 	ErrNoNeedVerification      = errors.New("user didn't request code or doent't need verification ")
 	ErrSentCodeAlready         = errors.New("code already sent")
+	ErrPasswordRecentlyChanged = errors.New("password changed recently")
 )

@@ -13,7 +13,7 @@ import (
 
 const (
 	maxRetries    = 3               // Try 3 times (15 seconds total if we wait 5 seconds between retries)
-	retryInterval = 5 * time.Second // Retry every 5 seconds
+	retryInterval = 3 * time.Second // Retry every 3 seconds
 )
 
 func OpenDB(cfg config.DataBase) (*sql.DB, error) {

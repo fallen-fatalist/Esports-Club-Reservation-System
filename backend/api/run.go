@@ -57,12 +57,19 @@ func Run() {
 	emailSender := email.NewEmailSender(cfg.EmailSender.FromAddress, cfg.EmailSender.Password,
 		cfg.EmailSender.SMTPHost, int(cfg.EmailSender.SMTPPort))
 
-	userService, _ := implementation.NewUserService(userRepository, jwtManager, emailSender)
+	// User service
+	userService, _ := implementation.NewUserService(&cfg.OwnerCredentials, userRepository, jwtManager, emailSender)
+
 	computerService, _ := implementation.NewComputerService(computerRepository)
 	packageService, _ := implementation.NewPackageService(packageRepository)
 
 	// Set the number of computers
-	bookingService, _ := implementation.NewBookingService(bookingRepository, computerService, packageService)
+	bookingService, _ := implementation.NewBookingService(
+		bookingRepository, 
+		computerService, 
+		packageService, 
+		userService,
+	)
 
 	paypalClient, err := paypal.NewPayPalClient(cfg)
 	if err != nil {
@@ -105,7 +112,7 @@ func startWorkers(svc service.Service, ctx context.Context, emailSender email.Em
 	refresherTicker := time.NewTicker(1 * time.Minute)
 	go worker.RefresherCallback(refresherTicker, svc.BookingService)
 
-	cleanupTicker := time.NewTicker(time.Minute)
+	cleanupTicker := time.NewTicker(time.Second * 30)
 	go worker.StartUserCleanupWorker(cleanupTicker, ctx, svc.UserService)
 
 	notificationTicker := time.NewTicker(30 * time.Second)

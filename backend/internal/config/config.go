@@ -14,11 +14,12 @@ import (
 
 type (
 	Config struct {
-		Server      Server
-		DataBase    DataBase
-		JWT         JWTConfig
-		EmailSender EmailSender
-		PayPal      PayPal
+		Server           Server
+		DataBase         DataBase
+		JWT              JWTConfig
+		EmailSender      EmailSender
+		PayPal           PayPal
+		OwnerCredentials OwnerCredentials
 	}
 
 	Server struct {
@@ -54,6 +55,12 @@ type (
 		WebhookID  string
 		ReturnURL  string
 		CancelURL  string
+	}
+
+	OwnerCredentials struct {
+		Email    string
+		Username string
+		Password string
 	}
 )
 
@@ -105,6 +112,11 @@ func NewConfig() *Config {
 			WebhookID:  getEnvStr("PAYPAL_WEBHOOK_ID", ""),
 			ReturnURL:  getEnvStr("RETURN_URL", "https://github.com"),
 			CancelURL:  getEnvStr("CANCEL_URL", "https://guthib.com"),
+		},
+		OwnerCredentials: OwnerCredentials{
+			Email:    getEnvStr("EMAIL", "owner@mail.com"),
+			Username: getEnvStr("USERNAME", "owner"),
+			Password: getEnvStr("PASSWORD", "change_me"),
 		},
 	}
 }

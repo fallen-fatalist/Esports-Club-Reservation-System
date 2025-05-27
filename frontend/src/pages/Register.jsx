@@ -50,7 +50,7 @@ const Register = () => {
     return passwordRegex.test(password);
   };
 
-  const validateForm = () => {
+  const validateForm = () => {  
     const { email, login, password, confirmPassword } = form;
 
     if (!email || !login || !password || !confirmPassword) {
@@ -125,11 +125,18 @@ const Register = () => {
       const res = await verifyEmail({ email: form.email, code: form.code });
 
       if (res.status === 200 || res.data?.success) {
-        showLocalModal("Email Verified", "Your email has been successfully verified!");
-        navigate("/login");
+        // 🔥 автоматический вход
+        await loginContext({
+          identifier: form.email,
+          password: form.password, // пароль из регистрации
+        });
+
+        navigate("/"); // редирект на главную
       } else {
+        showLocalModal("Verification Failed", "Something went wrong. Please try logging in.");
         navigate("/login");
       }
+
     } catch (err) {
       if (err.response?.status === 400) {
         showLocalModal("Verification Error", "Invalid verification code. Try again.");
@@ -145,6 +152,7 @@ const Register = () => {
       setIsLoading(false);
     }
   };
+
 
   const resendActivationCode = async () => {
     setError("");

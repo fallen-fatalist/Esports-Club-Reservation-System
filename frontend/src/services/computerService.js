@@ -22,5 +22,4 @@ const computerService = {
   }
 };
 
-
 export default computerService;

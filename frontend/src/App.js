@@ -1,3 +1,4 @@
+// App.js
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import Navbar from './components/Navbar';
@@ -6,10 +7,11 @@ import MyModal from './components/UI/modal/MyModal';
 import { AuthContext } from './context/contextIndex';
 import { ThemeProviderCustom } from './context/ThemeContext';
 import './styles/main.css';
-import { checkAuth, signIn, logoutRequest } from './services/authService';
+import { checkAuth, signIn, logoutRequest, checkIsPriveleged } from './services/authService';
 
 function App() {
   const [isAuth, setIsAuth] = useState(false);
+  const [userRole, setUserRole] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalContent, setModalContent] = useState({ title: "", message: "" });
   const [loading, setLoading] = useState(true);
@@ -24,23 +26,19 @@ function App() {
     showModal("Authentication Error", message);
   };
 
-  const login = async (credentials) => {
-    try {
-      await signIn(credentials);
-      await checkUserAuth();
-    } catch (error) {
-      showModal("Login Error", error?.response?.data?.error || "Unknown error");
-    }
-  };
-
   const logout = async () => {
     try {
       await logoutRequest(); 
     } catch (error) {
       console.error("Logout request failed:", error);
     } finally {
-      setIsAuth(false); 
+      setIsAuth(false);
+      setUserRole(null);
     }
+  };
+
+  const isAdmin = () => {
+    return userRole === 'admin' || userRole === 'privileged' || userRole === 'owner';
   };
 
   const checkUserAuth = async () => {
@@ -49,11 +47,28 @@ function App() {
       const res = await checkAuth();
       if (res.data?.role) {
         setIsAuth(true);
+        setUserRole(res.data.role);
+        console.log("User authenticated with role:", res.data.role);
+        
+        // Дополнительно проверим привилегии для админа
+        if (res.data.role === 'admin' || res.data.role === 'privileged') {
+          try {
+            await checkIsPriveleged();
+            console.log("Admin privileges confirmed");
+          } catch (error) {
+            // Если ошибка 403, то не админ - это нормально
+            if (error.response?.status !== 403) {
+              console.error('Privilege check error:', error);
+            }
+          }
+        }
       } else {
         setIsAuth(false);
+        setUserRole(null);
       }
     } catch (error) {
       setIsAuth(false);
+      setUserRole(null);
       if (error.response?.status !== 401) {
         console.error('Auth check error:', error);
       }
@@ -62,11 +77,58 @@ function App() {
     }
   };
 
+  const checkUserAuthForLogin = async () => {
+    try {
+      const res = await checkAuth();
+      if (res.data?.role) {
+        setIsAuth(true);
+        setUserRole(res.data.role);
+        console.log("Login auth check - user role:", res.data.role);
+        return true;
+      } else {
+        setIsAuth(false);
+        setUserRole(null);
+        throw new Error('No user role in response');
+      }
+    } catch (error) {
+      setIsAuth(false);
+      setUserRole(null);
+      throw error;
+    }
+  };
+
+  const login = async (credentials) => {
+    try {
+      console.log("Attempting login...");
+      const signInResponse = await signIn(credentials);
+      
+      if (signInResponse.status !== 200) {
+        throw new Error('Sign in failed');
+      }
+      
+      console.log("Sign in successful, checking auth...");
+      const authResult = await checkUserAuthForLogin();
+      console.log("Login process completed successfully");
+      
+      // Возвращаем информацию о пользователе для использования в Login компоненте
+      return {
+        success: true,
+        userRole: userRole,
+        isAdmin: isAdmin()
+      };
+      
+    } catch (error) {
+      console.error("Login error:", error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     checkUserAuth();
 
     const handleAuthEvent = () => {
-      setIsAuth(false); 
+      setIsAuth(false);
+      setUserRole(null);
     };
 
     window.addEventListener('auth-error', handleAuthEvent);
@@ -88,6 +150,9 @@ function App() {
     <AuthContext.Provider value={{
       isAuth,
       setIsAuth,
+      userRole,
+      setUserRole,
+      isAdmin,
       login,
       logout,
       handleAuthError,

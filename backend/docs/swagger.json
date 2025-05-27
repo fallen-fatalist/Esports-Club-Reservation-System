@@ -11,7 +11,7 @@
     "paths": {
         "/api/bookings": {
             "get": {
-                "description": "Returns a list of bookings with various statuses",
+                "description": "Returns a list of bookings with filtering by status",
                 "consumes": [
                     "application/json"
                 ],
@@ -21,7 +21,15 @@
                 "tags": [
                     "Bookings"
                 ],
-                "summary": "Get all bookings with time format \"2006-01-02T15:04:05Z07:00\"",
+                "summary": "Get all bookings",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter bookings by status. Options: non-cancelled, pending, finished, active, cancelled. If empty it set non-cancelled",
+                        "name": "filter",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -41,12 +49,7 @@
                 }
             },
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Creates a new booking with the given details",
+                "description": "Creates a new booking with the provided start and end times, computer ID and user ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -59,12 +62,12 @@
                 "summary": "Create a new booking",
                 "parameters": [
                     {
-                        "description": "Booking details",
+                        "description": "Booking to create",
                         "name": "booking",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/entities.Booking"
+                            "$ref": "#/definitions/dto.Booking"
                         }
                     }
                 ],
@@ -78,21 +81,38 @@
                     "400": {
                         "description": "Invalid request body",
                         "schema": {
-                            "$ref": "#/definitions/handlers.JSONAnswer"
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Computer not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.JSONAnswer"
+                            "$ref": "#/definitions/utils.HTTPError"
                         }
                     }
                 }
             }
         },
-        "/api/bookings/active": {
-            "get": {
-                "description": "Returns a list of active bookings",
+        "/api/bookings/{id}/cancel": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cancels a booking with the given ID. The user must have the correct role to cancel the booking.",
                 "consumes": [
                     "application/json"
                 ],
@@ -102,117 +122,42 @@
                 "tags": [
                     "Bookings"
                 ],
-                "summary": "Get active bookings with time format \"2006-01-02T15:04:05Z07:00\"",
-                "responses": {
-                    "200": {
-                        "description": "List of active bookings",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/entities.Booking"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.JSONAnswer"
-                        }
+                "summary": "Cancel a booking",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Booking ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
-                }
-            }
-        },
-        "/api/bookings/cancelled": {
-            "get": {
-                "description": "Returns a list of cancelled bookings",
-                "consumes": [
-                    "application/json"
                 ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Bookings"
-                ],
-                "summary": "Get cancelled bookings with time format \"2006-01-02T15:04:05Z07:00\"",
                 "responses": {
-                    "200": {
-                        "description": "List of cancelled bookings",
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid booking ID or non own booking cancel",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/entities.Booking"
-                            }
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Booking not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.JSONAnswer"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/bookings/finished": {
-            "get": {
-                "description": "Returns a list of finished bookings",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Bookings"
-                ],
-                "summary": "Get finished bookings with time format \"2006-01-02T15:04:05Z07:00\"",
-                "responses": {
-                    "200": {
-                        "description": "List of finished bookings",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/entities.Booking"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.JSONAnswer"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/bookings/pending": {
-            "get": {
-                "description": "Returns a list of pending bookings",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Bookings"
-                ],
-                "summary": "Get pending bookings with time format \"2006-01-02T15:04:05Z07:00\"",
-                "responses": {
-                    "200": {
-                        "description": "List of pending bookings",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/entities.Booking"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.JSONAnswer"
+                            "$ref": "#/definitions/utils.HTTPError"
                         }
                     }
                 }
@@ -220,7 +165,7 @@
         },
         "/api/computers": {
             "get": {
-                "description": "Returns a list of all computers",
+                "description": "Returns a list of filtered by room computers",
                 "produces": [
                     "application/json"
                 ],
@@ -228,6 +173,14 @@
                     "Computers"
                 ],
                 "summary": "Get all computers",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by room, may be empty (all computers returned)",
+                        "name": "room",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "List of computers",
@@ -247,6 +200,11 @@
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Creates a new computer",
                 "consumes": [
                     "application/json"
@@ -372,14 +330,14 @@
         },
         "/api/computers/{id}": {
             "get": {
-                "description": "Returns a specific computer by ID",
+                "description": "Returns a specific Computer by ID",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Computers"
                 ],
-                "summary": "Get a specific computer",
+                "summary": "Get a specific Computer",
                 "parameters": [
                     {
                         "type": "integer",
@@ -397,7 +355,7 @@
                         }
                     },
                     "400": {
-                        "description": "Invalid computer ID",
+                        "description": "Invalid Computer ID",
                         "schema": {
                             "$ref": "#/definitions/handlers.JSONAnswer"
                         }
@@ -417,6 +375,11 @@
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Deletes a specific computer by ID",
                 "produces": [
                     "application/json"
@@ -639,6 +602,40 @@
                 }
             }
         },
+        "/api/users": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a list of all users",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get all users",
+                "responses": {
+                    "200": {
+                        "description": "List of users",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entities.User"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    }
+                }
+            }
+        },
         "/api/users//bookings": {
             "get": {
                 "security": [
@@ -688,6 +685,243 @@
                 }
             }
         },
+        "/api/users/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes a user with the given ID.",
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Delete a user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid user ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{id}/admin": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Grants admin privileges to a user with the given ID, only Owner and Manager can grant admin role.",
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Grant admin privileges to a user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid user ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{id}/block": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Blocks a user with the given ID.",
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Block a user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid user ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{id}/credit": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Adds a specified amount to the user's balance using their ID.",
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Fill user balance",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "number",
+                        "description": "Amount to add to user's balance",
+                        "name": "amount",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid user ID or balance",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{id}/unblock": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Unblocks a user with the given ID.",
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Unblock a user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid user ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/activate": {
             "post": {
                 "description": "Sends a verification code to the email provided in request body",
@@ -708,7 +942,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.VerificationRequest"
+                            "$ref": "#/definitions/dto.EmailVerificationRequest"
                         }
                     }
                 ],
@@ -736,6 +970,11 @@
         },
         "/auth/authorized": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Returns the user's data if they are authorized",
                 "consumes": [
                     "application/json"
@@ -751,7 +990,130 @@
                     "200": {
                         "description": "User authorized",
                         "schema": {
-                            "$ref": "#/definitions/dto.UserDTO"
+                            "$ref": "#/definitions/dto.User"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/priveleged": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a 200 status if user is privileged",
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Check if user is privileged",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/auth/reset/confirm": {
+            "post": {
+                "description": "Resets user's password using email, code and new password",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Reset password",
+                "parameters": [
+                    {
+                        "description": "Password reset confirmation",
+                        "name": "resetConfirm",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ResetPasswordConfirm"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Password reset successfully",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid username or password",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "429": {
+                        "description": "Too many attempts",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/reset/request": {
+            "post": {
+                "description": "Sends a password reset code to the user's email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Request password reset code",
+                "parameters": [
+                    {
+                        "description": "Password reset request",
+                        "name": "resetRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reset code sent",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request or user not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
                         }
                     }
                 }
@@ -782,11 +1144,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "JWT token",
-                        "schema": {
-                            "$ref": "#/definitions/dto.TokenResponse"
-                        }
+                    "204": {
+                        "description": "No Content, JWT set in HTTPOnly cookie"
                     },
                     "400": {
                         "description": "Bad request, validation error",
@@ -915,6 +1274,45 @@
         }
     },
     "definitions": {
+        "dto.Booking": {
+            "type": "object",
+            "properties": {
+                "computer_id": {
+                    "description": "ComputerID is the ID of the computer being booked.\nrequired: true",
+                    "type": "integer",
+                    "example": 67890
+                },
+                "end_time": {
+                    "description": "EndTime is the end time of the booking in RFC3339 format.\nrequired: true",
+                    "type": "string",
+                    "example": "2025-05-27T12:00:00+07:00"
+                },
+                "package_id": {
+                    "description": "PackageID is the ID of the selected package for the booking.\nrequired: true",
+                    "type": "integer",
+                    "example": 111
+                },
+                "start_time": {
+                    "description": "StartTime is the start time of the booking in RFC3339 format.\nrequired: true",
+                    "type": "string",
+                    "example": "2025-05-27T10:00:00+07:00"
+                },
+                "user_id": {
+                    "description": "UserID is the ID of the user making the booking.\nrequired: true",
+                    "type": "integer",
+                    "example": 12345
+                }
+            }
+        },
+        "dto.EmailVerificationRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "description": "required: true\nexample: user@example.com",
+                    "type": "string"
+                }
+            }
+        },
         "dto.LoginUser": {
             "type": "object",
             "properties": {
@@ -945,15 +1343,29 @@
                 }
             }
         },
-        "dto.TokenResponse": {
+        "dto.ResetPasswordConfirm": {
             "type": "object",
             "properties": {
-                "token": {
+                "code": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "new_password": {
                     "type": "string"
                 }
             }
         },
-        "dto.UserDTO": {
+        "dto.ResetPasswordRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.User": {
             "type": "object",
             "properties": {
                 "balance": {
@@ -969,15 +1381,6 @@
                     "type": "string"
                 },
                 "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.VerificationRequest": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "description": "required: true\nexample: user@example.com",
                     "type": "string"
                 }
             }
@@ -1127,6 +1530,35 @@
                     "type": "string"
                 },
                 "start_time": {
+                    "type": "string"
+                }
+            }
+        },
+        "entities.User": {
+            "type": "object",
+            "properties": {
+                "balance": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "login": {
+                    "type": "string"
+                },
+                "passwordUpdatedAt": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "status": {
                     "type": "string"
                 }
             }

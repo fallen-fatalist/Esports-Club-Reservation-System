@@ -1,39 +1,115 @@
+// components/AppRouter.js
 import React, { useContext } from "react"
 import {
   Routes,
-  Route
+  Route,
+  Navigate
 } from 'react-router-dom'
 
-import { privateRoutes, publicRoutes } from "../router"
+import { privateRoutes, publicRoutes, adminRoutes } from "../router/index"
 import { AuthContext } from "../context/contextIndex";
 
+// Импортируем компоненты страниц
+import Main from "../pages/Main";
+import Login from "../pages/Login";
+import Register from "../pages/Register";
+import Booking from "../pages/Booking";
+import Error from "../pages/Error";
 
-const AppRouter = (props) => {
-  const {isAuth, setIsAuth} = useContext(AuthContext)
+const AdminRoute = ({ children }) => {
+  const { isAuth, isAdmin, userRole } = useContext(AuthContext);
+   
+  if (!isAuth || !userRole) {
+    return <Navigate to="/login" replace />;
+  }
+   
+  if (!isAdmin()) {
+    return <Navigate to="/" replace />;
+  }
+   
+  return children;
+};
+
+const ProtectedRoute = ({ children }) => {
+  const { isAuth } = useContext(AuthContext);
+  
+  if (!isAuth) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return children;
+};
+
+const AuthRoute = ({ children }) => {
+  const { isAuth, isAdmin } = useContext(AuthContext);
+  
+  // Если пользователь уже аутентифицирован, перенаправляем его
+  if (isAuth) {
+    return <Navigate to={isAdmin() ? "/admin" : "/"} replace />;
+  }
+  
+  return children;
+};
+
+const AppRouter = () => {
+  const { isAuth } = useContext(AuthContext);
+   
   return (
-        <Routes>
-          {isAuth
-            ? 
-              privateRoutes.map(route => 
-                <Route 
-                  path={route.path}
-                  element={<route.page/>}
-                  exact={route.exact}
-                  key={route.path}
-                />
-              )
-            :
-              publicRoutes.map(route => 
-                <Route 
-                  path={route.path}
-                  element={<route.page/>}
-                  exact={route.exact}
-                  key={route.path}
-                />
-              )
+    <Routes>
+      {/* Админские роуты */}
+      {adminRoutes.map(route => 
+        <Route
+          key={route.path}
+          path={route.path}
+          element={
+            <AdminRoute>
+              <route.page/>
+            </AdminRoute>
           }
-        </Routes>
-
+          exact={route.exact}
+        />
+      )}
+      
+      {/* Приватные роуты (для всех аутентифицированных пользователей) */}
+      {privateRoutes.map(route => 
+        <Route
+          key={route.path}
+          path={route.path}
+          element={
+            <ProtectedRoute>
+              <route.page/>
+            </ProtectedRoute>
+          }
+          exact={route.exact}
+        />
+      )}
+      
+      {/* Роуты аутентификации (логин/регистрация) */}
+      <Route
+        path="/login"
+        element={
+          <AuthRoute>
+            <Login/>
+          </AuthRoute>
+        }
+      />
+      
+      <Route
+        path="/register"
+        element={
+          <AuthRoute>
+            <Register/>
+          </AuthRoute>
+        }
+      />
+      
+      {/* Публичные роуты */}
+      <Route path="/" element={<Main/>} />
+      <Route path="/booking" element={<Booking/>} />
+      
+      {/* 404 роут */}
+      <Route path="*" element={<Error/>} />
+    </Routes>
   )
 };
 

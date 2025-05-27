@@ -6,11 +6,10 @@ import moonOutline from "../images/MoonOutlined.svg";
 import { ThemeContext } from "../context/ThemeContext";
 import LogoutIcon from '@mui/icons-material/Logout';
 import LoginIcon from '@mui/icons-material/Login';
-import { logoutRequest } from "../services/authService";
 
 const Navbar = () => {
   const { isDarkTheme, toggleTheme } = useContext(ThemeContext);
-  const { isAuth, logout } = useContext(AuthContext); 
+  const { isAuth, userRole, logout, isAdmin } = useContext(AuthContext); 
   const navigate = useNavigate();
 
   const handleThemeToggle = () => {
@@ -18,8 +17,12 @@ const Navbar = () => {
   };
 
   const handleLogout = async () => {
-    await logout();   
-    navigate('/');
+    try {
+      await logout();   
+      navigate('/');
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   return (
@@ -29,7 +32,7 @@ const Navbar = () => {
           eReserve
         </Link>
         
-        <button className="theme-toggle-btn" onClick={handleThemeToggle}>
+        <button className="theme-toggle-btn" onClick={handleThemeToggle}>   
           <img
             src={isDarkTheme ? sunnyOutline : moonOutline}
             alt="Theme Toggle Icon"
@@ -40,6 +43,7 @@ const Navbar = () => {
         <div className="navbar__links">
           <Link to="/booking">Booking</Link>
           {isAuth && <Link to="/profile">Profile</Link>}
+          {isAuth && isAdmin() && <Link to="/admin" className="admin-link">Admin</Link>}
 
           {!isAuth && (
             <>
@@ -58,12 +62,12 @@ const Navbar = () => {
               </button>
             </>
           )}
-          
+
           {isAuth && (
             <button
               className="logout-btn icon-only"
               onClick={handleLogout}
-              title="Logout"
+              title={`Logout (${userRole})`}
             >
               <LogoutIcon />
             </button>

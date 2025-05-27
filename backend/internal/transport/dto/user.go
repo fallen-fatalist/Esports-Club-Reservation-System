@@ -28,9 +28,9 @@ type LoginUser struct {
 	Password string `json:"password"`
 }
 
-// VerificationRequest represents verification code request
-// swagger:model VerificationRequest
-type VerificationRequest struct {
+// EmailVerificationRequest represents verification code request
+// swagger:model EmailVerificationRequest
+type EmailVerificationRequest struct {
 	// required: true
 	// example: user@example.com
 	Email string `json:"email"`
@@ -48,6 +48,17 @@ type VerifyEmailRequest struct {
 	Code string `json:"code"`
 }
 
+// First user presses Forget Password button and sends his email, then we send a code and user is redirected to
+type ResetPasswordRequest struct {
+	Email string `json:"email"`
+}
+
+type ResetPasswordConfirm struct {
+	Email       string `json:"email"`
+	Code        string `json:"code"`
+	NewPassword string `json:"new_password"`
+}
+
 // JSONAnswer represents a generic JSON response
 // swagger:model JSONAnswer
 type JSONAnswer struct {
@@ -60,7 +71,7 @@ type TokenResponse struct {
 	Token string `json:"token"`
 }
 
-type UserDTO struct {
+type User struct {
 	Username string  `json:"username"`
 	Email    string  `json:"email"`
 	Status   string  `json:"status"`

@@ -20,7 +20,6 @@ const bookingService = {
         }
     },
 
-
     async createBooking(bookingData) {
       try {
         console.log('Request payload:', JSON.stringify(bookingData, null, 2));
@@ -107,7 +106,36 @@ const bookingService = {
         console.error(`Error getting left time for computer #${id}:`, error);
         throw error;
       }
+    }, 
+    async cancelBookingByID(id) {
+      try {
+        const response = await api.post(`/api/bookings/${id}/cancel`);
+        return response.status === 200; 
+      } catch (error) {
+        console.error(`Error cancelling booking #${id}:`, error);
+        if (error.response?.status === 401) {
+          throw new Error('Authentication required');
+        }
+        if (error.response?.status === 403) {
+          throw new Error('Insufficient privileges to cancel booking');
+        }
+        if (error.response?.status === 404) {
+          throw new Error('Booking not found');
+        }
+        
+        throw error;
+      }
+    },
+    async getCancelledBookings() {
+      try {
+        const response = await api.get('/api/bookings/cancelled');
+        return response.data;
+      } catch (error) {
+        console.error('Error getting cancelled bookings:', error);
+        throw error;
+      }
     }
+
 };
 
 export default bookingService;

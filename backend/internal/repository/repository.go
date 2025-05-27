@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"esports_club_booking/internal/transport/dto"
 	"net/http"
 	"time"
 
@@ -51,14 +52,18 @@ type UserRepository interface {
 	GetCredentialsByEmail(email string) (entities.UserCredentials, error)
 	GetCredentialsByLogin(login string) (entities.UserCredentials, error)
 	Create(entity *entities.User, hashedPassword string) (int64, error)
-	Update(context.Context, *entities.User) (int64, error)
+	Update(*dto.User) (int64, error)
+	UpdateBalance(userID int64, amount float64) error
+	UpdatePassword(userID int64, hashedPassword string) error
 	Delete(int64) error
-	GetVerificationByEmail(email string) (entities.EmailVerification, error)
-	SaveEmailVerification(email string, code string, expiresAt time.Time) error
+	Block(userID int64) error
+	Unblock(userID int64) error
+	GetVerification(email, vType string) (entities.EmailVerification, error)
+	SaveVerification(email, code, vType string, expiresAt time.Time) error
 	MarkEmailVerified(userID int64) error
-	BlockEmail(email string, duration time.Duration) error
-	IncrementAttempt(email string) error
-	DeleteVerification(email string) error
+	BlockEmail(email, typ string, duration time.Duration) error
+	IncrementAttempt(email, typ string) error
+	DeleteVerification(email, vType string) error
 	DeleteUnverifiedUsers(olderThan time.Time) error
 }
 
@@ -77,6 +82,7 @@ type BookingRepository interface {
 	Create(context.Context, *entities.Booking) (int64, error)
 	Update(booking *entities.Booking) (int64, error)
 	Delete(int64) error
+	Cancel(int64) error
 	/* Very bad and stupid solution must be optimized to priority queue */
 	RefreshBookings()
 }
