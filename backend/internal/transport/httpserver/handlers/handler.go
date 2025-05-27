@@ -37,7 +37,6 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	/* Bookings */
 	mux.HandleFunc("GET /bookings", h.Bookings)
 	mux.HandleFunc("POST /bookings", auth.WithAuth(h.jwtMng, entities.AllRoles, h.PostBooking))
-	mux.HandleFunc("/bookings", h.BookingsOptions)
 
 	mux.HandleFunc("/bookings/pending", auth.WithAuth(h.jwtMng, entities.AllRoles, h.HandlePendingBookings))
 	mux.HandleFunc("/bookings/active", auth.WithAuth(h.jwtMng, entities.AllRoles, h.HandleActiveBookings))
@@ -51,6 +50,7 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("GET /users/bookings", auth.WithAuth(h.jwtMng, entities.AllRoles, h.UserBookings))
 	mux.HandleFunc("POST /block/{id}", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.HandleBlock))
 	mux.HandleFunc("POST /unblock/{id}", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.HandleUnblock))
+	mux.HandleFunc("POST /users/{id}/credit", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.HandleUserFill))
 	mux.HandleFunc("DELETE /users/{id}", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.HandleUserDelete))
 
 	//Auth
@@ -64,7 +64,7 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/reset/confirm", h.HandleResetPassword)
 
 	mux.HandleFunc("GET /auth/authorized", auth.WithAuth(h.jwtMng, entities.AllRoles, h.IsAuthorized))
-	mux.HandleFunc("GET /priveleged", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.IsPriveleged))
+	mux.HandleFunc("GET /auth/priveleged", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.IsPriveleged))
 	mux.HandleFunc("POST /auth/logout", auth.WithAuth(h.jwtMng, entities.AllRoles, h.Logout))
 
 }

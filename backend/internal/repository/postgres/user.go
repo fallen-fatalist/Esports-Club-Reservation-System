@@ -291,3 +291,36 @@ func (r *UserRepository) Unblock(userID int64) error {
 
 	return nil
 }
+
+// UpdateBalance updates the balance of a user by the specified amount.
+// It adds the amount to the existing balance.
+func (r *UserRepository) UpdateBalance(userID int64, amount float64) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Optionally you can lock the row for update to prevent race conditions
+	var currentBalance float64
+	err = tx.QueryRow(`SELECT balance FROM users WHERE user_id = $1 FOR UPDATE`, userID).Scan(&currentBalance)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return entities.ErrUserNotFound
+		}
+		return fmt.Errorf("query current balance: %w", err)
+	}
+
+	newBalance := currentBalance + amount
+
+	_, err = tx.Exec(`UPDATE users SET balance = $1 WHERE user_id = $2`, newBalance, userID)
+	if err != nil {
+		return fmt.Errorf("update balance: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit transaction: %w", err)
+	}
+
+	return nil
+}

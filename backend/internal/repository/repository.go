@@ -43,6 +43,7 @@ type UserRepository interface {
 	GetCredentialsByLogin(login string) (entities.UserCredentials, error)
 	Create(entity *entities.User, hashedPassword string) (int64, error)
 	Update(*dto.User) (int64, error)
+	UpdateBalance(userID int64, amount float64) error
 	UpdatePassword(userID int64, hashedPassword string) error
 	Delete(int64) error
 	Block(userID int64) error

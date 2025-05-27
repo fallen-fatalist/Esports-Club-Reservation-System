@@ -162,3 +162,21 @@ func (s *UserService) Delete(ctx context.Context, userID int64) error {
 
 	return s.repo.Delete(userID)
 }
+
+func (s *UserService) UserBalanceFill(ctx context.Context, userID int64, amount float64) error {
+	if err := entities.ValidateID(userID); err != nil {
+		return err
+	}
+
+	if amount <= entities.EPS {
+		return entities.ErrNegativeOrZeroAmount
+	} else if amount-entities.MAX_AMOUNT > entities.EPS {
+		// TODO: validation if needed
+		requesterID, _ := auth.GetUserIDFromContext(ctx)
+		requesterRole, _ := auth.GetUserIDFromContext(ctx)
+		slog.Warn("Maximum amount transfer exceeded", slog.String("Requester ID", requesterID), slog.String("Requester Role", requesterRole), slog.Float64("Amount", amount), slog.Int64("user id", userID))
+		return entities.ErrMaximumAmount
+	}
+
+	return s.repo.UpdateBalance(userID, amount)
+}

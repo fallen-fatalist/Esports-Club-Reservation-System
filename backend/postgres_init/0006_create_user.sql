@@ -9,7 +9,7 @@ CREATE TABLE users (
     hashed_password TEXT NOT NULL,
     status user_status DEFAULT 'active',
     role user_role DEFAULT 'client',
-    balance INT DEFAULT 0,
+    balance NUMERIC DEFAULT 0,
     promotion user_promotion DEFAULT 'no',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     password_updated_at TIMESTAMPTZ DEFAULT NOW() - INTERVAL '2 days'
