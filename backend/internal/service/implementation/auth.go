@@ -38,13 +38,13 @@ func (s *UserService) Register(userDTO dto.RegisterUser) (int64, error) {
 	_, err := s.repo.GetByEmail(userDTO.Email)
 	if err == nil {
 		return -1, service.ErrUserAlreadyExists
-	} else if !errors.Is(err, service.ErrUserNotFound) {
+	} else if !errors.Is(err, entities.ErrUserNotFound) {
 		return -1, fmt.Errorf("%s: failed to check existing user: %w", op, err)
 	}
 	_, err = s.repo.GetByLogin(userDTO.Login)
 	if err == nil {
 		return -1, service.ErrUserAlreadyExists
-	} else if !errors.Is(err, service.ErrUserNotFound) {
+	} else if !errors.Is(err, entities.ErrUserNotFound) {
 		return -1, fmt.Errorf("%s: failed to check existing user: %w", op, err)
 	}
 
@@ -59,8 +59,8 @@ func (s *UserService) Register(userDTO dto.RegisterUser) (int64, error) {
 		ID:     -1, // if user id didnt change then repository layer is not doing its job
 		Login:  userDTO.Login,
 		Email:  userDTO.Email,
-		Role:   "client",
 		Status: "unverified",
+		Role:   entities.ClientRole,
 	}
 
 	// call create register method to register new user
@@ -86,8 +86,13 @@ func (s *UserService) Login(userDTO dto.LoginUser) (string, error) {
 		user, err = s.repo.GetCredentialsByLogin(userDTO.Identifier)
 	}
 
+	// Check that user is blocked
+	if user.Status == entities.BlockedStatus {
+		return "", entities.ErrUserBlocked
+	}
+
 	if err != nil {
-		if errors.Is(err, service.ErrUserNotFound) {
+		if errors.Is(err, entities.ErrUserNotFound) {
 			return "", service.ErrInvalidCredentials
 		}
 		return "", fmt.Errorf("%s: failed to fetch user: %w", op, err)
@@ -97,7 +102,8 @@ func (s *UserService) Login(userDTO dto.LoginUser) (string, error) {
 	if !auth.VerifyPassword(user.HashedPassword, userDTO.Password) {
 		return "", service.ErrInvalidCredentials
 	}
-	if user.Status == "blocked" || user.Status == "unverified" {
+	if user.Status == entities.BlockedStatus ||
+		user.Status == entities.UnverifiedStatus {
 		return "", service.ErrUserBlockedOrUnverified
 	}
 	//generate jwt token and sign it (auth.CreateJWT already signs it for you)
@@ -115,7 +121,7 @@ func (s *UserService) SendVerificationCode(req dto.EmailVerificationRequest) err
 
 	user, err := s.repo.GetCredentialsByEmail(req.Email)
 	if err != nil {
-		if errors.Is(err, service.ErrUserNotFound) {
+		if errors.Is(err, entities.ErrUserNotFound) {
 			return errors.New("invalid email")
 		}
 		return fmt.Errorf("%s: failed to fetch user: %w", op, err)
@@ -177,7 +183,7 @@ func (s *UserService) VerifyEmail(req dto.VerifyEmailRequest) error {
 	// 3) Всё ок — создаём или активируем пользователя
 	user, err := s.repo.GetByEmail(req.Email)
 	if err != nil {
-		return service.ErrUserNotFound
+		return entities.ErrUserNotFound
 	}
 	if err := s.repo.MarkEmailVerified(user.ID); err != nil {
 		return err
@@ -201,8 +207,8 @@ func (s *UserService) SendPasswordResetCode(email string) error {
 
 	user, err := s.repo.GetCredentialsByEmail(email)
 	if err != nil {
-		if errors.Is(err, service.ErrUserNotFound) {
-			return service.ErrUserNotFound
+		if errors.Is(err, entities.ErrUserNotFound) {
+			return entities.ErrUserNotFound
 		}
 		return fmt.Errorf("%s: %w", op, err)
 	}

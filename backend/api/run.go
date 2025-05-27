@@ -51,12 +51,19 @@ func Run() {
 	emailSender := email.NewEmailSender(cfg.EmailSender.FromAddress, cfg.EmailSender.Password,
 		cfg.EmailSender.SMTPHost, int(cfg.EmailSender.SMTPPort))
 
-	userService, _ := implementation.NewUserService(userRepository, jwtManager, emailSender)
+	// User service
+	userService, _ := implementation.NewUserService(&cfg.OwnerCredentials, userRepository, jwtManager, emailSender)
+
 	computerService, _ := implementation.NewComputerService(computerRepository)
 	packageService, _ := implementation.NewPackageService(packageRepository)
 
 	// Set the number of computers
-	bookingService, _ := implementation.NewBookingService(bookingRepository, computerService, packageService)
+	bookingService, _ := implementation.NewBookingService(
+		bookingRepository, 
+		computerService, 
+		packageService, 
+		userService,
+	)
 
 	svc := service.NewService(
 		computerService,

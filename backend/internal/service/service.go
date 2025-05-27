@@ -40,9 +40,12 @@ type ComputerService interface {
 }
 
 type UserService interface {
-	GetAllUsers() ([]*entities.User, error)
+	GetUsers() ([]*entities.User, error)
 	GetUser(int64) (*entities.User, error)
-	CreateUser(*entities.User) (int64, error)
+	CreateUser(*dto.RegisterUser) (int64, error)
+	Delete(ctx context.Context, userID int64) error
+	Block(userID int64) error
+	Unblock(userID int64) error
 	// AuthUser()
 	Register(userDTO dto.RegisterUser) (int64, error)
 	Login(userDTO dto.LoginUser) (string, error)
@@ -51,13 +54,16 @@ type UserService interface {
 	SendPasswordResetCode(email string) error
 	ConfirmPasswordReset(req dto.ResetPasswordConfirm) error
 	DeleteUnverifiedUsers() error
+	UserBalanceFill(ctx context.Context, userID int64, amount float64) error
 	// FillBalance()
 }
 
 type BookingService interface {
 	// BookingNotified(*entities.Booking)
+	//TODO: Must handle with dto
 	GetAllBookings() ([]*entities.Booking, error)
-	CreateBooking(context.Context, *entities.Booking) (int64, error)
+	CreateBooking(context.Context, *dto.Booking) (int64, error)
+	Cancel(ctx context.Context, bookingdID int64) error
 	BookingNotified(*entities.Booking) error
 	GetComputerBookings(id int64) ([]*entities.Booking, error)
 	UserBookings(id int64) ([]*entities.Booking, error)

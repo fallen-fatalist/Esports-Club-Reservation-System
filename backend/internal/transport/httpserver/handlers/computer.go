@@ -17,7 +17,7 @@ import (
 // @Success		200	{array}		entities.Computer	"List of computers"
 // @Failure		500	{object}	handlers.JSONAnswer	"Internal server error"
 // @Router			/api/computers [get]
-func (s *Handler) getComputers(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) Computers(w http.ResponseWriter, r *http.Request) {
 	computerSpecs, err := s.service.ComputerService.GetAllComputers()
 	if err != nil {
 		slog.Error("Error fetching computer specs:", err)
@@ -44,7 +44,7 @@ func (s *Handler) getComputers(w http.ResponseWriter, r *http.Request) {
 // @Failure		400			{object}	handlers.JSONAnswer	"Invalid request body"
 // @Failure		500			{object}	handlers.JSONAnswer	"Internal server error"
 // @Router			/api/computers [post]
-func (s *Handler) postComputers(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) PostComputers(w http.ResponseWriter, r *http.Request) {
 	var computer entities.Computer
 
 	// Parse the JSON body into the struct
@@ -80,9 +80,9 @@ func (s *Handler) postComputers(w http.ResponseWriter, r *http.Request) {
 func (s *Handler) HandleComputers(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		s.getComputers(w, r)
+		s.Computers(w, r)
 	case http.MethodPost:
-		s.postComputers(w, r)
+		s.PostComputers(w, r)
 	default:
 		// Handle Method Not Allowed
 		w.Header().Set("Allow", "GET, POST")
@@ -91,17 +91,39 @@ func (s *Handler) HandleComputers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @Summary		Get a specific computer
-// @Description	Returns a specific computer by ID
+// func (s *Handler) HandleComputer(w http.ResponseWriter, r *http.Request) {
+// 	switch r.Method {
+// 	case http.MethodGet:
+// 		s.Computer(w, r)
+// 	case http.MethodDelete:
+// 		s.deleteComputer(w, r)
+// 	default:
+// 		// Handle Method Not Allowed
+// 		w.Header().Set("Allow", "GET, DELETE")
+// 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+
+// 	}
+
+// }
+
+// @Summary		Get a specific Computer
+// @Description	Returns a specific Computer by ID
 // @Tags			Computers
 // @Produce		json
 // @Param			id	path		int64				true	"Computer ID"
 // @Success		200	{object}	entities.Computer	"Computer details"
-// @Failure		400	{object}	handlers.JSONAnswer	"Invalid computer ID"
+// @Failure		400	{object}	handlers.JSONAnswer	"Invalid Computer ID"
 // @Failure		404	{object}	handlers.JSONAnswer	"Computer not found"
 // @Failure		500	{object}	handlers.JSONAnswer	"Internal server error"
 // @Router			/api/computers/{id} [get]
-func (s *Handler) getComputer(w http.ResponseWriter, r *http.Request, id int64) {
+func (s *Handler) Computer(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		slog.Error("parsing computer ID:", slog.Any("error", err))
+		http.Error(w, "Invalid computer ID", http.StatusBadRequest)
+		return
+	}
 	computer, err := s.service.ComputerService.GetComputer(id)
 	if err != nil {
 		if err == implementation.ErrComputerNotFound {
@@ -136,6 +158,7 @@ func (s *Handler) getComputer(w http.ResponseWriter, r *http.Request, id int64) 
 // @Summary		Delete a specific computer
 // @Description	Deletes a specific computer by ID
 // @Tags			Computers
+// @Security BearerAuth
 // @Produce		json
 // @Param			id	path		int64				true	"Computer ID"
 // @Success		204	{object}	handlers.JSONAnswer	"Computer deleted successfully"
@@ -143,8 +166,15 @@ func (s *Handler) getComputer(w http.ResponseWriter, r *http.Request, id int64) 
 // @Failure		404	{object}	handlers.JSONAnswer	"Computer not found"
 // @Failure		500	{object}	handlers.JSONAnswer	"Internal server error"
 // @Router			/api/computers/{id} [delete]
-func (s *Handler) deleteComputer(w http.ResponseWriter, r *http.Request, id int64) {
-	err := s.service.ComputerService.DeleteComputer(id)
+func (s *Handler) DeleteComputer(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		slog.Error("parsing computer ID:", slog.Any("error", err))
+		http.Error(w, "Invalid computer ID", http.StatusBadRequest)
+		return
+	}
+	err = s.service.ComputerService.DeleteComputer(id)
 	if err != nil {
 		if err == implementation.ErrComputerNotFound {
 			jsonPayload := dto.JSONEntityRelatedResponse{
@@ -170,28 +200,6 @@ func (s *Handler) deleteComputer(w http.ResponseWriter, r *http.Request, id int6
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (s *Handler) HandleComputer(w http.ResponseWriter, r *http.Request) {
-	idStr := r.PathValue("id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		slog.Error("parsing computer ID:", slog.Any("error", err))
-		http.Error(w, "Invalid computer ID", http.StatusBadRequest)
-		return
-	}
-	switch r.Method {
-	case http.MethodGet:
-		s.getComputer(w, r, id)
-	case http.MethodDelete:
-		s.deleteComputer(w, r, id)
-	default:
-		// Handle Method Not Allowed
-		w.Header().Set("Allow", "GET, DELETE")
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-
-	}
-
-}
-
 // @Summary		Get all computer statuses
 // @Description	Returns a list of all computer statuses
 // @Tags			Computers
@@ -201,11 +209,6 @@ func (s *Handler) HandleComputer(w http.ResponseWriter, r *http.Request) {
 // @Failure		500	{object}	handlers.JSONAnswer		"Internal server error"
 // @Router			/api/computers/statuses [get]
 func (s *Handler) HandleComputerStatuses(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.Header().Set("Allow", "GET")
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	}
-
 	computerStatuses, err := s.service.ComputerService.GetAllComputerStatuses()
 	if err != nil {
 		slog.Error("Error fetching computer statuses:", err)
@@ -232,10 +235,6 @@ func (s *Handler) HandleComputerStatuses(w http.ResponseWriter, r *http.Request)
 // @Failure		500	{object}	handlers.JSONAnswer		"Internal server error"
 // @Router			/api/computers/{id}/status [get]
 func (s *Handler) HandleComputerStatus(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.Header().Set("Allow", "GET")
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	}
 
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)

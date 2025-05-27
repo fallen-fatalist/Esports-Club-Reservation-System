@@ -3,26 +3,22 @@ FROM node:18 AS builder
 
 WORKDIR /app
 
-# Install dependencies
 COPY package*.json ./
-RUN npm install --production=false  # Install all deps (including dev)
+RUN npm install --production=false
 
-# Copy source files
 COPY . .
-
-# Optionally run build if it's a React/Vite/Next/etc. frontend
-# RUN npm run build
+# RUN npm run build  # Uncomment if you have a build step
 
 # ----------- Stage 2: Production Stage -----------
 FROM node:18-slim
 
 WORKDIR /app
 
-# Copy only production dependencies
+ENV NODE_ENV=production
+
 COPY package*.json ./
 RUN npm install --omit=dev
 
-# Copy built source from builder
 COPY --from=builder /app .
 
 EXPOSE 3000

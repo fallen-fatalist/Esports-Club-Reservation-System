@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"esports_club_booking/internal/auth"
+	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/service"
 	authService "esports_club_booking/internal/service/implementation"
 	"esports_club_booking/internal/transport/dto"
@@ -26,32 +27,66 @@ import (
 // @Failure		409		{object}	utils.HTTPError		"User already exists"
 // @Failure		500		{object}	utils.HTTPError		"Internal server error"
 // @Router			/auth/sign-up [post]
-func (s *Handler) HandleRegistration(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodPost:
-		s.register(w, r)
-	default:
-		w.Header().Set("Allow", "POST")
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+func (s *Handler) Register(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("jwt_token")
+	if err == nil {
+		_, err := s.jwtMng.ValidateToken(cookie.Value)
+		if err == nil {
+			utils.WriteError(w, http.StatusConflict, entities.ErrAlreadyAuthenticated)
+			return
+		} else {
+			s.Logout(w, r)
+		}
 	}
-}
 
-func (s *Handler) register(w http.ResponseWriter, r *http.Request) {
 	var userPayload dto.RegisterUser
 	if err := utils.ParseJSON(r, &userPayload); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
 
-	_, err := s.service.UserService.Register(userPayload)
+	_, err = s.service.UserService.Register(userPayload)
+
 	if err != nil {
-		if errors.Is(err, service.ErrUserAlreadyExists) {
+		switch {
+		case errors.Is(err, entities.ErrInvalidUserID),
+			errors.Is(err, entities.ErrNegativeComputerID),
+			errors.Is(err, entities.ErrInvalidPackageZero),
+			errors.Is(err, entities.ErrInvalidPackageNegative),
+			errors.Is(err, entities.ErrInvalidStartTimeFormat),
+			errors.Is(err, entities.ErrInvalidEndTimeFormat),
+			errors.Is(err, entities.ErrStartTimeInPast),
+			errors.Is(err, entities.ErrEndBeforeStart),
+			errors.Is(err, entities.ErrNonHourlyDuration),
+			errors.Is(err, entities.ErrEmptyStatus),
+			errors.Is(err, entities.ErrInvalidStatus),
+			errors.Is(err, authService.ErrUsernameEmpty),
+			errors.Is(err, authService.ErrUsernameLength),
+			errors.Is(err, authService.ErrUsernameWhitespace),
+			errors.Is(err, authService.ErrUsernameStartLetter),
+			errors.Is(err, authService.ErrUsernameInvalidCharacters),
+			errors.Is(err, authService.ErrUsernameConsecutiveSpecials),
+			errors.Is(err, authService.ErrUsernameEndsWithSpecial),
+			errors.Is(err, authService.ErrEmailEmpty),
+			errors.Is(err, authService.ErrEmailWhitespace),
+			errors.Is(err, authService.ErrEmailInvalidFormat),
+			errors.Is(err, authService.ErrPasswordEmpty),
+			errors.Is(err, authService.ErrPasswordTooShort),
+			errors.Is(err, authService.ErrPasswordWhitespace),
+			errors.Is(err, authService.ErrPasswordMissingLowercase),
+			errors.Is(err, authService.ErrPasswordMissingUppercase),
+			errors.Is(err, authService.ErrPasswordMissingDigit),
+			errors.Is(err, authService.ErrPasswordMissingSpecial):
+			utils.WriteError(w, http.StatusBadRequest, err)
+			return
+		case errors.Is(err, service.ErrUserAlreadyExists):
 			utils.WriteError(w, http.StatusConflict, errors.New("user with this email or login already exists"))
 			return
+		default:
+			s.logger.Error("failed to create user", slog.Any("error", err))
+			utils.WriteError(w, http.StatusInternalServerError, errors.New("failed to register user"))
+			return
 		}
-		s.logger.Error("failed to create user", slog.Any("error", err))
-		utils.WriteError(w, http.StatusInternalServerError, errors.New("failed to register user"))
-		return
 	}
 
 	utils.WriteJSON(w, http.StatusCreated, utils.Message{Message: "user created successfully"})
@@ -67,17 +102,7 @@ func (s *Handler) register(w http.ResponseWriter, r *http.Request) {
 // @Failure		400			{object}	utils.HTTPError		"Bad request, validation error"
 // @Failure		401			{object}	utils.HTTPError		"Unauthorized, invalid credentials or blocked user"
 // @Router			/auth/sign-in [post]
-func (s *Handler) HandleLogin(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodPost:
-		s.login(w, r)
-	default:
-		w.Header().Set("Allow", "POST")
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	}
-}
-
-func (s *Handler) login(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var userPayload dto.LoginUser
 	if err := utils.ParseJSON(r, &userPayload); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, err)
@@ -85,19 +110,24 @@ func (s *Handler) login(w http.ResponseWriter, r *http.Request) {
 	}
 	token, err := s.service.UserService.Login(userPayload)
 	if err != nil {
-		if errors.Is(err, service.ErrUserBlockedOrUnverified) {
+		switch {
+		case errors.Is(err, service.ErrUserBlockedOrUnverified):
 			s.logger.Warn("failed login attempt", slog.Any("error", err))
 			utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("failed to login: %s", "user is unverified or blocked"))
 			return
-		}
-		if errors.Is(err, service.ErrInvalidCredentials) {
+
+		case errors.Is(err, service.ErrInvalidCredentials):
 			s.logger.Warn("failed login attempt", slog.Any("error", err))
 			utils.WriteError(w, http.StatusUnauthorized, errors.New("invalid email or password"))
 			return
+		case errors.Is(err, entities.ErrUserBlocked):
+			utils.WriteError(w, http.StatusUnauthorized, err)
+			return
+		default:
+			s.logger.Warn("failed login attempt", slog.Any("error", err))
+			utils.WriteError(w, http.StatusUnauthorized, errors.New("failed to login"))
+			return
 		}
-		s.logger.Warn("failed login attempt", slog.Any("error", err))
-		utils.WriteError(w, http.StatusUnauthorized, errors.New("failed to login"))
-		return
 	}
 
 	exp, err := auth.ExtractExpiration(token)
@@ -128,17 +158,7 @@ func (s *Handler) login(w http.ResponseWriter, r *http.Request) {
 // @Failure		400					{object}	utils.HTTPError			"Invalid request"
 // @Failure		500					{object}	utils.HTTPError			"Internal server error"
 // @Router			/auth/activate [post]
-func (h *Handler) HandleRequestCode(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodPost:
-		h.requestCode(w, r)
-	default:
-		w.Header().Set("Allow", "POST")
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	}
-}
-
-func (h *Handler) requestCode(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) RequestCode(w http.ResponseWriter, r *http.Request) {
 	var req dto.EmailVerificationRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request", http.StatusBadRequest)
@@ -169,17 +189,7 @@ func (h *Handler) requestCode(w http.ResponseWriter, r *http.Request) {
 // @Failure		429					{object}	utils.HTTPError			"Too many attempts"
 // @Failure		500					{object}	utils.HTTPError			"Internal server error"
 // @Router			/auth/verify [post]
-func (h *Handler) HandleVerifyEmail(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodPost:
-		h.verifyEmail(w, r)
-	default:
-		w.Header().Set("Allow", "POST")
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	}
-}
-
-func (h *Handler) verifyEmail(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	var req dto.VerifyEmailRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request", http.StatusBadRequest)
@@ -203,7 +213,7 @@ func (h *Handler) verifyEmail(w http.ResponseWriter, r *http.Request) {
 		h.logger.Warn("too many attempts", slog.Any("error", err))
 		http.Error(w, "too many attempts, try later", http.StatusTooManyRequests)
 		return
-	case errors.Is(err, service.ErrUserNotFound):
+	case errors.Is(err, entities.ErrUserNotFound):
 		h.logger.Warn("user not found", slog.Any("error", err))
 		http.Error(w, "user not found", http.StatusNotFound)
 		return
@@ -217,11 +227,21 @@ func (h *Handler) verifyEmail(w http.ResponseWriter, r *http.Request) {
 // @Summary		Check if user is authorized
 // @Description	Returns the user's data if they are authorized
 // @Tags			Auth
+// @Security BearerAuth
 // @Accept			json
 // @Produce		json
-// @Success		200		{object}	dto.UserDTO	"User authorized"
+// @Success		200		{object}	dto.User	"User authorized"
 // @Router			/auth/authorized [get]
 func (h *Handler) IsAuthorized(w http.ResponseWriter, r *http.Request) {
+	token, err := r.Cookie("jwt_token")
+	if err == nil {
+		_, err = h.jwtMng.ValidateToken(token.Value)
+		if err != nil {
+			h.Logout(w, r)
+			utils.WriteError(w, http.StatusUnauthorized, entities.ErrInvalidToken)
+			return
+		}
+	}
 	userIDStr, _ := auth.GetUserIDFromContext(r.Context())
 	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	// Lie to the client who is trying to brute force the token
@@ -237,7 +257,7 @@ func (h *Handler) IsAuthorized(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userDTO := dto.UserDTO{
+	userDTO := dto.User{
 		Username: user.Login,
 		Email:    user.Email,
 		Status:   user.Status,
@@ -276,7 +296,7 @@ func (h *Handler) requestPasswordResetCode(w http.ResponseWriter, r *http.Reques
 	}
 
 	if err := h.service.UserService.SendPasswordResetCode(req.Email); err != nil {
-		if errors.Is(err, service.ErrUserNotFound) {
+		if errors.Is(err, entities.ErrUserNotFound) {
 			utils.WriteError(w, http.StatusBadRequest, err)
 			return
 		} else if errors.Is(err, service.ErrPasswordRecentlyChanged) {
@@ -336,7 +356,7 @@ func (h *Handler) resetPassword(w http.ResponseWriter, r *http.Request) {
 	case errors.Is(err, service.ErrNoNeedVerification):
 		utils.WriteError(w, http.StatusBadGateway, err)
 
-	case errors.Is(err, service.ErrUserNotFound):
+	case errors.Is(err, entities.ErrUserNotFound):
 		utils.WriteError(w, http.StatusNotFound, err)
 
 	case errors.Is(err, authService.ErrUsernameEmpty),
@@ -357,6 +377,7 @@ func (h *Handler) resetPassword(w http.ResponseWriter, r *http.Request) {
 		errors.Is(err, authService.ErrPasswordMissingDigit),
 		errors.Is(err, authService.ErrPasswordMissingSpecial):
 		utils.WriteError(w, http.StatusBadRequest, err)
+		return
 
 	default:
 		h.logger.Error("internal error", slog.Any("error", err))

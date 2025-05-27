@@ -27,7 +27,7 @@ const docTemplate = `{
                 "tags": [
                     "Bookings"
                 ],
-                "summary": "Get all bookings with time format \"2006-01-02T15:04:05Z07:00\"",
+                "summary": "Get all bookings",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -47,12 +47,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Creates a new booking with the given details",
+                "description": "Creates a new booking with the provided start and end times, computer ID and user ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -65,12 +60,12 @@ const docTemplate = `{
                 "summary": "Create a new booking",
                 "parameters": [
                     {
-                        "description": "Booking details",
+                        "description": "Booking to create",
                         "name": "booking",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/entities.Booking"
+                            "$ref": "#/definitions/dto.Booking"
                         }
                     }
                 ],
@@ -84,13 +79,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request body",
                         "schema": {
-                            "$ref": "#/definitions/handlers.JSONAnswer"
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Computer not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/handlers.JSONAnswer"
+                            "$ref": "#/definitions/utils.HTTPError"
                         }
                     }
                 }
@@ -112,6 +119,40 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "List of active bookings",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entities.Booking"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bookings/all": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a list of all bookings",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Get all bookings",
+                "responses": {
+                    "200": {
+                        "description": "List of all bookings",
                         "schema": {
                             "type": "array",
                             "items": {
@@ -219,6 +260,64 @@ const docTemplate = `{
                         "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bookings/{id}/cancel": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cancels a booking with the given ID. The user must have the correct role to cancel the booking.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Cancel a booking",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Booking ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid booking ID or non own booking cancel",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Booking not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
                         }
                     }
                 }
@@ -378,14 +477,14 @@ const docTemplate = `{
         },
         "/api/computers/{id}": {
             "get": {
-                "description": "Returns a specific computer by ID",
+                "description": "Returns a specific Computer by ID",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Computers"
                 ],
-                "summary": "Get a specific computer",
+                "summary": "Get a specific Computer",
                 "parameters": [
                     {
                         "type": "integer",
@@ -403,7 +502,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid computer ID",
+                        "description": "Invalid Computer ID",
                         "schema": {
                             "$ref": "#/definitions/handlers.JSONAnswer"
                         }
@@ -423,6 +522,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Deletes a specific computer by ID",
                 "produces": [
                     "application/json"
@@ -645,6 +749,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/users": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a list of all users",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get all users",
+                "responses": {
+                    "200": {
+                        "description": "List of users",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entities.User"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    }
+                }
+            }
+        },
         "/api/users//bookings": {
             "get": {
                 "security": [
@@ -689,6 +827,144 @@ const docTemplate = `{
                         "description": "Internal server error or unhandled error",
                         "schema": {
                             "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes a user with the given ID.",
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Delete a user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid user ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{id}/block": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Blocks a user with the given ID.",
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Block a user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid user ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{id}/unblock": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Unblocks a user with the given ID.",
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Unblock a user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid user ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
                         }
                     }
                 }
@@ -742,6 +1018,11 @@ const docTemplate = `{
         },
         "/auth/authorized": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Returns the user's data if they are authorized",
                 "consumes": [
                     "application/json"
@@ -757,8 +1038,27 @@ const docTemplate = `{
                     "200": {
                         "description": "User authorized",
                         "schema": {
-                            "$ref": "#/definitions/dto.UserDTO"
+                            "$ref": "#/definitions/dto.User"
                         }
+                    }
+                }
+            }
+        },
+        "/auth/priveleged": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a 200 status if user is privileged",
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Check if user is privileged",
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     }
                 }
             }
@@ -1022,6 +1322,36 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "dto.Booking": {
+            "type": "object",
+            "properties": {
+                "computer_id": {
+                    "description": "ComputerID is the ID of the computer being booked.\nrequired: true",
+                    "type": "integer",
+                    "example": 67890
+                },
+                "end_time": {
+                    "description": "EndTime is the end time of the booking in RFC3339 format.\nrequired: true",
+                    "type": "string",
+                    "example": "2025-05-27T12:00:00+07:00"
+                },
+                "package_id": {
+                    "description": "PackageID is the ID of the selected package for the booking.\nrequired: true",
+                    "type": "integer",
+                    "example": 111
+                },
+                "start_time": {
+                    "description": "StartTime is the start time of the booking in RFC3339 format.\nrequired: true",
+                    "type": "string",
+                    "example": "2025-05-27T10:00:00+07:00"
+                },
+                "user_id": {
+                    "description": "UserID is the ID of the user making the booking.\nrequired: true",
+                    "type": "integer",
+                    "example": 12345
+                }
+            }
+        },
         "dto.EmailVerificationRequest": {
             "type": "object",
             "properties": {
@@ -1083,7 +1413,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.UserDTO": {
+        "dto.User": {
             "type": "object",
             "properties": {
                 "balance": {
@@ -1248,6 +1578,35 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "start_time": {
+                    "type": "string"
+                }
+            }
+        },
+        "entities.User": {
+            "type": "object",
+            "properties": {
+                "balance": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "login": {
+                    "type": "string"
+                },
+                "passwordUpdatedAt": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "status": {
                     "type": "string"
                 }
             }

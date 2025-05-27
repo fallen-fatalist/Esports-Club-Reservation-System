@@ -66,7 +66,7 @@ type JSONAnswer struct {
 	Message string `json:"message"`
 }
 
-type UserDTO struct {
+type User struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Status   string `json:"status"`
