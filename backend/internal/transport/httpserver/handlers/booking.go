@@ -308,7 +308,7 @@ func (s *Handler) ComputersRemaining(w http.ResponseWriter, r *http.Request) {
 // @Failure		400	{object}	handlers.JSONAnswer	"Invalid user ID"
 // @Failure		404	{object}	handlers.JSONAnswer	"User not found"
 // @Failure		500	{object}	handlers.JSONAnswer	"Internal server error or unhandled error"
-// @Router			/api/users//bookings [get]
+// @Router			/api/users/bookings [get]
 func (s *Handler) UserBookings(w http.ResponseWriter, r *http.Request) {
 	userIDStr, ok := auth.GetUserIDFromContext(r.Context())
 	if !ok {
