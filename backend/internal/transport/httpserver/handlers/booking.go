@@ -57,6 +57,7 @@ func (s *Handler) Bookings(w http.ResponseWriter, r *http.Request) {
 // @Summary		Create a new booking
 // @Description	Creates a new booking with the provided start and end times, computer ID and user ID
 // @Tags			Bookings
+// @Security BearerAuth
 // @Accept			json
 // @Produce		json
 // @Param			booking	body		dto.Booking	true	"Booking to create"
