@@ -7,6 +7,7 @@ import (
 
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/repository"
+	"esports_club_booking/internal/transport/dto"
 	"log/slog"
 )
 
@@ -199,8 +200,8 @@ func (r *UserRepository) Create(user *entities.User, hashedPassword string) (int
 	return user.ID, nil
 }
 
-func (r *UserRepository) Update(ctx context.Context, user *entities.User) (int64, error) {
-	tx, err := r.db.BeginTx(ctx, nil)
+func (r *UserRepository) Update(user *dto.User) (int64, error) {
+	tx, err := r.db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return 0, fmt.Errorf("failed to begin transaction: %w", err)
 	}
@@ -212,13 +213,11 @@ func (r *UserRepository) Update(ctx context.Context, user *entities.User) (int64
 		RETURNING user_id
 	`
 	var updatedID int64
-	err = tx.QueryRowContext(ctx, query,
-		user.Login,
+	err = tx.QueryRowContext(context.Background(), query,
 		user.Email,
 		user.Status,
 		user.Role,
 		user.Balance,
-		user.ID,
 	).Scan(&updatedID)
 	if err != nil {
 		if err == sql.ErrNoRows {
