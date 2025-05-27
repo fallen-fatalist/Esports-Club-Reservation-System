@@ -38,6 +38,9 @@ export const activate = (email) => api.post('/api/auth/activate', { email });
 export const verifyEmail = (data) => api.post('/api/auth/verify', data);
 export const signIn = (credentials) => api.post('/api/auth/sign-in', credentials);
 export const checkAuth = () => api.get('/api/auth/authorized');
+// Needed to know are you admin or not
+export const checkIsPriveleged = () => api.get('/api/auth/priveleged');
+
 export const logoutRequest = () => api.post('/api/auth/logout');
 
 

@@ -98,4 +98,13 @@ func (computer *Computer) Validate() error {
 
 var (
 	ErrComputerNotFound = errors.New("computer does not exist")
+	ErrInvalidRoom      = errors.New("invalid room")
 )
+
+var (
+	StandardRoom = "Standard"
+	VIPRoom      = "VIP"
+	ConsoleRoom  = "Console"
+)
+
+var Rooms = []string{StandardRoom, VIPRoom, ConsoleRoom}

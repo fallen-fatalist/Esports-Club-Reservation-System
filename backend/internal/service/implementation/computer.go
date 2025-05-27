@@ -8,6 +8,7 @@ import (
 	"esports_club_booking/internal/service"
 	"log"
 	"log/slog"
+	"slices"
 )
 
 // Errors
@@ -26,7 +27,7 @@ func NewComputerService(repository repository.ComputerRepository) (*ComputerServ
 	}
 
 	s := &ComputerService{repository: repository, computersMap: make(map[int64]*entities.Computer)}
-	computers, _ := s.GetAllComputers()
+	computers, _ := s.Computers("")
 	for _, computer := range computers {
 		s.computersMap[computer.ID] = computer
 	}
@@ -38,8 +39,24 @@ func (s *ComputerService) ComputersMap() map[int64]*entities.Computer {
 	return s.computersMap
 }
 
-func (s *ComputerService) GetAllComputers() ([]*entities.Computer, error) {
-	return s.repository.GetAll()
+func (s *ComputerService) Computers(room string) ([]*entities.Computer, error) {
+	comps, err := s.repository.GetAll()
+	if err != nil {
+		return nil, err
+	} else if room != "" {
+		if !slices.Contains(entities.Rooms, room) {
+			return nil, entities.ErrInvalidRoom
+		}
+		res := make([]*entities.Computer, 0)
+		for _, comp := range comps {
+			if comp.Room == room {
+				res = append(res, comp)
+			}
+		}
+		return res, nil
+	} else {
+		return comps, nil
+	}
 }
 
 func (s *ComputerService) GetComputer(id int64) (*entities.Computer, error) {
@@ -83,7 +100,7 @@ func (s *ComputerService) DeleteComputer(id int64) error {
 }
 
 func (s *ComputerService) GetAllComputerStatuses() ([]*entities.ComputerStatus, error) {
-	comps, err := s.GetAllComputers()
+	comps, err := s.Computers("")
 	if err != nil {
 		return nil, err
 	}

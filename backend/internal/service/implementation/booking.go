@@ -39,7 +39,7 @@ func NewBookingService(repository repository.BookingRepository, computerService 
 
 	// Fetch the number of computers
 	var computerNum int
-	computers, err := computerService.GetAllComputers()
+	computers, err := computerService.Computers("")
 	if err == nil {
 		computerNum = len(computers)
 	}

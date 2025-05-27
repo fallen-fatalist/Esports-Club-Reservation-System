@@ -31,7 +31,7 @@ func NewService(
 
 type ComputerService interface {
 	ComputersMap() map[int64]*entities.Computer
-	GetAllComputers() ([]*entities.Computer, error)
+	Computers(room string) ([]*entities.Computer, error)
 	GetComputer(id int64) (*entities.Computer, error)
 	CreateComputer(*entities.Computer) (int64, error)
 	DeleteComputer(id int64) error

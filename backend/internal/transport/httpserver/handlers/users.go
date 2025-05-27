@@ -121,14 +121,13 @@ func (s *Handler) HandleUserDelete(w http.ResponseWriter, r *http.Request) {
 // @Tags         Users
 // @Security     BearerAuth
 // @Param        id      path    int64   true  "User ID"
-// @Param        balance query   float64 true  "Amount to add to user's balance"
+// @Param        amount  query   float64 true  "Amount to add to user's balance"
 // @Success      204
 // @Failure      400     {object} utils.HTTPError "Invalid user ID or balance"
 // @Failure      404     {object} utils.HTTPError "User not found"
 // @Failure      500     {object} utils.HTTPError "Internal server error"
 // @Router       /api/users/{id}/credit [post]
-
-func (s *Handler) HandleUserFill(w http.ResponseWriter, r *http.Request) {
+func (s *Handler) HandleUserCredit(w http.ResponseWriter, r *http.Request) {
 	userIDStr := r.PathValue("id")
 
 	userID, err := strconv.ParseInt(userIDStr, 10, 64)
@@ -137,7 +136,7 @@ func (s *Handler) HandleUserFill(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	balanceStr := r.URL.Query().Get("balance")
+	balanceStr := r.URL.Query().Get("amount")
 
 	balance, err := strconv.ParseFloat(balanceStr, 64)
 	if err != nil {

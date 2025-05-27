@@ -106,6 +106,16 @@ const bookingService = {
         console.error(`Error getting left time for computer #${id}:`, error);
         throw error;
       }
+    }, 
+    async cancelBookingByID(id) {
+      try {
+        /* Requires Admin role or higher, or the 401 403 status codes */
+        const response = await api.post(`/api/bookings/${id}/cancel`);
+        return response.status;
+      } catch (error) {
+        console.error(`Error cancelling booking #${id}:`, error);
+        throw error;
+      }
     }
 };
 

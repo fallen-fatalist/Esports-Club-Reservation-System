@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/service/implementation"
 	"esports_club_booking/internal/transport/dto"
+	"esports_club_booking/internal/utils"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -14,12 +16,19 @@ import (
 // @Description	Returns a list of all computers
 // @Tags			Computers
 // @Produce		json
+// @Param			room	query		string	false	"Filter by room, may be empty (all computers returned)"
 // @Success		200	{array}		entities.Computer	"List of computers"
 // @Failure		500	{object}	handlers.JSONAnswer	"Internal server error"
 // @Router			/api/computers [get]
 func (s *Handler) Computers(w http.ResponseWriter, r *http.Request) {
-	computerSpecs, err := s.service.ComputerService.GetAllComputers()
+	room := r.URL.Query().Get("room")
+
+	computerSpecs, err := s.service.ComputerService.Computers(room)
 	if err != nil {
+		if errors.Is(err, entities.ErrInvalidRoom) {
+			utils.WriteError(w, http.StatusBadRequest, err)
+			return
+		}
 		slog.Error("Error fetching computer specs:", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return

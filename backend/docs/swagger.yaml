@@ -449,6 +449,11 @@ paths:
   /api/computers:
     get:
       description: Returns a list of all computers
+      parameters:
+      - description: Filter by room, may be empty (all computers returned)
+        in: query
+        name: room
+        type: string
       produces:
       - application/json
       responses:
@@ -838,6 +843,40 @@ paths:
       security:
       - BearerAuth: []
       summary: Block a user
+      tags:
+      - Users
+  /api/users/{id}/credit:
+    post:
+      description: Adds a specified amount to the user's balance using their ID.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Amount to add to user's balance
+        in: query
+        name: amount
+        required: true
+        type: number
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Invalid user ID or balance
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Fill user balance
       tags:
       - Users
   /api/users/{id}/unblock:
