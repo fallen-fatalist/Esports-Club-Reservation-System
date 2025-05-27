@@ -48,8 +48,12 @@ type (
 	}
 
 	PayPal struct {
-		ClientID string
-		Secret   string
+		ClientID   string
+		Secret     string
+		WebhookURL string
+		WebhookID  string
+		ReturnURL  string
+		CancelURL  string
 	}
 )
 
@@ -74,6 +78,7 @@ func NewConfig() *Config {
 	return &Config{
 		Server: Server{
 			Port:         getEnvStr("PORT", "8080"),
+			Address:      getEnvStr("ADDRESS", "0.0.0.0"),
 			CORS_ALLOWED: allowed,
 		},
 		DataBase: DataBase{
@@ -94,8 +99,12 @@ func NewConfig() *Config {
 			Password:    getEnvStr("EMAIL_SENDER_APP_PASSWORD", ""),
 		},
 		PayPal: PayPal{
-			ClientID: getEnvStr("PAYPAL_CLIENT_ID", ""),
-			Secret:   getEnvStr("PAYPAL_CLIENT_SECRET", ""),
+			ClientID:   getEnvStr("PAYPAL_CLIENT_ID", ""),
+			Secret:     getEnvStr("PAYPAL_CLIENT_SECRET", ""),
+			WebhookURL: getEnvStr("PAYPAL_WEBHOOK_URL", ""),
+			WebhookID:  getEnvStr("PAYPAL_WEBHOOK_ID", ""),
+			ReturnURL:  getEnvStr("RETURN_URL", "https://github.com"),
+			CancelURL:  getEnvStr("CANCEL_URL", "https://guthib.com"),
 		},
 	}
 }

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"net/http"
 
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/transport/dto"
@@ -87,6 +88,7 @@ type PaymentService interface {
 	CancelBooking(context.Context, int64) error
 	RequestDeposit(context.Context, int64, float64) (orderID string, redirectURL string, err error)
 	Deposit(ctx context.Context, userID int64, amount float64) error
+	VerifyWebhook(ctx context.Context, r *http.Request) error
 	// Further do
 	// Withdraw(context.Context, *entities.User) (string, error)
 	// GetTransactionHistory(context.Context, *entities.User) ([]*entities.Transaction, error)

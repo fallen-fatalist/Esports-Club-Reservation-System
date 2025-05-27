@@ -99,17 +99,6 @@ func (r *PaymentRepository) PayBooking(ctx context.Context, booking *entities.Bo
 		return fmt.Errorf("failed to process payment: %w", err)
 	}
 
-	// 3. Update booking status
-	statusQuery := `
-		UPDATE bookings
-		SET status = 'confirmed'
-		WHERE booking_id = $1
-	`
-	_, err = tx.ExecContext(ctx, statusQuery, booking.ID)
-	if err != nil {
-		return fmt.Errorf("failed to confirm booking: %w", err)
-	}
-
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}

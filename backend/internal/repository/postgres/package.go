@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	"esports_club_booking/internal/entities"
@@ -64,9 +65,38 @@ func (r *PackageRepository) GetAll() ([]*entities.Package, error) {
 }
 
 func (r *PackageRepository) GetByID(id int64) (*entities.Package, error) {
-	return nil, nil
-}
+	// Query for a single package by ID
+	row := r.db.QueryRow(`
+        SELECT package_id, package_name, room, price, duration, startTime, endTime, created_at 
+        FROM packages
+        WHERE package_id = $1
+    `, id)
 
+	var pkg entities.Package
+	var startTime, endTime sql.NullString
+	var createdAt time.Time
+
+	// Scan the row into variables
+	err := row.Scan(&pkg.ID, &pkg.Name, &pkg.Room, &pkg.Price, &pkg.Duration, &startTime, &endTime, &createdAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// Return nil if no package found with this ID
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to scan package: %w", err)
+	}
+
+	// Handle nullable time fields
+	if startTime.Valid {
+		pkg.StartTime = startTime.String
+	}
+	if endTime.Valid {
+		pkg.EndTime = endTime.String
+	}
+	pkg.CreatedAt = createdAt.Format(time.RFC3339)
+
+	return &pkg, nil
+}
 func (r *PackageRepository) Create(booking *entities.Package) (int64, error) {
 	return 0, nil
 }

@@ -117,63 +117,117 @@ func (s *Handler) handleBookingRefund(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// This API is not intended to be used by other sources than PayPal
 func (h *Handler) handleWebhook(w http.ResponseWriter, r *http.Request) {
+	// 1. Verify this is a genuine PayPal webhook
+	if err := h.service.PaymentService.VerifyWebhook(r.Context(), r); err != nil {
+		h.logger.Error("webhook verification failed", "error", err)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// 2. Read and parse the request body
 	var event map[string]interface{}
-
-	err := json.NewDecoder(r.Body).Decode(&event)
-	if err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
+		h.logger.Error("invalid payload", "error", err)
+		http.Error(w, "Invalid payload", http.StatusBadRequest)
 		return
 	}
 
-	eventType, ok := event["event_type"].(string)
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	// 3. Log the incoming event for debugging
+	h.logger.Info("PayPal webhook received", "event_type", event["event_type"])
 
-	switch eventType {
-	case "PAYMENT.CAPTURE.COMPLETED":
-		resource := event["resource"].(map[string]interface{})
-
-		rawUserID, exists := resource["custom_id"].(string)
-		if !exists {
-			// IMPORTANT: implement refund logic here
-			h.logger.Error("user completed payment, but didn't recieve funds", "metadata", resource)
-			http.Error(w, "user completed payment, but didn't recieve funds", 400)
+	// 4. Process CHECKOUT.ORDER.APPROVED events
+	if event["event_type"] == "CHECKOUT.ORDER.APPROVED" {
+		if err := h.processApprovedOrder(event); err != nil {
+			h.logger.Error("order processing failed", "error", err)
+			http.Error(w, "Order processing failed", http.StatusBadRequest)
 			return
 		}
-
-		userID, err := strconv.ParseInt(rawUserID, 10, 64)
-		if err != nil {
-			h.logger.Error("user completed payment, but didn't recieve funds", "metadata", resource)
-			http.Error(w, "user completed payment, but didn't recieve funds", 400)
-			return
-		}
-
-		rawAmount := event["resource"].(map[string]interface{})["amount"].(map[string]interface{})["value"].(string)
-		amount, err := strconv.ParseFloat(rawAmount, 64)
-		if err != nil {
-			h.logger.Error("user completed payment, but didn't recieve funds", "metadata", resource)
-			http.Error(w, "user completed payment, but didn't recieve funds", 400)
-			return
-		}
-
-		err = h.service.PaymentService.Deposit(r.Context(), userID, amount)
-		if err != nil {
-			h.logger.Error("user completed payment, but didn't recieve funds", "metadata", resource)
-			http.Error(w, "user completed payment, but didn't recieve funds", 400)
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-	default:
-		// This practically never happens, our wehook only sends
-		// successfully captured payments
-		fmt.Println("📦 Unhandled event:", eventType)
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *Handler) processApprovedOrder(event map[string]interface{}) error {
+	// 1. Extract resource data with safety checks
+	resource, ok := event["resource"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid resource format")
+	}
+
+	// 2. Extract purchase units
+	purchaseUnits, ok := resource["purchase_units"].([]interface{})
+	if !ok || len(purchaseUnits) == 0 {
+		return fmt.Errorf("no purchase units found")
+	}
+
+	// 3. Get first purchase unit
+	firstUnit, ok := purchaseUnits[0].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid purchase unit format")
+	}
+
+	// 4. Extract custom_id (userID)
+	rawUserID, ok := firstUnit["custom_id"].(string)
+	if !ok {
+		return fmt.Errorf("custom_id missing or invalid")
+	}
+
+	// 5. Convert userID to int64
+	userID, err := strconv.ParseInt(rawUserID, 10, 64)
+	if err != nil {
+		return fmt.Errorf("invalid userID format: %v", err)
+	}
+
+	// 6. Extract amount
+	amount, err := h.getAmountFromOrder(resource)
+	if err != nil {
+		return fmt.Errorf("failed to get amount: %v", err)
+	}
+
+	// 7. Process payment
+	if err := h.service.PaymentService.Deposit(context.Background(), userID, amount*511); err != nil {
+		return fmt.Errorf("deposit failed: %v", err)
+	}
+
+	// 8. Log success
+	h.logger.Info("Payment processed successfully",
+		"userID", userID,
+		"amount", amount,
+		"paypalID", resource["id"],
+	)
+
+	return nil
+}
+
+func (h *Handler) getAmountFromOrder(resource map[string]interface{}) (float64, error) {
+	purchaseUnits, ok := resource["purchase_units"].([]interface{})
+	if !ok || len(purchaseUnits) == 0 {
+		return 0, fmt.Errorf("no purchase units")
+	}
+
+	firstUnit, ok := purchaseUnits[0].(map[string]interface{})
+	if !ok {
+		return 0, fmt.Errorf("invalid purchase unit")
+	}
+
+	amountData, ok := firstUnit["amount"].(map[string]interface{})
+	if !ok {
+		return 0, fmt.Errorf("amount data missing")
+	}
+
+	valueStr, ok := amountData["value"].(string)
+	if !ok {
+		return 0, fmt.Errorf("amount value missing")
+	}
+
+	amount, err := strconv.ParseFloat(valueStr, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid amount format: %v", err)
+	}
+
+	return amount, nil
 }
 
 // Helper function for consistent JSON responses

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"esports_club_booking/internal/entities"
@@ -96,4 +97,5 @@ type PaymentRepository interface {
 
 type PayPalClient interface {
 	Deposit(amount float64, userID int64, description string) (string, string, error)
+	VerifyWebhook(ctx context.Context, r *http.Request) error
 }

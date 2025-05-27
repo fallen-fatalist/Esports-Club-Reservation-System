@@ -3,6 +3,7 @@ package implementation
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"esports_club_booking/internal/entities"
@@ -88,4 +89,8 @@ func (s *PaymentService) CancelBooking(ctx context.Context, bookingID int64) err
 	}
 
 	return s.repo.PaymentRepository.CancelBooking(ctx, booking, packageItem.Price)
+}
+
+func (s *PaymentService) VerifyWebhook(ctx context.Context, r *http.Request) error {
+	return s.paypalClient.VerifyWebhook(ctx, r)
 }

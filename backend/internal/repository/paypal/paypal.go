@@ -2,8 +2,10 @@ package paypal
 
 import (
 	"context"
+	"esports_club_booking/internal/config"
 	"esports_club_booking/internal/repository"
 	"fmt"
+	"net/http"
 	"strconv"
 
 	paypal "github.com/plutov/paypal/v4"
@@ -13,10 +15,14 @@ var _ repository.PayPalClient = (*PayPalClient)(nil)
 
 type PayPalClient struct {
 	Client *paypal.Client
+
+	WebHookID string
+	ReturnURL string
+	CancelURL string
 }
 
-func NewPayPalClient(clientID, secret, URL string) (*PayPalClient, error) {
-	client, err := paypal.NewClient(clientID, secret, paypal.APIBaseSandBox)
+func NewPayPalClient(cfg *config.Config) (*PayPalClient, error) {
+	client, err := paypal.NewClient(cfg.PayPal.ClientID, cfg.PayPal.Secret, paypal.APIBaseSandBox)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create client: %w", err)
 	}
@@ -26,21 +32,14 @@ func NewPayPalClient(clientID, secret, URL string) (*PayPalClient, error) {
 		return nil, fmt.Errorf("failed to get access token: %w", err)
 	}
 
-	req := &paypal.CreateWebhookRequest{
-		URL: URL + "/api/payment/webhook",
-		EventTypes: []paypal.WebhookEventType{
-			{Name: "PAYMENT.CAPTURE.COMPLETED"},
-		},
-	}
-
-	_, err = client.CreateWebhook(context.Background(), req)
-	if err != nil {
-		return nil, err
-	}
-
 	// Turn on only for debugging purposes
 	// client.SetLog(os.Stdout)
-	return &PayPalClient{Client: client}, nil
+	return &PayPalClient{
+		Client:    client,
+		WebHookID: cfg.PayPal.WebhookID,
+		ReturnURL: cfg.PayPal.ReturnURL,
+		CancelURL: cfg.PayPal.CancelURL,
+	}, nil
 }
 
 func (p *PayPalClient) Deposit(amount float64, userID int64, description string) (string, string, error) {
@@ -48,23 +47,31 @@ func (p *PayPalClient) Deposit(amount float64, userID int64, description string)
 		{
 			Amount: &paypal.PurchaseUnitAmount{
 				Currency: "USD",
-				Value:    fmt.Sprintf("%.2f", amount),
+				Value:    fmt.Sprintf("%.2f", amount/511),
 			},
 			CustomID: strconv.FormatInt(userID, 10),
 		},
 	}
 
-	ApplicationContext := &paypal.ApplicationContext{
-		ReturnURL:  "https://github.com", // Payment success
-		CancelURL:  "https://guthib.com", // Payment cancelled
-		UserAction: "PAY_NOW",            // optional; shows immediate payment button
+	appContext := &paypal.ApplicationContext{
+		ReturnURL:  p.ReturnURL,
+		CancelURL:  p.CancelURL,
+		UserAction: "PAY_NOW",
 	}
 
-	order, err := p.Client.CreateOrder(context.Background(), paypal.OrderIntentCapture, unit, &paypal.PaymentSource{}, ApplicationContext)
+	// Remove the empty PaymentSource parameter
+	order, err := p.Client.CreateOrder(
+		context.Background(),
+		paypal.OrderIntentCapture,
+		unit,
+		nil, // Don't pass PaymentSource here
+		appContext,
+	)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to create order: %w", err)
 	}
 
+	// Find approval URL
 	var redirectURL string
 	for _, link := range order.Links {
 		if link.Rel == "approve" {
@@ -80,7 +87,22 @@ func (p *PayPalClient) Deposit(amount float64, userID int64, description string)
 	return order.ID, redirectURL, nil
 }
 
-func (p *PayPalClient) CheckOrderStatus(orderID string) (string, error) {
+func (p *PayPalClient) VerifyWebhook(ctx context.Context, r *http.Request) error {
+	// Verify the webhook signature
+	sig, err := p.Client.VerifyWebhookSignature(ctx, r, p.WebHookID)
+	if err != nil {
+		return fmt.Errorf("failed to verify webhook signature: %w", err)
+	}
+
+	// Check if verification succeeded
+	if sig.VerificationStatus != "SUCCESS" {
+		return fmt.Errorf("webhook verification failed: %s", sig.VerificationStatus)
+	}
+
+	return nil
+}
+
+func (p *PayPalClient) checkOrderStatus(orderID string) (string, error) {
 	order, err := p.Client.GetOrder(context.Background(), orderID)
 
 	if err != nil {

@@ -64,7 +64,7 @@ func Run() {
 	// Set the number of computers
 	bookingService, _ := implementation.NewBookingService(bookingRepository, computerService, packageService)
 
-	paypalClient, err := paypal.NewPayPalClient(cfg.PayPal.ClientID, cfg.PayPal.Secret, cfg.Server.Adress+":"+cfg.Server.Port)
+	paypalClient, err := paypal.NewPayPalClient(cfg)
 	if err != nil {
 		logger.Error("Failed to create PayPal client", slog.Any("error", err))
 		return
