@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 
@@ -201,34 +200,29 @@ func (r *UserRepository) Create(user *entities.User, hashedPassword string) (int
 }
 
 func (r *UserRepository) Update(user *dto.User) (int64, error) {
-	tx, err := r.db.BeginTx(context.Background(), nil)
-	if err != nil {
-		return 0, fmt.Errorf("failed to begin transaction: %w", err)
-	}
-
 	query := `
 		UPDATE users
-		SET login = $1, email = $2, status = $3, role = $4, balance = $5
-		WHERE user_id = $6
-		RETURNING user_id
+		SET 
+			login = $5,
+			status = $2,
+			role = $3,
+			balance = $4
+		WHERE email = $1
 	`
-	var updatedID int64
-	err = tx.QueryRowContext(context.Background(), query,
-		user.Email,
-		user.Status,
-		user.Role,
-		user.Balance,
-	).Scan(&updatedID)
+
+	result, err := r.db.Exec(query, user.Email, user.Status, user.Role, user.Balance, user.Username)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return 0, entities.ErrUserNotFound
-		}
-		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			return 0, fmt.Errorf("failed to rollback transaction: %w", rollbackErr)
-		}
-		return 0, fmt.Errorf("failed to update user: %w", err)
+		return 0, err
 	}
-	return updatedID, tx.Commit()
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	} else if rowsAffected == 0 {
+		return 0, entities.ErrUserNotFound
+	}
+
+	return rowsAffected, nil
 }
 
 func (r *UserRepository) Delete(userID int64) error {
