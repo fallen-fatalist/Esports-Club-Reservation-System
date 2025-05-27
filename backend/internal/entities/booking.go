@@ -63,6 +63,7 @@ var (
 	ErrStartTimeInPast        = errors.New("start_time must be in the future")
 	ErrEndBeforeStart         = errors.New("end_time must be after start_time")
 	ErrNonHourlyDuration      = errors.New("booking duration must be a whole number of hours")
+	ErrInvalidFilter          = errors.New("invalid filter")
 	ErrEmptyStatus            = errors.New("status must not be empty")
 )
 

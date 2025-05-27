@@ -15,15 +15,18 @@ import (
 )
 
 // @Summary		Get all bookings
-// @Description	Returns a list of bookings with various statuses
+// @Description	Returns a list of bookings with filtering by status
 // @Tags			Bookings
 // @Accept			json
 // @Produce		json
-// @Success		200	{array}		entities.Booking
-// @Failure		500	{object}	handlers.JSONAnswer	"Internal server error"
+// @Param			filter	query		string	false	"Filter bookings by status. Options: non-cancelled, pending, finished, active, cancelled. If empty it set non-cancelled"
+// @Success		200		{array}		entities.Booking
+// @Failure		500		{object}	handlers.JSONAnswer	"Internal server error"
 // @Router			/api/bookings [get]
 func (s *Handler) Bookings(w http.ResponseWriter, r *http.Request) {
-	bookings, err := s.service.BookingService.GetAllBookings()
+	filter := r.URL.Query().Get("filter")
+
+	bookings, err := s.service.BookingService.Bookings(filter)
 	if err != nil {
 		slog.Error("Error fetching bookings:", slog.String("error", err.Error()))
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -38,6 +41,9 @@ func (s *Handler) Bookings(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 			return
 		}
+		return
+	} else if errors.Is(err, entities.ErrInvalidFilter) {
+		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -210,141 +216,6 @@ func (s *Handler) ComputerBookings(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// @Summary		Get finished bookings with time format "2006-01-02T15:04:05Z07:00"
-// @Description	Returns a list of finished bookings
-// @Tags			Bookings
-// @Accept			json
-// @Produce		json
-// @Success		200	{array}		entities.Booking	"List of finished bookings"
-// @Failure		500	{object}	handlers.JSONAnswer	"Internal server error"
-// @Router			/api/bookings/finished [get]
-func (s *Handler) getFinishedBookings(w http.ResponseWriter, r *http.Request) {
-	bookings, err := s.service.BookingService.GetFinishedBookings()
-	if err != nil {
-		slog.Error("Error fetching finished bookings:", slog.Any("error", err))
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(bookings); err != nil {
-		slog.Error("Error encoding JSON:", err)
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-	}
-
-}
-
-func (s *Handler) HandleFinishedBookings(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		s.getFinishedBookings(w, r)
-	default:
-		w.Header().Set("Allow", "GET")
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	}
-}
-
-// @Summary		Get pending bookings with time format "2006-01-02T15:04:05Z07:00"
-// @Description	Returns a list of pending bookings
-// @Tags			Bookings
-// @Accept			json
-// @Produce		json
-// @Success		200	{array}		entities.Booking	"List of pending bookings"
-// @Failure		500	{object}	handlers.JSONAnswer	"Internal server error"
-// @Router			/api/bookings/pending [get]
-func (s *Handler) getPendingBookings(w http.ResponseWriter, r *http.Request) {
-	bookings, err := s.service.BookingService.GetPendingBookings()
-	if err != nil {
-		slog.Error("Error fetching pending bookings:", slog.Any("error", err))
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(bookings); err != nil {
-		slog.Error("Error encoding JSON:", err)
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-	}
-}
-
-func (s *Handler) HandlePendingBookings(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		s.getPendingBookings(w, r)
-	default:
-		w.Header().Set("Allow", "GET")
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	}
-}
-
-// @Summary		Get active bookings with time format "2006-01-02T15:04:05Z07:00"
-// @Description	Returns a list of active bookings
-// @Tags			Bookings
-// @Accept			json
-// @Produce		json
-// @Success		200	{array}		entities.Booking	"List of active bookings"
-// @Failure		500	{object}	handlers.JSONAnswer	"Internal server error"
-// @Router			/api/bookings/active [get]
-func (s *Handler) getActiveBookings(w http.ResponseWriter, r *http.Request) {
-	activeBookings, err := s.service.BookingService.GetActiveBookings()
-	if err != nil {
-		slog.Error("Error fetching active bookings:", slog.Any("error", err))
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(activeBookings); err != nil {
-		slog.Error("Error encoding JSON:", err)
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-	}
-
-}
-
-func (s *Handler) HandleActiveBookings(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		s.getActiveBookings(w, r)
-	default:
-		w.Header().Set("Allow", "GET")
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	}
-}
-
-// @Summary		Get cancelled bookings with time format "2006-01-02T15:04:05Z07:00"
-// @Description	Returns a list of cancelled bookings
-// @Tags			Bookings
-// @Accept			json
-// @Produce		json
-// @Success		200	{array}		entities.Booking	"List of cancelled bookings"
-// @Failure		500	{object}	handlers.JSONAnswer	"Internal server error"
-// @Router			/api/bookings/cancelled [get]
-func (s *Handler) getCancelledBookings(w http.ResponseWriter, r *http.Request) {
-	cancelledBookings, err := s.service.BookingService.GetCancelledBookings()
-	if err != nil {
-		slog.Error("Error fetching cancelled bookings:", slog.Any("error", err))
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(cancelledBookings); err != nil {
-		slog.Error("Error encoding JSON:", err)
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-	}
-
-}
-
-func (s *Handler) HandleCancelledBookings(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		s.getCancelledBookings(w, r)
-	default:
-		w.Header().Set("Allow", "GET")
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	}
-}
-
 // @Summary		Get remaining occupied time for a computer
 // @Description	Returns the remaining time (in seconds) that a specific computer will be occupied before it becomes available for a new booking with the given package duration.
 // @Tags			Bookings
@@ -437,7 +308,7 @@ func (s *Handler) ComputersRemaining(w http.ResponseWriter, r *http.Request) {
 // @Failure		400	{object}	handlers.JSONAnswer	"Invalid user ID"
 // @Failure		404	{object}	handlers.JSONAnswer	"User not found"
 // @Failure		500	{object}	handlers.JSONAnswer	"Internal server error or unhandled error"
-// @Router			/api/users//bookings [get]
+// @Router			/api/users/bookings [get]
 func (s *Handler) UserBookings(w http.ResponseWriter, r *http.Request) {
 	userIDStr, ok := auth.GetUserIDFromContext(r.Context())
 	if !ok {

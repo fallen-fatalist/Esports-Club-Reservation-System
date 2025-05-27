@@ -17,7 +17,7 @@ const docTemplate = `{
     "paths": {
         "/api/bookings": {
             "get": {
-                "description": "Returns a list of bookings with various statuses",
+                "description": "Returns a list of bookings with filtering by status",
                 "consumes": [
                     "application/json"
                 ],
@@ -28,6 +28,14 @@ const docTemplate = `{
                     "Bookings"
                 ],
                 "summary": "Get all bookings",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter bookings by status. Options: non-cancelled, pending, finished, active, cancelled. If empty it set non-cancelled",
+                        "name": "filter",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -103,168 +111,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/bookings/active": {
-            "get": {
-                "description": "Returns a list of active bookings",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Bookings"
-                ],
-                "summary": "Get active bookings with time format \"2006-01-02T15:04:05Z07:00\"",
-                "responses": {
-                    "200": {
-                        "description": "List of active bookings",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/entities.Booking"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.JSONAnswer"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/bookings/all": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns a list of all bookings",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Bookings"
-                ],
-                "summary": "Get all bookings",
-                "responses": {
-                    "200": {
-                        "description": "List of all bookings",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/entities.Booking"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.JSONAnswer"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/bookings/cancelled": {
-            "get": {
-                "description": "Returns a list of cancelled bookings",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Bookings"
-                ],
-                "summary": "Get cancelled bookings with time format \"2006-01-02T15:04:05Z07:00\"",
-                "responses": {
-                    "200": {
-                        "description": "List of cancelled bookings",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/entities.Booking"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.JSONAnswer"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/bookings/finished": {
-            "get": {
-                "description": "Returns a list of finished bookings",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Bookings"
-                ],
-                "summary": "Get finished bookings with time format \"2006-01-02T15:04:05Z07:00\"",
-                "responses": {
-                    "200": {
-                        "description": "List of finished bookings",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/entities.Booking"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.JSONAnswer"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/bookings/pending": {
-            "get": {
-                "description": "Returns a list of pending bookings",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Bookings"
-                ],
-                "summary": "Get pending bookings with time format \"2006-01-02T15:04:05Z07:00\"",
-                "responses": {
-                    "200": {
-                        "description": "List of pending bookings",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/entities.Booking"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/handlers.JSONAnswer"
-                        }
-                    }
-                }
-            }
-        },
         "/api/bookings/{id}/cancel": {
             "post": {
                 "security": [
@@ -325,7 +171,7 @@ const docTemplate = `{
         },
         "/api/computers": {
             "get": {
-                "description": "Returns a list of all computers",
+                "description": "Returns a list of filtered by room computers",
                 "produces": [
                     "application/json"
                 ],
@@ -360,6 +206,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Creates a new computer",
                 "consumes": [
                     "application/json"
@@ -852,6 +703,52 @@ const docTemplate = `{
                     "Users"
                 ],
                 "summary": "Delete a user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid user ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{id}/admin": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Grants admin privileges to a user with the given ID, only Owner and Manager can grant admin role.",
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Grant admin privileges to a user",
                 "parameters": [
                     {
                         "type": "integer",

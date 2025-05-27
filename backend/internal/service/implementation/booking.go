@@ -55,7 +55,16 @@ func NewBookingService(repository repository.BookingRepository, computerService 
 	return service, nil
 }
 
-func (s *BookingService) GetAllBookings() ([]*entities.Booking, error) {
+func (s *BookingService) Bookings(filter string) ([]*entities.Booking, error) {
+	if filter == "" {
+		filter = "non-cancelled"
+	}
+
+	if filter != "non-cancelled" && filter != "pending" && filter != "finished" &&
+		filter != "active" && filter != "cancelled" {
+		return nil, entities.ErrInvalidFilter
+	}
+
 	bookings, err := s.repository.GetAll()
 	if err != nil {
 		return nil, err
@@ -63,7 +72,15 @@ func (s *BookingService) GetAllBookings() ([]*entities.Booking, error) {
 
 	filtered := make([]*entities.Booking, 0)
 	for _, booking := range bookings {
-		if booking.Status != "cancelled" {
+		if filter == "non-cancelled" && booking.Status != "cancelled" {
+			filtered = append(filtered, booking)
+		} else if filter == "pending" && booking.Status == "pending" {
+			filtered = append(filtered, booking)
+		} else if filter == "finished" && booking.Status == "finished" {
+			filtered = append(filtered, booking)
+		} else if filter == "active" && booking.Status == "active" {
+			filtered = append(filtered, booking)
+		} else if filter == "cancelled" && booking.Status == "cancelled" {
 			filtered = append(filtered, booking)
 		}
 	}
@@ -137,12 +154,14 @@ func (s *BookingService) BookingNotified(booking *entities.Booking) error {
 	return err
 }
 
+// GetComputerBookings returns all non-cancelled bookings for the given computer ID.
+// The bookings are sorted by start time.
 func (s *BookingService) GetComputerBookings(id int64) ([]*entities.Booking, error) {
 	if err := entities.ValidateID(id); err != nil {
 		return nil, err
 	}
 
-	bookings, err := s.GetAllBookings()
+	bookings, err := s.Bookings("non-cancelled")
 	if err != nil {
 		slog.Error("Unhandled Error fetching pending bookings:", err)
 		return nil, service.ErrUnhandledError

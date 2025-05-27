@@ -13,7 +13,7 @@ import (
 )
 
 // @Summary		Get all computers
-// @Description	Returns a list of all computers
+// @Description	Returns a list of filtered by room computers
 // @Tags			Computers
 // @Produce		json
 // @Param			room	query		string	false	"Filter by room, may be empty (all computers returned)"
@@ -46,6 +46,7 @@ func (s *Handler) Computers(w http.ResponseWriter, r *http.Request) {
 // @Summary		Create a new computer
 // @Description	Creates a new computer
 // @Tags			Computers
+// @Security BearerAuth
 // @Accept			json
 // @Produce		json
 // @Param			computer	body		entities.Computer	true	"Computer details"

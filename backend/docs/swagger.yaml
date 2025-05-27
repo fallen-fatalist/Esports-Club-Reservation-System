@@ -248,7 +248,13 @@ paths:
     get:
       consumes:
       - application/json
-      description: Returns a list of bookings with various statuses
+      description: Returns a list of bookings with filtering by status
+      parameters:
+      - description: 'Filter bookings by status. Options: non-cancelled, pending,
+          finished, active, cancelled. If empty it set non-cancelled'
+        in: query
+        name: filter
+        type: string
       produces:
       - application/json
       responses:
@@ -341,114 +347,9 @@ paths:
       summary: Cancel a booking
       tags:
       - Bookings
-  /api/bookings/active:
-    get:
-      consumes:
-      - application/json
-      description: Returns a list of active bookings
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of active bookings
-          schema:
-            items:
-              $ref: '#/definitions/entities.Booking'
-            type: array
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-      summary: Get active bookings with time format "2006-01-02T15:04:05Z07:00"
-      tags:
-      - Bookings
-  /api/bookings/all:
-    get:
-      description: Returns a list of all bookings
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of all bookings
-          schema:
-            items:
-              $ref: '#/definitions/entities.Booking'
-            type: array
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-      security:
-      - BearerAuth: []
-      summary: Get all bookings
-      tags:
-      - Bookings
-  /api/bookings/cancelled:
-    get:
-      consumes:
-      - application/json
-      description: Returns a list of cancelled bookings
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of cancelled bookings
-          schema:
-            items:
-              $ref: '#/definitions/entities.Booking'
-            type: array
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-      summary: Get cancelled bookings with time format "2006-01-02T15:04:05Z07:00"
-      tags:
-      - Bookings
-  /api/bookings/finished:
-    get:
-      consumes:
-      - application/json
-      description: Returns a list of finished bookings
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of finished bookings
-          schema:
-            items:
-              $ref: '#/definitions/entities.Booking'
-            type: array
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-      summary: Get finished bookings with time format "2006-01-02T15:04:05Z07:00"
-      tags:
-      - Bookings
-  /api/bookings/pending:
-    get:
-      consumes:
-      - application/json
-      description: Returns a list of pending bookings
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of pending bookings
-          schema:
-            items:
-              $ref: '#/definitions/entities.Booking'
-            type: array
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-      summary: Get pending bookings with time format "2006-01-02T15:04:05Z07:00"
-      tags:
-      - Bookings
   /api/computers:
     get:
-      description: Returns a list of all computers
+      description: Returns a list of filtered by room computers
       parameters:
       - description: Filter by room, may be empty (all computers returned)
         in: query
@@ -496,6 +397,8 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/handlers.JSONAnswer'
+      security:
+      - BearerAuth: []
       summary: Create a new computer
       tags:
       - Computers
@@ -814,6 +717,36 @@ paths:
       security:
       - BearerAuth: []
       summary: Delete a user
+      tags:
+      - Users
+  /api/users/{id}/admin:
+    post:
+      description: Grants admin privileges to a user with the given ID, only Owner
+        and Manager can grant admin role.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Grant admin privileges to a user
       tags:
       - Users
   /api/users/{id}/block:

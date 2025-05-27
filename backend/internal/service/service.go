@@ -49,6 +49,7 @@ type UserService interface {
 	// AuthUser()
 	Register(userDTO dto.RegisterUser) (int64, error)
 	Login(userDTO dto.LoginUser) (string, error)
+	GrantAdmin(userID int64) error
 	VerifyEmail(emailverify dto.VerifyEmailRequest) error
 	SendVerificationCode(dto.EmailVerificationRequest) error
 	SendPasswordResetCode(email string) error
@@ -61,7 +62,7 @@ type UserService interface {
 type BookingService interface {
 	// BookingNotified(*entities.Booking)
 	//TODO: Must handle with dto
-	GetAllBookings() ([]*entities.Booking, error)
+	Bookings(filter string) ([]*entities.Booking, error)
 	CreateBooking(context.Context, *dto.Booking) (int64, error)
 	Cancel(ctx context.Context, bookingdID int64) error
 	BookingNotified(*entities.Booking) error
