@@ -44,8 +44,8 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	/* User  */
 	mux.HandleFunc("GET /users", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.GetUsers))
 	mux.HandleFunc("GET /users/bookings", auth.WithAuth(h.jwtMng, entities.AllRoles, h.UserBookings))
-	mux.HandleFunc("POST /block/{id}", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.HandleBlock))
-	mux.HandleFunc("POST /unblock/{id}", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.HandleUnblock))
+	mux.HandleFunc("POST /users/{id}/block", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.HandleBlock))
+	mux.HandleFunc("POST /users/{id}/unblock", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.HandleUnblock))
 	mux.HandleFunc("POST /users/{id}/credit", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.HandleUserCredit))
 	mux.HandleFunc("POST /users/{id}/admin", auth.WithAuth(h.jwtMng, entities.ManagementRoles, h.HandleGrantAdmin))
 	mux.HandleFunc("DELETE /users/{id}", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.HandleUserDelete))
