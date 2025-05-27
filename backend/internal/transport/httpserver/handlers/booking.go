@@ -456,16 +456,7 @@ func (s *Handler) UserBookings(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch err {
 		case entities.ErrUserNotFound:
-			jsonPayload := JSONAnswer{
-				Message: "User not found",
-			}
-			w.WriteHeader(http.StatusNotFound)
-			w.Header().Set("Content-Type", "application/json")
-			if err := json.NewEncoder(w).Encode(jsonPayload); err != nil {
-				slog.Error("Error encoding JSON:", slog.Any("error", err))
-				http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-				return
-			}
+			utils.WriteError(w, http.StatusNotFound, err)
 			return
 		case entities.ErrInvalidUserID:
 			jsonPayload := JSONAnswer{

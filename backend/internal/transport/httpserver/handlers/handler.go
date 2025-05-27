@@ -20,11 +20,6 @@ func NewHandler(svc *service.Service, logger *slog.Logger, jwtMng auth.JWTManage
 
 func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 
-	/* Priveleged endpoints */
-	mux.HandleFunc("GET /priveleged", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.IsPriveleged))
-	mux.HandleFunc("POST /priveleged/block/{id}", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.HandleBlock))
-	mux.HandleFunc("POST /priveleged/unblock/{id}", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.HandleUnblock))
-
 	/* Computers */
 
 	mux.HandleFunc("GET /computers", h.Computers)
@@ -49,12 +44,16 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("/bookings/finished", auth.WithAuth(h.jwtMng, entities.AllRoles, h.HandleFinishedBookings))
 	mux.HandleFunc("/bookings/cancelled", auth.WithAuth(h.jwtMng, entities.AllRoles, h.HandleCancelledBookings))
 	mux.HandleFunc("GET /computers/{id}/bookings", h.ComputerBookings)
-	mux.HandleFunc("GET /users/bookings", auth.WithAuth(h.jwtMng, entities.AllRoles, h.UserBookings))
 	mux.HandleFunc("POST /bookings/{id}/cancel", auth.WithAuth(h.jwtMng, entities.AllRoles, h.HandleCancel))
 
+	/* User  */
 	mux.HandleFunc("GET /users", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.GetUsers))
+	mux.HandleFunc("GET /users/bookings", auth.WithAuth(h.jwtMng, entities.AllRoles, h.UserBookings))
+	mux.HandleFunc("POST /block/{id}", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.HandleBlock))
+	mux.HandleFunc("POST /unblock/{id}", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.HandleUnblock))
+	mux.HandleFunc("DELETE /users/{id}", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.HandleUserDelete))
 
-	//User & Auth
+	//Auth
 	mux.HandleFunc("POST /auth/sign-up", h.Register)
 	mux.HandleFunc("POST /auth/sign-in", h.Login)
 	mux.HandleFunc("POST /auth/activate", h.RequestCode)
@@ -65,6 +64,7 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/reset/confirm", h.HandleResetPassword)
 
 	mux.HandleFunc("GET /auth/authorized", auth.WithAuth(h.jwtMng, entities.AllRoles, h.IsAuthorized))
+	mux.HandleFunc("GET /priveleged", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.IsPriveleged))
 	mux.HandleFunc("POST /auth/logout", auth.WithAuth(h.jwtMng, entities.AllRoles, h.Logout))
 
 }

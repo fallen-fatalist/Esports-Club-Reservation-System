@@ -34,14 +34,6 @@ var (
 	ErrNonNumericID       = errors.New("id is not numeric")
 )
 
-// Roles
-var (
-	OwnerRole   = "owner"
-	ManagerRole = "manager"
-	AdminRole   = "admin"
-	AnalystRole = "analyst"
-	ClientRole  = "client"
-)
 
 // Statuses
 var (

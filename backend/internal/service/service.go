@@ -43,6 +43,7 @@ type UserService interface {
 	GetUsers() ([]*entities.User, error)
 	GetUser(int64) (*entities.User, error)
 	CreateUser(*dto.RegisterUser) (int64, error)
+	Delete(ctx context.Context, userID int64) error
 	Block(userID int64) error
 	Unblock(userID int64) error
 	// AuthUser()

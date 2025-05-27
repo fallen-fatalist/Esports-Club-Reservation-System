@@ -362,6 +362,27 @@ paths:
       summary: Get active bookings with time format "2006-01-02T15:04:05Z07:00"
       tags:
       - Bookings
+  /api/bookings/all:
+    get:
+      description: Returns a list of all bookings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of all bookings
+          schema:
+            items:
+              $ref: '#/definitions/entities.Booking'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handlers.JSONAnswer'
+      security:
+      - BearerAuth: []
+      summary: Get all bookings
+      tags:
+      - Bookings
   /api/bookings/cancelled:
     get:
       consumes:
@@ -761,6 +782,35 @@ paths:
       summary: Get bookings for a specific user
       tags:
       - Bookings
+  /api/users/{id}:
+    delete:
+      description: Deletes a user with the given ID.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Delete a user
+      tags:
+      - Users
   /api/users/{id}/block:
     post:
       description: Blocks a user with the given ID.

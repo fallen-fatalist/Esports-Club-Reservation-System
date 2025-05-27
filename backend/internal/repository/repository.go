@@ -4,6 +4,7 @@ import (
 	"context"
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/repository/postgres"
+	"esports_club_booking/internal/transport/dto"
 	"time"
 )
 
@@ -41,7 +42,7 @@ type UserRepository interface {
 	GetCredentialsByEmail(email string) (entities.UserCredentials, error)
 	GetCredentialsByLogin(login string) (entities.UserCredentials, error)
 	Create(entity *entities.User, hashedPassword string) (int64, error)
-	Update(*entities.Booking) (int64, error)
+	Update(*dto.User) (int64, error)
 	UpdatePassword(userID int64, hashedPassword string) error
 	Delete(int64) error
 	Block(userID int64) error

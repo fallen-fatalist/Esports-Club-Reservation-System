@@ -135,6 +135,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/bookings/all": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a list of all bookings",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Get all bookings",
+                "responses": {
+                    "200": {
+                        "description": "List of all bookings",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entities.Booking"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    }
+                }
+            }
+        },
         "/api/bookings/cancelled": {
             "get": {
                 "description": "Returns a list of cancelled bookings",
@@ -793,6 +827,52 @@ const docTemplate = `{
                         "description": "Internal server error or unhandled error",
                         "schema": {
                             "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes a user with the given ID.",
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Delete a user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid user ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
                         }
                     }
                 }

@@ -3,7 +3,7 @@ package postgres
 import (
 	"database/sql"
 	"esports_club_booking/internal/entities"
-	"esports_club_booking/internal/service"
+	"esports_club_booking/internal/transport/dto"
 	"fmt"
 	"log/slog"
 )
@@ -77,7 +77,7 @@ func (r *UserRepository) GetByID(id int64) (*entities.User, error) {
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, service.ErrUserNotFound
+			return nil, entities.ErrUserNotFound
 		}
 		return nil, fmt.Errorf("repository.GetByID: failed to get user: %w", err)
 	}
@@ -97,7 +97,7 @@ func (r *UserRepository) GetCredentialsByEmail(email string) (entities.UserCrede
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return uc, service.ErrUserNotFound
+			return uc, entities.ErrUserNotFound
 		}
 		return uc, entities.ErrFailedToGetUser
 	}
@@ -116,7 +116,7 @@ func (r *UserRepository) GetCredentialsByLogin(login string) (entities.UserCrede
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return uc, service.ErrUserNotFound
+			return uc, entities.ErrUserNotFound
 		}
 		return uc, entities.ErrFailedToGetUser
 	}
@@ -141,7 +141,7 @@ func (r *UserRepository) GetByEmail(email string) (entities.User, error) {
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return user, service.ErrUserNotFound
+			return user, entities.ErrUserNotFound
 		}
 		return user, entities.ErrFailedToGetUser
 	}
@@ -166,7 +166,7 @@ func (r *UserRepository) GetByLogin(login string) (entities.User, error) {
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return user, service.ErrUserNotFound
+			return user, entities.ErrUserNotFound
 		}
 		return user, entities.ErrFailedToGetUser
 	}
@@ -196,11 +196,27 @@ func (r *UserRepository) Create(user *entities.User, hashedPassword string) (int
 	return user.ID, nil
 }
 
-func (r *UserRepository) Update(booking *entities.Booking) (int64, error) {
+func (r *UserRepository) Update(booking *dto.User) (int64, error) {
 	return 0, nil
 }
 
-func (r *UserRepository) Delete(id int64) error {
+func (r *UserRepository) Delete(userID int64) error {
+	query := `DELETE FROM users WHERE user_id = $1`
+
+	result, err := r.db.Exec(query, userID)
+	if err != nil {
+		return fmt.Errorf("failed to delete user: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get affected rows: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return entities.ErrUserNotFound
+	}
+
 	return nil
 }
 

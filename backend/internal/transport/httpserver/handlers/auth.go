@@ -213,7 +213,7 @@ func (h *Handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 		h.logger.Warn("too many attempts", slog.Any("error", err))
 		http.Error(w, "too many attempts, try later", http.StatusTooManyRequests)
 		return
-	case errors.Is(err, service.ErrUserNotFound):
+	case errors.Is(err, entities.ErrUserNotFound):
 		h.logger.Warn("user not found", slog.Any("error", err))
 		http.Error(w, "user not found", http.StatusNotFound)
 		return
@@ -296,7 +296,7 @@ func (h *Handler) requestPasswordResetCode(w http.ResponseWriter, r *http.Reques
 	}
 
 	if err := h.service.UserService.SendPasswordResetCode(req.Email); err != nil {
-		if errors.Is(err, service.ErrUserNotFound) {
+		if errors.Is(err, entities.ErrUserNotFound) {
 			utils.WriteError(w, http.StatusBadRequest, err)
 			return
 		} else if errors.Is(err, service.ErrPasswordRecentlyChanged) {
@@ -356,7 +356,7 @@ func (h *Handler) resetPassword(w http.ResponseWriter, r *http.Request) {
 	case errors.Is(err, service.ErrNoNeedVerification):
 		utils.WriteError(w, http.StatusBadGateway, err)
 
-	case errors.Is(err, service.ErrUserNotFound):
+	case errors.Is(err, entities.ErrUserNotFound):
 		utils.WriteError(w, http.StatusNotFound, err)
 
 	case errors.Is(err, authService.ErrUsernameEmpty),

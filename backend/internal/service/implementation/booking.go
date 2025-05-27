@@ -56,11 +56,18 @@ func NewBookingService(repository repository.BookingRepository, computerService 
 }
 
 func (s *BookingService) GetAllBookings() ([]*entities.Booking, error) {
-	if bookings, err := s.repository.GetAll(); err != nil {
+	bookings, err := s.repository.GetAll()
+	if err != nil {
 		return nil, err
-	} else {
-		return bookings, nil
 	}
+
+	filtered := make([]*entities.Booking, 0)
+	for _, booking := range bookings {
+		if booking.Status != "cancelled" {
+			filtered = append(filtered, booking)
+		}
+	}
+	return filtered, nil
 }
 
 func (s *BookingService) CreateBooking(ctx context.Context, bookingDTO *dto.Booking) (int64, error) {
@@ -73,7 +80,6 @@ func (s *BookingService) CreateBooking(ctx context.Context, bookingDTO *dto.Book
 	} else if user.Status == entities.BlockedStatus {
 		return 0, entities.ErrUserBlocked
 	}
-
 
 	booking := &entities.Booking{
 		UserID:     bookingDTO.UserID,

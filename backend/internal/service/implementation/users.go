@@ -1,6 +1,7 @@
 package implementation
 
 import (
+	"context"
 	"esports_club_booking/internal/auth"
 	"esports_club_booking/internal/config"
 	"esports_club_booking/internal/email"
@@ -136,4 +137,28 @@ func (s *UserService) createOwner(ownerCredentials *config.OwnerCredentials) err
 	}
 
 	return nil
+}
+
+func (s *UserService) Delete(ctx context.Context, userID int64) error {
+	if err := entities.ValidateID(userID); err != nil {
+		return err
+	}
+
+	// Validate that user role not exceeds yourself
+	user, err := s.GetUser(userID)
+	if err != nil {
+		return err
+	}
+
+	role, roleExists := auth.GetRoleFromContext(ctx)
+	if !roleExists {
+		slog.Error("Error while deleting user: getting role from context", slog.Any("error", err), slog.String("role", role))
+		return entities.ErrUnhandledError
+	}
+
+	if !entities.RoleHasSufficientRights(role, user.Role) {
+		return entities.ErrInsufficientPriv
+	}
+
+	return s.repo.Delete(userID)
 }
