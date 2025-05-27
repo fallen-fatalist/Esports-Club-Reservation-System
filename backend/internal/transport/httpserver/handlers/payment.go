@@ -187,7 +187,7 @@ func (h *Handler) processApprovedOrder(event map[string]interface{}) error {
 	}
 
 	// 7. Process payment
-	if err := h.service.PaymentService.Deposit(context.Background(), userID, amount*511); err != nil {
+	if err := h.service.PaymentService.Deposit(context.Background(), userID, amount); err != nil {
 		return fmt.Errorf("deposit failed: %v", err)
 	}
 

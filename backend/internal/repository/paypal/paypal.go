@@ -47,7 +47,7 @@ func (p *PayPalClient) Deposit(amount float64, userID int64, description string)
 		{
 			Amount: &paypal.PurchaseUnitAmount{
 				Currency: "USD",
-				Value:    fmt.Sprintf("%.2f", amount/511),
+				Value:    fmt.Sprintf("%.2f", amount),
 			},
 			CustomID: strconv.FormatInt(userID, 10),
 		},
