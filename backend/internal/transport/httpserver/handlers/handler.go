@@ -38,10 +38,6 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("GET /bookings", h.Bookings)
 	mux.HandleFunc("POST /bookings", auth.WithAuth(h.jwtMng, entities.AllRoles, h.PostBooking))
 
-	mux.HandleFunc("/bookings/pending", auth.WithAuth(h.jwtMng, entities.AllRoles, h.HandlePendingBookings))
-	mux.HandleFunc("/bookings/active", auth.WithAuth(h.jwtMng, entities.AllRoles, h.HandleActiveBookings))
-	mux.HandleFunc("/bookings/finished", auth.WithAuth(h.jwtMng, entities.AllRoles, h.HandleFinishedBookings))
-	mux.HandleFunc("/bookings/cancelled", auth.WithAuth(h.jwtMng, entities.AllRoles, h.HandleCancelledBookings))
 	mux.HandleFunc("GET /computers/{id}/bookings", h.ComputerBookings)
 	mux.HandleFunc("POST /bookings/{id}/cancel", auth.WithAuth(h.jwtMng, entities.AllRoles, h.HandleCancel))
 
