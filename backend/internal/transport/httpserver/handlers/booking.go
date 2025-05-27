@@ -19,11 +19,14 @@ import (
 // @Tags			Bookings
 // @Accept			json
 // @Produce		json
-// @Success		200	{array}		entities.Booking
-// @Failure		500	{object}	handlers.JSONAnswer	"Internal server error"
+// @Param			filter	query		string	false	"Filter bookings by status. Options: non-cancelled, pending, finished, active, cancelled. If empty it set non-cancelled"
+// @Success		200		{array}		entities.Booking
+// @Failure		500		{object}	handlers.JSONAnswer	"Internal server error"
 // @Router			/api/bookings [get]
 func (s *Handler) Bookings(w http.ResponseWriter, r *http.Request) {
-	bookings, err := s.service.BookingService.GetAllBookings()
+	filter := r.URL.Query().Get("filter")
+
+	bookings, err := s.service.BookingService.Bookings(filter)
 	if err != nil {
 		slog.Error("Error fetching bookings:", slog.String("error", err.Error()))
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -38,6 +41,9 @@ func (s *Handler) Bookings(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 			return
 		}
+		return
+	} else if errors.Is(err, entities.ErrInvalidFilter) {
+		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
 

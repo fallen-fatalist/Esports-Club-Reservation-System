@@ -30,6 +30,11 @@ var NonPrivellegedRoles []string = []string{
 	ClientRole,
 }
 
+var AdminGranters []string = []string{
+	OwnerRole,
+	ManagerRole,
+}
+
 // Roles
 var (
 	OwnerRole   = "owner"

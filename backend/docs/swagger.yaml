@@ -249,6 +249,12 @@ paths:
       consumes:
       - application/json
       description: Returns a list of bookings with various statuses
+      parameters:
+      - description: 'Filter bookings by status. Options: non-cancelled, pending,
+          finished, active, cancelled. If empty it set non-cancelled'
+        in: query
+        name: filter
+        type: string
       produces:
       - application/json
       responses:
@@ -360,27 +366,6 @@ paths:
           schema:
             $ref: '#/definitions/handlers.JSONAnswer'
       summary: Get active bookings with time format "2006-01-02T15:04:05Z07:00"
-      tags:
-      - Bookings
-  /api/bookings/all:
-    get:
-      description: Returns a list of all bookings
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of all bookings
-          schema:
-            items:
-              $ref: '#/definitions/entities.Booking'
-            type: array
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-      security:
-      - BearerAuth: []
-      summary: Get all bookings
       tags:
       - Bookings
   /api/bookings/cancelled:
@@ -877,6 +862,36 @@ paths:
       security:
       - BearerAuth: []
       summary: Fill user balance
+      tags:
+      - Users
+  /api/users/{id}/grant-admin:
+    post:
+      description: Grants admin privileges to a user with the given ID, only Owner
+        and Manager can grant admin role.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Grant admin privileges to a user
       tags:
       - Users
   /api/users/{id}/unblock:

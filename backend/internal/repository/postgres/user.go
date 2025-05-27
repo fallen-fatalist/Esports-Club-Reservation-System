@@ -196,8 +196,30 @@ func (r *UserRepository) Create(user *entities.User, hashedPassword string) (int
 	return user.ID, nil
 }
 
-func (r *UserRepository) Update(booking *dto.User) (int64, error) {
-	return 0, nil
+func (r *UserRepository) Update(user *dto.User) (int64, error) {
+	query := `
+		UPDATE users
+		SET 
+			login = $5,
+			status = $2,
+			role = $3,
+			balance = $4
+		WHERE email = $1
+	`
+
+	result, err := r.db.Exec(query, user.Email, user.Status, user.Role, user.Balance, user.Username)
+	if err != nil {
+		return 0, err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	} else if rowsAffected == 0 {
+		return 0, entities.ErrUserNotFound
+	}
+
+	return rowsAffected, nil
 }
 
 func (r *UserRepository) Delete(userID int64) error {
