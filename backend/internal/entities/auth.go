@@ -9,6 +9,7 @@ var (
 	ErrAlreadyAuthenticated = errors.New("already authenticated")
 	ErrInvalidToken         = errors.New("invalid token")
 	ErrInsufficientPriv     = errors.New("insufficient privileges")
+	ErrMissingToken         = errors.New("missing token")
 )
 
 var AllRoles []string = []string{

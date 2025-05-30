@@ -8,7 +8,7 @@ import (
 	"esports_club_booking/internal/service"
 	authService "esports_club_booking/internal/service/implementation"
 	"esports_club_booking/internal/transport/dto"
-	"esports_club_booking/internal/utils"
+	"esports_club_booking/internal/views"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -32,7 +32,7 @@ func (s *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		_, err := s.jwtMng.ValidateToken(cookie.Value)
 		if err == nil {
-			utils.WriteError(w, http.StatusConflict, entities.ErrAlreadyAuthenticated)
+			views.WriteError(w, http.StatusConflict, entities.ErrAlreadyAuthenticated)
 			return
 		} else {
 			s.Logout(w, r)
@@ -40,8 +40,8 @@ func (s *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var userPayload dto.RegisterUser
-	if err := utils.ParseJSON(r, &userPayload); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err)
+	if err := views.ParseJSON(r, &userPayload); err != nil {
+		views.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -77,19 +77,19 @@ func (s *Handler) Register(w http.ResponseWriter, r *http.Request) {
 			errors.Is(err, authService.ErrPasswordMissingUppercase),
 			errors.Is(err, authService.ErrPasswordMissingDigit),
 			errors.Is(err, authService.ErrPasswordMissingSpecial):
-			utils.WriteError(w, http.StatusBadRequest, err)
+			views.WriteError(w, http.StatusBadRequest, err)
 			return
 		case errors.Is(err, service.ErrUserAlreadyExists):
-			utils.WriteError(w, http.StatusConflict, errors.New("user with this email or login already exists"))
+			views.WriteError(w, http.StatusConflict, errors.New("user with this email or login already exists"))
 			return
 		default:
 			s.logger.Error("failed to create user", slog.Any("error", err))
-			utils.WriteError(w, http.StatusInternalServerError, errors.New("failed to register user"))
+			views.WriteError(w, http.StatusInternalServerError, errors.New("failed to register user"))
 			return
 		}
 	}
 
-	utils.WriteJSON(w, http.StatusCreated, utils.Message{Message: "user created successfully"})
+	views.WriteJSON(w, http.StatusCreated, views.Message{Message: "user created successfully"})
 }
 
 // @Summary		User login
@@ -104,8 +104,8 @@ func (s *Handler) Register(w http.ResponseWriter, r *http.Request) {
 // @Router			/auth/sign-in [post]
 func (s *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var userPayload dto.LoginUser
-	if err := utils.ParseJSON(r, &userPayload); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err)
+	if err := views.ParseJSON(r, &userPayload); err != nil {
+		views.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
 	token, err := s.service.UserService.Login(userPayload)
@@ -113,19 +113,19 @@ func (s *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, service.ErrUserBlockedOrUnverified):
 			s.logger.Warn("failed login attempt", slog.Any("error", err))
-			utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("failed to login: %s", "user is unverified or blocked"))
+			views.WriteError(w, http.StatusUnauthorized, fmt.Errorf("failed to login: %s", "user is unverified or blocked"))
 			return
 
 		case errors.Is(err, service.ErrInvalidCredentials):
 			s.logger.Warn("failed login attempt", slog.Any("error", err))
-			utils.WriteError(w, http.StatusUnauthorized, errors.New("invalid email or password"))
+			views.WriteError(w, http.StatusUnauthorized, errors.New("invalid email or password"))
 			return
 		case errors.Is(err, entities.ErrUserBlocked):
-			utils.WriteError(w, http.StatusUnauthorized, err)
+			views.WriteError(w, http.StatusForbidden, err)
 			return
 		default:
 			s.logger.Warn("failed login attempt", slog.Any("error", err))
-			utils.WriteError(w, http.StatusUnauthorized, errors.New("failed to login"))
+			views.WriteError(w, http.StatusUnauthorized, errors.New("failed to login"))
 			return
 		}
 	}
@@ -145,7 +145,7 @@ func (s *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 	})
 
-	// utils.WriteJSON(w, http.StatusOK, dto.TokenResponse{Token: token})
+	// views.WriteJSON(w, http.StatusOK, dto.TokenResponse{Token: token})
 }
 
 // @Summary		Send verification code to user's email
@@ -166,7 +166,7 @@ func (h *Handler) RequestCode(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := h.service.UserService.SendVerificationCode(req); err != nil {
 		if errors.Is(err, service.ErrSentCodeAlready) {
-			utils.WriteJSON(w, http.StatusTooManyRequests, "code already sent,wait for new attempt")
+			views.WriteJSON(w, http.StatusTooManyRequests, "code already sent,wait for new attempt")
 			return
 		}
 		h.logger.Error("failed to send verification code", slog.Any("error", err))
@@ -174,7 +174,7 @@ func (h *Handler) RequestCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, JSONAnswer{Message: "verification code sent"})
+	views.WriteJSON(w, http.StatusOK, JSONAnswer{Message: "verification code sent"})
 }
 
 // @Summary		Verify email with code
@@ -199,7 +199,7 @@ func (h *Handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	err := h.service.UserService.VerifyEmail(req)
 	switch {
 	case err == nil:
-		utils.WriteJSON(w, http.StatusOK, JSONAnswer{Message: "email verified"})
+		views.WriteJSON(w, http.StatusOK, JSONAnswer{Message: "email verified"})
 		return
 	case errors.Is(err, service.ErrNoNeedVerification):
 		h.logger.Warn("verification not needed", slog.Any("error", err))
@@ -238,7 +238,7 @@ func (h *Handler) IsAuthorized(w http.ResponseWriter, r *http.Request) {
 		_, err = h.jwtMng.ValidateToken(token.Value)
 		if err != nil {
 			h.Logout(w, r)
-			utils.WriteError(w, http.StatusUnauthorized, entities.ErrInvalidToken)
+			views.WriteError(w, http.StatusUnauthorized, entities.ErrInvalidToken)
 			return
 		}
 	}
@@ -246,14 +246,14 @@ func (h *Handler) IsAuthorized(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	// Lie to the client who is trying to brute force the token
 	if err != nil {
-		utils.WriteJSON(w, http.StatusUnauthorized, dto.JSONAnswer{Message: "missing token"})
+		views.WriteJSON(w, http.StatusUnauthorized, dto.JSONAnswer{Message: "missing token"})
 		return
 	}
 
 	user, err := h.service.UserService.GetUser(userID)
 	if err != nil {
 		h.logger.Error("failed to get user", slog.Any("error", err))
-		utils.WriteJSON(w, http.StatusInternalServerError, dto.JSONAnswer{Message: "internal error"})
+		views.WriteJSON(w, http.StatusInternalServerError, dto.JSONAnswer{Message: "internal error"})
 		return
 	}
 
@@ -265,7 +265,7 @@ func (h *Handler) IsAuthorized(w http.ResponseWriter, r *http.Request) {
 		Balance:  user.Balance,
 	}
 
-	utils.WriteJSON(w, http.StatusOK, userDTO)
+	views.WriteJSON(w, http.StatusOK, userDTO)
 }
 
 // @Summary		Request password reset code
@@ -297,10 +297,10 @@ func (h *Handler) requestPasswordResetCode(w http.ResponseWriter, r *http.Reques
 
 	if err := h.service.UserService.SendPasswordResetCode(req.Email); err != nil {
 		if errors.Is(err, entities.ErrUserNotFound) {
-			utils.WriteError(w, http.StatusBadRequest, err)
+			views.WriteError(w, http.StatusBadRequest, err)
 			return
 		} else if errors.Is(err, service.ErrPasswordRecentlyChanged) {
-			utils.WriteError(w, http.StatusBadRequest, err)
+			views.WriteError(w, http.StatusBadRequest, err)
 			return
 		}
 		h.logger.Error("failed to send reset code", slog.Any("error", err))
@@ -308,7 +308,7 @@ func (h *Handler) requestPasswordResetCode(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, JSONAnswer{Message: "reset code sent"})
+	views.WriteJSON(w, http.StatusOK, JSONAnswer{Message: "reset code sent"})
 }
 
 // @Summary		Reset password
@@ -345,19 +345,19 @@ func (h *Handler) resetPassword(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err == nil:
 		h.Logout(w, r)
-		utils.WriteJSON(w, http.StatusOK, JSONAnswer{Message: "password changed"})
+		views.WriteJSON(w, http.StatusOK, JSONAnswer{Message: "password changed"})
 
 	case errors.Is(err, service.ErrInvalidVerificationCode):
-		utils.WriteError(w, http.StatusBadRequest, err)
+		views.WriteError(w, http.StatusBadRequest, err)
 
 	case errors.Is(err, service.ErrTooManyAttempts):
-		utils.WriteError(w, http.StatusTooManyRequests, err)
+		views.WriteError(w, http.StatusTooManyRequests, err)
 
 	case errors.Is(err, service.ErrNoNeedVerification):
-		utils.WriteError(w, http.StatusBadGateway, err)
+		views.WriteError(w, http.StatusBadGateway, err)
 
 	case errors.Is(err, entities.ErrUserNotFound):
-		utils.WriteError(w, http.StatusNotFound, err)
+		views.WriteError(w, http.StatusNotFound, err)
 
 	case errors.Is(err, authService.ErrUsernameEmpty),
 		errors.Is(err, authService.ErrUsernameLength),
@@ -376,12 +376,12 @@ func (h *Handler) resetPassword(w http.ResponseWriter, r *http.Request) {
 		errors.Is(err, authService.ErrPasswordMissingUppercase),
 		errors.Is(err, authService.ErrPasswordMissingDigit),
 		errors.Is(err, authService.ErrPasswordMissingSpecial):
-		utils.WriteError(w, http.StatusBadRequest, err)
+		views.WriteError(w, http.StatusBadRequest, err)
 		return
 
 	default:
 		h.logger.Error("internal error", slog.Any("error", err))
-		utils.WriteJSON(w, http.StatusInternalServerError, JSONAnswer{Message: "internal error"})
+		views.WriteJSON(w, http.StatusInternalServerError, JSONAnswer{Message: "internal error"})
 	}
 }
 

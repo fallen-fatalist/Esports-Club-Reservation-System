@@ -6,7 +6,7 @@ import (
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/service/implementation"
 	"esports_club_booking/internal/transport/dto"
-	"esports_club_booking/internal/utils"
+	"esports_club_booking/internal/views"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -26,7 +26,7 @@ func (s *Handler) Computers(w http.ResponseWriter, r *http.Request) {
 	computerSpecs, err := s.service.ComputerService.Computers(room)
 	if err != nil {
 		if errors.Is(err, entities.ErrInvalidRoom) {
-			utils.WriteError(w, http.StatusBadRequest, err)
+			views.WriteError(w, http.StatusBadRequest, err)
 			return
 		}
 		slog.Error("Error fetching computer specs:", err)

@@ -13,6 +13,7 @@ import (
 const (
 	maxRetries    = 3               // Try 3 times (15 seconds total if we wait 5 seconds between retries)
 	retryInterval = 3 * time.Second // Retry every 3 seconds
+	pingTimeout   = 5 * time.Second
 )
 
 func OpenDB(cfg config.DataBase) (*sql.DB, error) {
@@ -27,7 +28,7 @@ func OpenDB(cfg config.DataBase) (*sql.DB, error) {
 	for range maxRetries {
 		db, err = sql.Open("postgres", dsn)
 		if err == nil {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), pingTimeout)
 			defer cancel()
 			err = db.PingContext(ctx)
 			if err == nil {

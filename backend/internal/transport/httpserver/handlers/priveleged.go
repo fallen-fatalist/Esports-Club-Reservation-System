@@ -3,7 +3,7 @@ package handlers
 import (
 	"errors"
 	"esports_club_booking/internal/entities"
-	"esports_club_booking/internal/utils"
+	"esports_club_booking/internal/views"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -34,7 +34,7 @@ func (s *Handler) HandleBlock(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, entities.ErrNonNumericID)
+		views.WriteError(w, http.StatusBadRequest, entities.ErrNonNumericID)
 		return
 	}
 
@@ -44,7 +44,7 @@ func (s *Handler) HandleBlock(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, entities.ErrNegativeID),
 			errors.Is(err, entities.ErrZeroID),
 			errors.Is(err, entities.ErrUserNotFound):
-			utils.WriteError(w, http.StatusBadRequest, err)
+			views.WriteError(w, http.StatusBadRequest, err)
 			return
 		default:
 			slog.Error("unhandled error while blocking user:", slog.Any("error", err))
@@ -77,7 +77,7 @@ func (s *Handler) HandleUnblock(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, entities.ErrNonNumericID)
+		views.WriteError(w, http.StatusBadRequest, entities.ErrNonNumericID)
 		return
 	}
 
@@ -87,7 +87,7 @@ func (s *Handler) HandleUnblock(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, entities.ErrNegativeID),
 			errors.Is(err, entities.ErrZeroID),
 			errors.Is(err, entities.ErrUserNotFound):
-			utils.WriteError(w, http.StatusBadRequest, err)
+			views.WriteError(w, http.StatusBadRequest, err)
 			return
 		default:
 			slog.Error("unhandled error while unblocking user:", slog.Any("error", err))
