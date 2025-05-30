@@ -17,7 +17,7 @@ const (
 
 func WithAuth(j JWTManager, requiredRoles []string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		tokenCookie, err := r.Cookie("jwt_token")
+		tokenCookie, err := r.Cookie("token")
 		if err != nil || tokenCookie.Value == "" {
 			views.WriteError(w, http.StatusUnauthorized, entities.ErrMissingToken)
 			return

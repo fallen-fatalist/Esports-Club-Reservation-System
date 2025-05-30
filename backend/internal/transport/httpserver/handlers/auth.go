@@ -28,7 +28,7 @@ import (
 // @Failure		500		{object}	utils.HTTPError		"Internal server error"
 // @Router			/auth/sign-up [post]
 func (s *Handler) Register(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("jwt_token")
+	cookie, err := r.Cookie("token")
 	if err == nil {
 		_, err := s.jwtMng.ValidateToken(cookie.Value)
 		if err == nil {
@@ -136,7 +136,7 @@ func (s *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     "jwt_token",
+		Name:     "token",
 		Value:    token,
 		Expires:  exp,
 		HttpOnly: true,
@@ -233,7 +233,7 @@ func (h *Handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 // @Success		200		{object}	dto.User	"User authorized"
 // @Router			/auth/authorized [get]
 func (h *Handler) IsAuthorized(w http.ResponseWriter, r *http.Request) {
-	token, err := r.Cookie("jwt_token")
+	token, err := r.Cookie("token")
 	if err == nil {
 		_, err = h.jwtMng.ValidateToken(token.Value)
 		if err != nil {
@@ -246,7 +246,7 @@ func (h *Handler) IsAuthorized(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	// Lie to the client who is trying to brute force the token
 	if err != nil {
-		views.WriteJSON(w, http.StatusUnauthorized, dto.JSONAnswer{Message: "missing token"})
+		views.WriteError(w, http.StatusUnauthorized, entities.ErrMissingToken)
 		return
 	}
 
@@ -387,7 +387,7 @@ func (h *Handler) resetPassword(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     "jwt_token",
+		Name:     "token",
 		Value:    "",
 		Path:     "/",
 		Expires:  time.Unix(0, 0),
