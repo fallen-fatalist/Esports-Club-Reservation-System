@@ -247,6 +247,7 @@ func (h *Handler) IsAuthorized(w http.ResponseWriter, r *http.Request) {
 	// Lie to the client who is trying to brute force the token
 	if err != nil {
 		views.WriteError(w, http.StatusUnauthorized, entities.ErrMissingToken)
+		h.Logout(w, r)
 		return
 	}
 
