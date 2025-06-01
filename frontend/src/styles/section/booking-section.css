@@ -20,13 +20,39 @@
     transition: background-color var(--transition-normal);
 }
 
+.computers__container {
+    flex: 1; 
+    min-width: 0; 
+}
+
+.reservation__container {
+    background-color: var(--color-bg-secondary, #ffffff);
+    border: 1px solid var(--color-border, #e0e0e0);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all var(--transition-normal);
+}
+
+.reservation__container:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
 .auth-warning {
-  margin-top: 16px;
-  padding: 12px;
-  background-color: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffeeba;
-  border-radius: 4px;
-  font-size: 14px;
+    margin-top: 16px;
+    padding: 12px;
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.reservation__container h3 {
+    margin-top: 0;
+    color: var(--color-text-primary);
+    border-bottom: 2px solid var(--color-border-specs);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
 }
 

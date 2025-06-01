@@ -125,13 +125,12 @@ const Register = () => {
       const res = await verifyEmail({ email: form.email, code: form.code });
 
       if (res.status === 200 || res.data?.success) {
-        // 🔥 автоматический вход
         await loginContext({
           identifier: form.email,
-          password: form.password, // пароль из регистрации
+          password: form.password, 
         });
 
-        navigate("/"); // редирект на главную
+        navigate("/"); 
       } else {
         showLocalModal("Verification Failed", "Something went wrong. Please try logging in.");
         navigate("/login");
