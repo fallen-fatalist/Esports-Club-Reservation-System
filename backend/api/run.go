@@ -65,9 +65,9 @@ func Run() {
 
 	// Set the number of computers
 	bookingService, _ := implementation.NewBookingService(
-		bookingRepository, 
-		computerService, 
-		packageService, 
+		bookingRepository,
+		computerService,
+		packageService,
 		userService,
 	)
 
@@ -76,13 +76,17 @@ func Run() {
 		logger.Error("Failed to create PayPal client", slog.Any("error", err))
 		return
 	}
-	paymentService := implementation.NewPaymentService(paypalClient, repository.Repository{
-		BookingRepository:  bookingRepository,
-		UserRepository:     userRepository,
-		PackageRepository:  packageRepository,
-		ComputerRepository: computerRepository,
-		PaymentRepository:  paymentRepository,
-	})
+	paymentService := implementation.NewPaymentService(
+		paypalClient,
+		emailSender,
+		repository.Repository{
+			BookingRepository:  bookingRepository,
+			UserRepository:     userRepository,
+			PackageRepository:  packageRepository,
+			ComputerRepository: computerRepository,
+			PaymentRepository:  paymentRepository,
+		},
+	)
 
 	svc := service.NewService(
 		computerService,

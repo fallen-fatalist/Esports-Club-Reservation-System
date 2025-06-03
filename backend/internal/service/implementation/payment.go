@@ -3,9 +3,11 @@ package implementation
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"time"
 
+	"esports_club_booking/internal/email"
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/repository"
 	"esports_club_booking/internal/repository/paypal"
@@ -21,12 +23,14 @@ const (
 
 type PaymentService struct {
 	paypalClient *paypal.PayPalClient
+	emailSender  email.EmailSender
 	repo         repository.Repository
 }
 
-func NewPaymentService(client *paypal.PayPalClient, repo repository.Repository) *PaymentService {
+func NewPaymentService(client *paypal.PayPalClient, emailSender email.EmailSender, repo repository.Repository) *PaymentService {
 	return &PaymentService{
 		paypalClient: client,
+		emailSender:  emailSender,
 		repo:         repo,
 	}
 }
@@ -70,7 +74,22 @@ func (s *PaymentService) PayBooking(ctx context.Context, booking *entities.Booki
 		return fmt.Errorf("insufficient balance for booking: user balance %.2f, package price %.2f", user.Balance, packageItem.Price)
 	}
 
-	return s.repo.PaymentRepository.PayBooking(ctx, booking, packageItem.Price)
+	err = s.repo.PaymentRepository.PayBooking(ctx, booking, packageItem.Price)
+	if err != nil {
+		return fmt.Errorf("failed to pay booking: %w", err)
+	}
+
+	// Send confirmation email
+	err = s.emailSender.SendEmail(
+		user.Email,
+		"Booking Confirmation",
+		fmt.Sprintf("Your booking for %s has been confirmed.", packageItem.Name),
+	)
+	if err != nil {
+		slog.Error("failed to send booking confirmation email", "error", err)
+	}
+
+	return nil
 }
 
 func (s *PaymentService) CancelBooking(ctx context.Context, bookingID int64) error {
@@ -86,6 +105,20 @@ func (s *PaymentService) CancelBooking(ctx context.Context, bookingID int64) err
 	packageItem, err := s.repo.PackageRepository.GetByID(booking.PackageID)
 	if err != nil {
 		return fmt.Errorf("failed to get package: %w", err)
+	}
+
+	user, err := s.repo.UserRepository.GetByID(booking.UserID)
+	if err != nil {
+		return fmt.Errorf("failed to get user: %w", err)
+	}
+
+	err = s.emailSender.SendEmail(
+		user.Email,
+		"Booking Confirmation",
+		fmt.Sprintf("Your booking for %s has been confirmed.", packageItem.Name),
+	)
+	if err != nil {
+		slog.Error("failed to send booking confirmation email", "error", err)
 	}
 
 	return s.repo.PaymentRepository.CancelBooking(ctx, booking, packageItem.Price)
