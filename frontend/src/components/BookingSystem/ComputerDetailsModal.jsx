@@ -4,7 +4,7 @@ import ComputerDetails from "../BookingSystem/ComputerDetails";
 import BookingSummary from "../UI/bookingSummary/BookingSummary";
 import crossIcon from '../../images/Cross.svg';  
 
-const ComputerDetailsModal = ({ visible, setVisible, selectedComputer, computers, date, time, duration, bookings }) => {
+const ComputerDetailsModal = ({ visible, setVisible, selectedComputer, computers, date, time, duration, bookings, selectedPackage, packages }) => {
   const computer = computers.find(c => c.id === selectedComputer);
 
   return (
@@ -18,7 +18,7 @@ const ComputerDetailsModal = ({ visible, setVisible, selectedComputer, computers
             onClick={() => setVisible(false)}
             style={{ cursor: 'pointer', width: 24, height: 24 }}
           />
-          <BookingSummary computerId={selectedComputer} date={date} time={time} duration={duration} />
+          <BookingSummary computerId={selectedComputer} date={date} time={time} duration={duration} selectedPackage={selectedPackage} packages={packages} />
           <ComputerDetails computer={computer} bookings={bookings} date={date} />
         </div>
       )}
