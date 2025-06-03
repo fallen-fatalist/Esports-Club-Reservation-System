@@ -5,7 +5,7 @@ import (
 	"errors"
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/transport/dto"
-	"esports_club_booking/internal/utils"
+	"esports_club_booking/internal/views"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -48,7 +48,7 @@ func (s *Handler) HandleUserDelete(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	userID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, entities.ErrNonNumericID)
+		views.WriteError(w, http.StatusBadRequest, entities.ErrNonNumericID)
 		return
 	}
 
@@ -56,20 +56,20 @@ func (s *Handler) HandleUserDelete(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, entities.ErrUserNotFound):
-			utils.WriteError(w, http.StatusNotFound, err)
+			views.WriteError(w, http.StatusNotFound, err)
 			return
 		case errors.Is(err, entities.ErrZeroID), errors.Is(err, entities.ErrNegativeID):
-			utils.WriteError(w, http.StatusBadRequest, err)
+			views.WriteError(w, http.StatusBadRequest, err)
 			return
 		case errors.Is(err, entities.ErrInsufficientPriv):
-			utils.WriteError(w, http.StatusForbidden, err)
+			views.WriteError(w, http.StatusForbidden, err)
 			return
 		case errors.Is(err, entities.ErrUnhandledError):
-			utils.WriteError(w, http.StatusInternalServerError, err)
+			views.WriteError(w, http.StatusInternalServerError, err)
 			return
 		default:
 			slog.Error("error deleting user", slog.Any("error", err))
-			utils.WriteJSON(w, http.StatusInternalServerError, dto.JSONAnswer{Message: "unhandled error, please contact administrator."})
+			views.WriteJSON(w, http.StatusInternalServerError, dto.JSONAnswer{Message: "unhandled error, please contact administrator."})
 			return
 		}
 
@@ -94,7 +94,7 @@ func (s *Handler) HandleUserCredit(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, entities.ErrNonNumericID)
+		views.WriteError(w, http.StatusBadRequest, entities.ErrNonNumericID)
 		return
 	}
 
@@ -102,7 +102,7 @@ func (s *Handler) HandleUserCredit(w http.ResponseWriter, r *http.Request) {
 
 	balance, err := strconv.ParseFloat(balanceStr, 64)
 	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, entities.ErrNonNumericID)
+		views.WriteError(w, http.StatusBadRequest, entities.ErrNonNumericID)
 		return
 	}
 
@@ -110,20 +110,20 @@ func (s *Handler) HandleUserCredit(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, entities.ErrUserNotFound):
-			utils.WriteError(w, http.StatusNotFound, err)
+			views.WriteError(w, http.StatusNotFound, err)
 			return
 		case errors.Is(err, entities.ErrZeroID), errors.Is(err, entities.ErrNegativeID):
-			utils.WriteError(w, http.StatusBadRequest, err)
+			views.WriteError(w, http.StatusBadRequest, err)
 			return
 		case errors.Is(err, entities.ErrNegativeOrZeroAmount):
-			utils.WriteError(w, http.StatusBadRequest, err)
+			views.WriteError(w, http.StatusBadRequest, err)
 			return
 		case errors.Is(err, entities.ErrUnhandledError):
-			utils.WriteError(w, http.StatusInternalServerError, err)
+			views.WriteError(w, http.StatusInternalServerError, err)
 			return
 		default:
 			slog.Error("error filling user balance", slog.String("userID", userIDStr), slog.String("balance", balanceStr), slog.Any("error", err))
-			utils.WriteJSON(w, http.StatusInternalServerError, dto.JSONAnswer{Message: "unhandled error, please contact administrator."})
+			views.WriteJSON(w, http.StatusInternalServerError, dto.JSONAnswer{Message: "unhandled error, please contact administrator."})
 			return
 		}
 	}
@@ -145,7 +145,7 @@ func (s *Handler) HandleGrantAdmin(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	userID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, entities.ErrNonNumericID)
+		views.WriteError(w, http.StatusBadRequest, entities.ErrNonNumericID)
 		return
 	}
 
@@ -153,17 +153,17 @@ func (s *Handler) HandleGrantAdmin(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, entities.ErrUserNotFound):
-			utils.WriteError(w, http.StatusNotFound, err)
+			views.WriteError(w, http.StatusNotFound, err)
 			return
 		case errors.Is(err, entities.ErrZeroID), errors.Is(err, entities.ErrNegativeID):
-			utils.WriteError(w, http.StatusBadRequest, err)
+			views.WriteError(w, http.StatusBadRequest, err)
 			return
 		case errors.Is(err, entities.ErrUnhandledError):
-			utils.WriteError(w, http.StatusInternalServerError, err)
+			views.WriteError(w, http.StatusInternalServerError, err)
 			return
 		default:
 			slog.Error("error granting admin to user", slog.Int64("userID", userID), slog.Any("error", err))
-			utils.WriteJSON(w, http.StatusInternalServerError, dto.JSONAnswer{Message: "unhandled error, please contact administrator."})
+			views.WriteJSON(w, http.StatusInternalServerError, dto.JSONAnswer{Message: "unhandled error, please contact administrator."})
 			return
 		}
 	}

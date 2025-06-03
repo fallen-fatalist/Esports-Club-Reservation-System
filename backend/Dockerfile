@@ -1,17 +1,17 @@
-FROM golang:alpine AS builder
+from golang:alpine as builder
 
-WORKDIR /app
+workdir /app
 
-COPY . /app
+copy . /app
 
-RUN go build -o /app/bin/booking-service /app
+run go build -o /app/bin/booking-service /app
 
-FROM alpine:latest AS runner
+from alpine:latest as runner
 
-WORKDIR /app 
+workdir /app 
 
-COPY --from=builder /app/bin /app
+copy --from=builder /app/bin /app
 
-EXPOSE 8080
+expose 8080
 
-CMD ["/app/booking-service"]
+cmd ["/app/booking-service"]

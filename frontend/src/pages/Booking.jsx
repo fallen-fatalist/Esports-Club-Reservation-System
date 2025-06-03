@@ -17,14 +17,14 @@ const excludedStatuses = ['pending', 'under repair', 'not working', 'unknown'];
 const getCurrentTimeString = () => {
   const now = new Date();
   now.setMinutes(now.getMinutes() + 1);
-  const roundedMinutes = Math.ceil(now.getMinutes() / 5) * 5;
+  const roundedMinutes = Math.ceil(now.getMinutes() / 30) * 30;
   now.setMinutes(roundedMinutes);
   now.setSeconds(0);
   now.setMilliseconds(0);
   const hours = String(now.getHours()).padStart(2, '0');
   const mins = String(now.getMinutes()).padStart(2, '0');
-  if (hours === '00' && parseInt(mins) < 5) {
-    return `00:05`;
+  if (hours === '00' && parseInt(mins) < 30) {
+    return `00:${String(30).padStart(2, '0')}`;
   }
   return `${hours}:${mins}`;
 };
@@ -125,6 +125,9 @@ const Booking = () => {
     const duration = getCurrentPackageDuration();
     if (date < today) {
       setErrorMessage(`Cannot book in the past. Please select today's date (${today})`);
+      setTimeout(() => {
+        window.location.reload(); 
+      }, 1000);
       return false;
     }
     const bookingStart = dateUtils.parseDate(date, timeToUse);

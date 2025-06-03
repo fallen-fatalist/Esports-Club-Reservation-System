@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Timedate from "../UI/date/Timedate/Timedate";
 import MyTime from "../UI/date/MyTime/MyTime";
 import MyDropdown from "../UI/dropdown/MyDropdown/MyDropdown";
-import Message from "./Message";
+import MyModal from "../UI/modal/MyModal";
 import packageService from "../../services/packageService";
 
 const BookingForm = ({
@@ -25,8 +25,40 @@ const BookingForm = ({
   const [packagesLoading, setPackagesLoading] = useState(true);
   const [packagesError, setPackagesError] = useState(null);
   const [internalRoom, setInternalRoom] = useState(initialRoom);
+  
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalContent, setModalContent] = useState({ title: "", message: "", type: "" });
 
   const currentRoom = setCurrentRoom ? initialRoom : internalRoom;
+
+  const showModal = (title, message, type = "info") => {
+    setModalContent({ title, message, type });
+    setModalVisible(true);
+  };
+
+  useEffect(() => {
+    if (errorMessage) {
+      showModal("Error", errorMessage, "error");
+    }
+  }, [errorMessage]);
+
+  useEffect(() => {
+    if (infoMessage) {
+      showModal("Information", infoMessage, "info");
+    }
+  }, [infoMessage]);
+
+  useEffect(() => {
+    if (bookingSuccess) {
+      showModal("Success", "Your computer has been booked successfully!", "success");
+    }
+  }, [bookingSuccess]);
+
+  useEffect(() => {
+    if (packagesError) {
+      showModal("Error", packagesError, "error");
+    }
+  }, [packagesError]);
 
   useEffect(() => {
     const fetchPackages = async () => {
@@ -79,117 +111,147 @@ const BookingForm = ({
     setSelectedComputers([]);
   };
 
+  const handleModalClose = () => {
+    setModalVisible(false);
+  };
+
+  const getTitleColor = (type) => {
+    switch (type) {
+      case "error":
+        return "#d8000c";
+      case "success":
+        return "#28a745";
+      case "info":
+      default:
+        return "#007bff";
+    }
+  };
+
   return (
-    <div className="reservation__container">
-      <h3>PC Reservation</h3>
-      <p>Select date and time</p>
+    <>
+      <div className="reservation__container">
+        <h3>PC Reservation</h3>
+        <p>Select date and time</p>
 
-      <div className="reservation__date">
-        <Timedate value={date} onChange={(e) => setDate(e.target.value)} />
-      </div>
-
-      <div className="time__duration">
-        <div className="reservation__time">
-          <MyTime value={time} onChange={(e) => setTime(e.target.value)} />
+        <div className="reservation__date">
+          <Timedate value={date} onChange={(e) => setDate(e.target.value)} />
         </div>
 
-        <div className="reservation__room">
-          <MyDropdown value={currentRoom} onChange={(e) => handleRoomChange(e.target.value)}>
-            {availableRooms.map((room) => (
-              <option key={room} value={room}>
-                {room} Room
-              </option>
-            ))}
-          </MyDropdown>
-        </div>
+        <div className="time__duration">
+          <div className="reservation__time">
+            <MyTime value={time} onChange={(e) => setTime(e.target.value)} />
+          </div>
 
-        <div className="reservation__duration">
-          {packagesLoading ? (
-            <MyDropdown disabled>
-              <option>Loading packages...</option>
-            </MyDropdown>
-          ) : packagesError ? (
-            <MyDropdown disabled>
-              <option>Error loading packages</option>
-            </MyDropdown>
-          ) : (
-            <MyDropdown value={selectedPackage} onChange={(e) => setSelectedPackage(Number(e.target.value))}>
-              <option value="">Select package</option>
-              {filteredPackages.map((pkg) => (
-                <option key={pkg.id} value={pkg.id}>
-                  {formatPackageOption(pkg)}
+          <div className="reservation__room">
+            <MyDropdown value={currentRoom} onChange={(e) => handleRoomChange(e.target.value)}>
+              {availableRooms.map((room) => (
+                <option key={room} value={room}>
+                  {room} Room
                 </option>
               ))}
             </MyDropdown>
-          )}
+          </div>
+
+          <div className="reservation__duration">
+            {packagesLoading ? (
+              <MyDropdown disabled>
+                <option>Loading packages...</option>
+              </MyDropdown>
+            ) : packagesError ? (
+              <MyDropdown disabled>
+                <option>Error loading packages</option>
+              </MyDropdown>
+            ) : (
+              <MyDropdown value={selectedPackage} onChange={(e) => setSelectedPackage(Number(e.target.value))}>
+                <option value="">Select package</option>
+                {filteredPackages.map((pkg) => (
+                  <option key={pkg.id} value={pkg.id}>
+                    {formatPackageOption(pkg)}
+                  </option>
+                ))}
+              </MyDropdown>
+            )}
+          </div>
         </div>
+
+        {isAuthenticated && (
+          <div className="auto-selection">
+            <label htmlFor="autoSelectCount">Auto-select computers:</label>
+            <input
+              id="autoSelectCount"
+              type="number"
+              min="1"
+              max={availableComputersCount}
+              value={autoSelectCountInput}
+              onChange={(e) => {
+                const value = e.target.value;
+                const parsed = parseInt(value);
+                if (parsed > availableComputersCount) {
+                  setAutoSelectCountInput(String(availableComputersCount));
+                } else {
+                  setAutoSelectCountInput(value);
+                }
+              }}
+              onBlur={() => {
+                const count = parseValidCount();
+                setAutoSelectCountInput(String(count));
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleAutoSelectClick();
+                }
+              }}
+              className="auto-select-input"
+            />
+            <button className="auto-select-btn" onClick={handleAutoSelectClick}>
+              <span className="btn-txt">Auto Select</span>
+            </button>
+          </div>
+        )}
+        
+        {authWarning && (
+          <div className="auth-warning">
+            Please log in to book computers and access all features.
+          </div>
+        )}
+
+        {isAuthenticated && selectedComputers.length > 0 && (
+          <div className="computers__selection-actions">
+            <span className="computers__selection-count">
+              Selected computers: {selectedComputers.length}
+            </span>
+            <button className="book-multiple-button" onClick={handleBookMultipleComputers}>
+              <span className="btn-txt">Book Selected</span>
+            </button>
+            <button className="clear-selection-button" onClick={() => setSelectedComputers([])}>
+              <span className="btn-txt">Clear Selected</span>
+            </button>
+          </div>
+        )}
       </div>
 
-      {isAuthenticated && (
-        <div className="auto-selection">
-          <label htmlFor="autoSelectCount">Auto-select computers:</label>
-          <input
-            id="autoSelectCount"
-            type="number"
-            min="1"
-            max={availableComputersCount}
-            value={autoSelectCountInput}
-            onChange={(e) => {
-              const value = e.target.value;
-              const parsed = parseInt(value);
-              if (parsed > availableComputersCount) {
-                setAutoSelectCountInput(String(availableComputersCount));
-              } else {
-                setAutoSelectCountInput(value);
-              }
-            }}
-            onBlur={() => {
-              const count = parseValidCount();
-              setAutoSelectCountInput(String(count));
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleAutoSelectClick();
-              }
-            }}
-            className="auto-select-input"
-          />
-          <button className="auto-select-btn" onClick={handleAutoSelectClick}>
-            <span className="btn-txt">Auto Select</span>
+      <MyModal visible={modalVisible} setVisible={setModalVisible}>
+        <div style={{ padding: "20px", textAlign: "center" }}>
+          <h3 style={{ 
+            color: getTitleColor(modalContent.type),
+            marginBottom: "15px"
+          }}>
+            {modalContent.title}
+          </h3>
+          <p style={{ 
+            marginBottom: "20px",
+            fontSize: "16px",
+            lineHeight: "1.5"
+          }}>
+            {modalContent.message}
+          </p>
+          <button className="auth-btn" onClick={handleModalClose}>
+            OK
           </button>
         </div>
-      )}
-
-      {packagesError && <Message message={packagesError} type="error" />}
-      {errorMessage && <Message message={errorMessage} type="error" />}
-      {infoMessage && <Message message={infoMessage} type="info" />}
-      {bookingSuccess && (
-        <div className="booking-success-banner">
-          <p>Your computer has been booked successfully!</p>
-        </div>
-      )}
-      {authWarning && (
-        <div className="auth-warning">
-          Please log in to book computers and access all features.
-        </div>
-      )}
-
-      {isAuthenticated && selectedComputers.length > 0 && (
-        <div className="computers__selection-actions">
-          <span className="computers__selection-count">
-            Selected computers: {selectedComputers.length}
-          </span>
-          <button className="book-multiple-button" onClick={handleBookMultipleComputers}>
-            <span className="btn-txt">Book Selected</span>
-          </button>
-          <button className="clear-selection-button" onClick={() => setSelectedComputers([])}>
-            <span className="btn-txt">Clear Selected</span>
-          </button>
-        </div>
-      )}
-    </div>
+      </MyModal>
+    </>
   );
 };
 
 export default BookingForm;
-

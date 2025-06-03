@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"esports_club_booking/internal/transport/dto"
-	"esports_club_booking/internal/utils"
+	"esports_club_booking/internal/views"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -44,15 +44,11 @@ func (s *Handler) Bookings(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	} else if errors.Is(err, entities.ErrInvalidFilter) {
-		utils.WriteError(w, http.StatusBadRequest, err)
+		views.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
 
-	if err := utils.WriteJSON(w, http.StatusOK, bookings); err != nil {
-		slog.Error("Error encoding JSON:", slog.Any("error", err))
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		return
-	}
+	views.WriteJSON(w, http.StatusOK, bookings)
 }
 
 // @Summary		Create a new booking
@@ -111,23 +107,23 @@ func (s *Handler) PostBooking(w http.ResponseWriter, r *http.Request) {
 			errors.Is(err, entities.ErrEmptyStatus),
 			errors.Is(err, entities.ErrInvalidStatus),
 			errors.Is(err, entities.ErrInvalidTimeFormat):
-			utils.WriteError(w, http.StatusBadRequest, err)
+			views.WriteError(w, http.StatusBadRequest, err)
 			return
 
 		case errors.Is(err, entities.ErrPackageNotFound):
-			utils.WriteError(w, http.StatusBadRequest, err)
+			views.WriteError(w, http.StatusBadRequest, err)
 			return
 
 		case errors.Is(err, entities.ErrComputerNotFound):
-			utils.WriteError(w, http.StatusBadRequest, err)
+			views.WriteError(w, http.StatusBadRequest, err)
 			return
 
 		case errors.Is(err, entities.ErrBookingOverlap):
-			utils.WriteError(w, http.StatusBadRequest, err)
+			views.WriteError(w, http.StatusBadRequest, err)
 			return
 
 		case errors.Is(err, entities.ErrNotCorrespondenceOfRoom):
-			utils.WriteError(w, http.StatusBadRequest, err)
+			views.WriteError(w, http.StatusBadRequest, err)
 			return
 
 		default:
@@ -460,7 +456,7 @@ func (s *Handler) UserBookings(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch err {
 		case entities.ErrUserNotFound:
-			utils.WriteError(w, http.StatusNotFound, err)
+			views.WriteError(w, http.StatusNotFound, err)
 			return
 		case entities.ErrInvalidUserID:
 			jsonPayload := JSONAnswer{
@@ -506,7 +502,7 @@ func (s *Handler) HandleCancel(w http.ResponseWriter, r *http.Request) {
 
 	bookingID, err := strconv.ParseInt(bookingIDStr, 10, 64)
 	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, errors.New("invalid booking ID"))
+		views.WriteError(w, http.StatusBadRequest, errors.New("invalid booking ID"))
 		return
 	}
 
@@ -514,13 +510,13 @@ func (s *Handler) HandleCancel(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, entities.ErrUnauthorized):
-			utils.WriteError(w, http.StatusUnauthorized, err)
+			views.WriteError(w, http.StatusUnauthorized, err)
 			return
 		case errors.Is(err, entities.ErrBookingNotExists):
-			utils.WriteError(w, http.StatusNotFound, err)
+			views.WriteError(w, http.StatusNotFound, err)
 			return
 		case errors.Is(err, entities.ErrNonOwnBookingCancel):
-			utils.WriteError(w, http.StatusBadRequest, err)
+			views.WriteError(w, http.StatusBadRequest, err)
 		}
 		slog.Error("unhandled error cancelling booking:", slog.Any("error", err))
 		http.Error(w, "Internal server error", http.StatusInternalServerError)

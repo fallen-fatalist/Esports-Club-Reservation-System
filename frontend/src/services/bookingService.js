@@ -110,9 +110,13 @@ const bookingService = {
     async cancelBookingByID(id) {
       try {
         const response = await api.post(`/api/bookings/${id}/cancel`);
-        return response.status === 200; 
+
+        if (response.status === 200 || response.status === 204) {
+          return true;
+        }
+
+        return false;
       } catch (error) {
-        console.error(`Error cancelling booking #${id}:`, error);
         if (error.response?.status === 401) {
           throw new Error('Authentication required');
         }
@@ -122,8 +126,15 @@ const bookingService = {
         if (error.response?.status === 404) {
           throw new Error('Booking not found');
         }
-        
-        throw error;
+        if (error.response?.status === 409) {
+          throw new Error('Booking cannot be cancelled');
+        }
+
+        const errorMessage = error.response?.data?.message || 
+                            error.response?.data?.error || 
+                            error.message || 
+                            'Failed to cancel booking';
+        throw new Error(errorMessage);
       }
     },
     async getCancelledBookings() {
