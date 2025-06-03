@@ -16,6 +16,9 @@
       "get": {
         "summary": "Get active bookings",
         "description": "Returns a list of active bookings with time format \"2006-01-02T15:04:05Z07:00\"",
+        "tags": [
+          "Booking"
+        ],
         "responses": {
           "200": {
             "description": "List of active bookings",
@@ -47,6 +50,9 @@
       "get": {
         "summary": "Get cancelled bookings",
         "description": "Returns a list of cancelled bookings with time format \"2006-01-02T15:04:05Z07:00\"",
+        "tags": [
+          "Booking"
+        ],
         "responses": {
           "200": {
             "description": "List of cancelled bookings",
@@ -78,6 +84,9 @@
       "get": {
         "summary": "Get finished bookings",
         "description": "Returns a list of finished bookings with time format \"2006-01-02T15:04:05Z07:00\"",
+        "tags": [
+          "Booking"
+        ],
         "responses": {
           "200": {
             "description": "List of finished bookings",
@@ -109,6 +118,9 @@
       "get": {
         "summary": "Get pending bookings",
         "description": "Returns a list of pending bookings with time format \"2006-01-02T15:04:05Z07:00\"",
+        "tags": [
+          "Booking"
+        ],
         "responses": {
           "200": {
             "description": "List of pending bookings",
@@ -140,6 +152,9 @@
       "get": {
         "summary": "Get all bookings",
         "description": "Returns a list of bookings with various statuses with time format \"2006-01-02T15:04:05Z07:00\"",
+        "tags": [
+          "Booking"
+        ],
         "responses": {
           "200": {
             "description": "List of bookings",
@@ -179,6 +194,9 @@
             }
           }
         },
+        "tags": [
+          "Booking"
+        ],
         "responses": {
           "201": {
             "description": "Booking created successfully",
@@ -217,6 +235,9 @@
       "get": {
         "summary": "Get remaining occupied time for all computers",
         "description": "Returns a list of computers with the remaining time (in seconds) each will be occupied before becoming available for booking with the specified package.",
+        "tags": [
+          "Computers"
+        ],
         "parameters": [
           {
             "name": "packageID",
@@ -277,6 +298,9 @@
       "get": {
         "summary": "Get all computer statuses",
         "description": "Returns a list of all computer statuses",
+        "tags": [
+          "Computers"
+        ],
         "responses": {
           "200": {
             "description": "List of computer statuses",
@@ -308,6 +332,9 @@
       "get": {
         "summary": "Get bookings for a specific computer",
         "description": "Returns a list of bookings for the specified computer ID with time format \"2006-01-02T15:04:05Z07:00\"",
+        "tags": [
+          "Computers"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -360,6 +387,9 @@
       "get": {
         "summary": "Get remaining occupied time for a computer",
         "description": "Returns the remaining time (in seconds) that a specific computer will be occupied before it becomes available for a new booking with the given package duration.",
+        "tags": [
+          "Computers"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -426,6 +456,9 @@
       "get": {
         "summary": "Get the status of a specific computer",
         "description": "Returns the status of the specified computer ID",
+        "tags": [
+          "Computers"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -485,6 +518,9 @@
       "get": {
         "summary": "Get a specific computer",
         "description": "Returns a specific computer by ID",
+        "tags": [
+          "Computers"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -542,6 +578,9 @@
       "delete": {
         "summary": "Delete a specific computer",
         "description": "Deletes a specific computer by ID",
+        "tags": [
+          "Computers"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -601,6 +640,9 @@
       "get": {
         "summary": "Get all computers",
         "description": "Returns a list of all computers",
+        "tags": [
+          "Computers"
+        ],
         "responses": {
           "200": {
             "description": "List of computers",
@@ -630,6 +672,9 @@
       "post": {
         "summary": "Create a new computer",
         "description": "Creates a new computer",
+        "tags": [
+          "Computers"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -678,6 +723,9 @@
       "get": {
         "summary": "Get all packages",
         "description": "Returns a list of all packages",
+        "tags": [
+          "Packages"
+        ],
         "responses": {
           "200": {
             "description": "List of packages",
@@ -709,6 +757,9 @@
       "get": {
         "summary": "Get bookings for a specific user",
         "description": "Returns a list of bookings for the specified user ID",
+        "tags": [
+          "Users"
+        ],
         "parameters": [
           {
             "name": "id",
@@ -770,6 +821,9 @@
     "/api/payment/deposit": {
       "post": {
         "summary": "Deposit money to user account",
+        "tags": [
+          "Payment"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -799,6 +853,9 @@
     "/api/payment/booking": {
       "post": {
         "summary": "Pay for a booking",
+        "tags": [
+          "Payment"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -835,10 +892,41 @@
         }
       }
     },
+    "/api/payment/cancel": {
+      "post": {
+        "summary": "Cancel pending booking",
+        "tags": [
+          "Payment"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "booking_id": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment successful"
+          }
+        }
+      }
+    },
     "/auth/activate": {
       "post": {
         "summary": "Send verification code to user's email",
         "description": "Sends a verification code to the email provided in request body",
+        "tags": [
+          "Authorization"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -892,6 +980,9 @@
       "post": {
         "summary": "User login",
         "description": "Login user with email, login and password, returns JWT token",
+        "tags": [
+          "Authorization"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -956,6 +1047,9 @@
       "post": {
         "summary": "Register a new user",
         "description": "Registers a user with email, login and password",
+        "tags": [
+          "Authorization"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -1025,6 +1119,9 @@
       "post": {
         "summary": "Verify email with code",
         "description": "Verifies user's email using a verification code",
+        "tags": [
+          "Authorization"
+        ],
         "requestBody": {
           "required": true,
           "content": {
