@@ -4,6 +4,11 @@ import MyButton from "../UI/button/MyButton/MyButton";
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 
 const groupByRoom = (computers, selectedRoom = null) => {
+  if (selectedRoom && selectedRoom !== 'All') {
+    const filtered = computers.filter(comp => comp.room === selectedRoom);
+    return { [selectedRoom]: filtered };
+  }
+
   const roomOrder = ['Standard', 'VIP', 'Console'];
 
   const grouped = computers.reduce((acc, comp) => {
@@ -15,18 +20,14 @@ const groupByRoom = (computers, selectedRoom = null) => {
 
   const sortedGrouped = {};
 
-  if (selectedRoom && grouped[selectedRoom]) {
-    sortedGrouped[selectedRoom] = grouped[selectedRoom];
-  }
-
   roomOrder.forEach(room => {
-    if (grouped[room] && room !== selectedRoom) {
+    if (grouped[room]) {
       sortedGrouped[room] = grouped[room];
     }
   });
 
   Object.keys(grouped).forEach(room => {
-    if (!roomOrder.includes(room) && room !== selectedRoom) {
+    if (!roomOrder.includes(room)) {
       sortedGrouped[room] = grouped[room];
     }
   });
@@ -145,9 +146,16 @@ const ComputerList = ({
     }));
   };
 
+  const getHeaderText = () => {
+    if (selectedRoom && selectedRoom !== 'All') {
+      return `Select computer(s) to book in ${getRoomDisplayName(selectedRoom)}`;
+    }
+    return 'Select computer(s) to book';
+  };
+
   return (
     <div className="icon__container">
-      <h3>Select computer(s) to book</h3>
+      <h3>{getHeaderText()}</h3>
 
       {Object.keys(groupedComputers).map(room => (
         <div key={room} className={`room-section ${getRoomClass(room)} ${selectedRoom === room ? 'selected-room' : ''}`}>
@@ -178,7 +186,12 @@ const ComputerList = ({
 
       {Object.keys(groupedComputers).length === 0 && (
         <div className="no-computers">
-          <p>No computers available</p>
+          <p>
+            {selectedRoom && selectedRoom !== 'All' 
+              ? `No computers available in ${getRoomDisplayName(selectedRoom)}`
+              : 'No computers available'
+            }
+          </p>
         </div>
       )}
     </div>

@@ -15,7 +15,7 @@ const BookingForm = ({
   setSelectedComputers, handleAutoSelectComputers,
   autoSelectCountInput, setAutoSelectCountInput,
   availableComputersCount,
-  currentRoom: initialRoom = "Standard",
+  currentRoom: initialRoom = "All",
   setCurrentRoom,
   authWarning,
   navigate,
@@ -69,9 +69,8 @@ const BookingForm = ({
 
         if (selectedPackage) {
           const currentPackage = fetchedPackages.find(pkg => pkg.id === selectedPackage);
-          if (!currentPackage || currentPackage.room !== currentRoom) {
-            const defaultPackage = fetchedPackages.find(pkg => pkg.room === currentRoom);
-            setSelectedPackage(defaultPackage ? defaultPackage.id : '');
+          if (currentRoom !== 'All' && (!currentPackage || currentPackage.room !== currentRoom)) {
+            setSelectedPackage('');
           }
         }
       } catch (error) {
@@ -85,8 +84,11 @@ const BookingForm = ({
     fetchPackages();
   }, [currentRoom, selectedPackage, setSelectedPackage]);
 
-  const filteredPackages = packages.filter(pkg => pkg.room === currentRoom);
-  const availableRooms = [...new Set(packages.map(pkg => pkg.room))].sort();
+  const filteredPackages = currentRoom === 'All'
+    ? packages
+    : packages.filter(pkg => pkg.room === currentRoom);
+  
+  const availableRooms = ['All', ...new Set(packages.map(pkg => pkg.room))].sort();
 
   const parseValidCount = () => {
     const parsed = parseInt(autoSelectCountInput);
@@ -100,7 +102,12 @@ const BookingForm = ({
     handleAutoSelectComputers(count);
   };
 
-  const formatPackageOption = (pkg) => `${pkg.name} - ${pkg.duration}h - ${pkg.price}₸`;
+  const formatPackageOption = (pkg) => {
+    if (currentRoom === 'All') {
+      return `${pkg.name} (${pkg.room}) - ${pkg.duration}h - ${pkg.price}₸`;
+    }
+    return `${pkg.name} - ${pkg.duration}h - ${pkg.price}₸`;
+  };
 
   const handleRoomChange = (newRoom) => {
     if (setCurrentRoom) {
@@ -109,6 +116,9 @@ const BookingForm = ({
       setInternalRoom(newRoom);
     }
     setSelectedComputers([]);
+    if (newRoom !== 'All') {
+      setSelectedPackage('');
+    }
   };
 
   const handleModalClose = () => {
@@ -125,6 +135,20 @@ const BookingForm = ({
       default:
         return "#007bff";
     }
+  };
+
+  const getLoadingText = () => {
+    if (currentRoom === 'All') {
+      return "Loading all packages...";
+    }
+    return `Loading ${currentRoom} packages...`;
+  };
+
+  const getPackagePlaceholder = () => {
+    if (currentRoom === 'All') {
+      return "Select package (all rooms)";
+    }
+    return ""; 
   };
 
   return (
@@ -146,7 +170,7 @@ const BookingForm = ({
             <MyDropdown value={currentRoom} onChange={(e) => handleRoomChange(e.target.value)}>
               {availableRooms.map((room) => (
                 <option key={room} value={room}>
-                  {room} Room
+                  {room === 'All' ? 'All Rooms' : `${room} Room`}
                 </option>
               ))}
             </MyDropdown>
@@ -155,7 +179,7 @@ const BookingForm = ({
           <div className="reservation__duration">
             {packagesLoading ? (
               <MyDropdown disabled>
-                <option>Loading packages...</option>
+                <option>{getLoadingText()}</option>
               </MyDropdown>
             ) : packagesError ? (
               <MyDropdown disabled>
@@ -163,7 +187,7 @@ const BookingForm = ({
               </MyDropdown>
             ) : (
               <MyDropdown value={selectedPackage} onChange={(e) => setSelectedPackage(Number(e.target.value))}>
-                <option value="">Select package</option>
+                {getPackagePlaceholder() && <option value="">{getPackagePlaceholder()}</option>}
                 {filteredPackages.map((pkg) => (
                   <option key={pkg.id} value={pkg.id}>
                     {formatPackageOption(pkg)}

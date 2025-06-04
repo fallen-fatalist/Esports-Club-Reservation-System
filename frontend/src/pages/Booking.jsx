@@ -58,7 +58,7 @@ const Booking = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalComputerId, setModalComputerId] = useState(null);
   const [autoSelectCountInput, setAutoSelectCountInput] = useState("1");
-  const [currentRoom, setCurrentRoom] = useState("Standard");
+  const [currentRoom, setCurrentRoom] = useState("All");
   const [authPromptModal, setAuthPromptModal] = useState(false);
 
   const { computers: fetchedComputers = [], loading, error } = useComputers();
