@@ -65,11 +65,6 @@ func Run() {
 		os.Exit(1)
 	}
 
-	if err = minioClient.UploadFile(ctx, "pfp", "rauan.avif", "123.avif", "image/avif"); err != nil {
-		logger.Error("Failed uploading a file to minio", "error", err)
-		os.Exit(1)
-	}
-
 	// Services init
 	jwtManager := auth.NewJWTManager(cfg.JWT.Secret, cfg.JWT.Expiration)
 	emailSender := email.NewEmailSender(cfg.EmailSender.FromAddress, cfg.EmailSender.Password,

@@ -3,6 +3,7 @@ package minio
 import (
 	"context"
 	"esports_club_booking/internal/config"
+	"io"
 	"log"
 
 	"github.com/minio/minio-go/v7"
@@ -40,15 +41,14 @@ func NewMinioClient(cfg *config.Config) (*MinioClient, error) {
 		}
 		log.Println("Successfully created bucket 'pfp'")
 	} else {
-		log.Println("Bucket 'pfp' already exists")
 	}
 
 	return client, nil
 }
 
 // UploadFile uploads a file to the specified bucket
-func (mc *MinioClient) UploadFile(ctx context.Context, bucketName, objectName, filePath, contentType string) error {
-	_, err := mc.client.FPutObject(ctx, bucketName, objectName, filePath, minio.PutObjectOptions{
+func (mc *MinioClient) UploadFile(ctx context.Context, objectName string, r io.Reader, objectSize int64, contentType string) error {
+	_, err := mc.client.PutObject(ctx, "pfp", objectName, r, objectSize, minio.PutObjectOptions{
 		ContentType: contentType,
 	})
 	return err

@@ -61,6 +61,8 @@ type UserService interface {
 	DeleteUnverifiedUsers() error
 	UserBalanceFill(ctx context.Context, userID int64, amount float64) error
 	// FillBalance()
+	// UploadPfp(r io.Reader)
+	// DeletePfp()
 }
 
 type BookingService interface {
@@ -98,7 +100,7 @@ type PaymentService interface {
 	RequestDeposit(context.Context, int64, float64) (orderID string, redirectURL string, err error)
 	Deposit(ctx context.Context, userID int64, amount float64) error
 	VerifyWebhook(ctx context.Context, r *http.Request) error
-	// Further do
+	// -- Further do --
 	// Withdraw(context.Context, *entities.User) (string, error)
 	// GetTransactionHistory(context.Context, *entities.User) ([]*entities.Transaction, error)
 	// GetBalance(context.Context, *entities.User) (float64, error)
