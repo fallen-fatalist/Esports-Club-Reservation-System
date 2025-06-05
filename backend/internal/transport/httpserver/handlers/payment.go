@@ -10,8 +10,10 @@ import (
 	"net/http"
 	"strconv"
 
+	"esports_club_booking/internal/auth"
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/transport/dto"
+	"esports_club_booking/internal/views"
 )
 
 // @Summary      Make a deposit
@@ -33,7 +35,25 @@ func (h *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, redirectURL, err := h.service.PaymentService.RequestDeposit(context.Background(), req.UserID, req.Amount)
+	token, err := r.Cookie("token")
+	if err == nil {
+		_, err = h.jwtMng.ValidateToken(token.Value)
+		if err != nil {
+			h.Logout(w, r)
+			views.WriteError(w, http.StatusUnauthorized, entities.ErrInvalidToken)
+			return
+		}
+	}
+	userIDStr, _ := auth.GetUserIDFromContext(r.Context())
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	// Lie to the client who is trying to brute force the token
+	if err != nil {
+		views.WriteError(w, http.StatusUnauthorized, entities.ErrMissingToken)
+		h.Logout(w, r)
+		return
+	}
+
+	_, redirectURL, err := h.service.PaymentService.RequestDeposit(context.Background(), userID, req.Amount)
 	if err != nil {
 		log.Println(err)
 		jsonResponse(w, 400, dto.JSONAnswer{Message: err.Error()})
@@ -54,8 +74,8 @@ func (h *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 // @Failure      400    {object}  dto.JSONAnswer             "Invalid request"
 // @Failure      402    {object}  dto.JSONAnswer             "Insufficient balance"
 // @Failure      500    {object}  dto.JSONAnswer             "Internal server error"
-// @Router       /api/payments/bookings [post]
-func (s *Handler) handleBookingPayment(w http.ResponseWriter, r *http.Request) {
+// @Router       /api/payments/booking [post]
+func (h *Handler) handleBookingPayment(w http.ResponseWriter, r *http.Request) {
 	var booking entities.Booking
 	if err := json.NewDecoder(r.Body).Decode(&booking); err != nil {
 		slog.Error("Error decoding booking payment request:", err)
@@ -64,7 +84,21 @@ func (s *Handler) handleBookingPayment(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if err := s.service.PaymentService.PayBooking(r.Context(), &booking); err != nil {
+	token, err := r.Cookie("token")
+	if err == nil {
+		_, err = h.jwtMng.ValidateToken(token.Value)
+		if err != nil {
+			h.Logout(w, r)
+			views.WriteError(w, http.StatusUnauthorized, entities.ErrInvalidToken)
+			return
+		}
+	}
+	userIDStr, _ := auth.GetUserIDFromContext(r.Context())
+	userID, _ := strconv.ParseInt(userIDStr, 10, 64)
+
+	booking.UserID = userID
+
+	if err := h.service.PaymentService.PayBooking(r.Context(), &booking); err != nil {
 		slog.Error("Error processing booking payment:", "error", err)
 
 		var status int
