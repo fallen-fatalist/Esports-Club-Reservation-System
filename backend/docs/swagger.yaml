@@ -516,8 +516,6 @@ paths:
             schema:
               type: object
               properties:
-                user_id:
-                  type: integer
                 amount:
                   type: number
                   format: float
@@ -546,8 +544,6 @@ paths:
                 start_time:
                   type: string
                   format: date-time
-                user_id:
-                  type: integer
       responses:
         '200':
           description: Payment successful
