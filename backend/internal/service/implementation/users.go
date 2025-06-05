@@ -7,6 +7,7 @@ import (
 	"esports_club_booking/internal/email"
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/repository"
+	"esports_club_booking/internal/repository/minio"
 	"esports_club_booking/internal/transport/dto"
 	"log"
 	"log/slog"
@@ -16,6 +17,7 @@ type UserService struct {
 	repo        repository.UserRepository
 	jwt         auth.JWTManager
 	emailSender email.EmailSender
+	minio       minio.MinioClient
 }
 
 func NewUserService(
@@ -23,6 +25,7 @@ func NewUserService(
 	repository repository.UserRepository,
 	jwtManager auth.JWTManager,
 	emailSender email.EmailSender,
+	minio minio.MinioClient,
 ) (*UserService, error) {
 	if repository == nil {
 		log.Fatal("Nil repository provided to user service")
@@ -31,8 +34,12 @@ func NewUserService(
 	} else if ownerCredentials == nil {
 		log.Fatal("Nil config provided to user service")
 	}
-
-	svc := &UserService{repository, jwtManager, emailSender}
+	svc := &UserService{
+		repository,
+		jwtManager,
+		emailSender,
+		minio,
+	}
 	if err := svc.createOwner(ownerCredentials); err != nil {
 		log.Fatal(":", err)
 	}

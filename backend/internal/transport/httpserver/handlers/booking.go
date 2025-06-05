@@ -264,7 +264,7 @@ func (s *Handler) getPendingBookings(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(bookings); err != nil {
-		slog.Error("Error encoding JSON:", err)
+		slog.Error("Error encoding JSON:", "error", err)
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
 }

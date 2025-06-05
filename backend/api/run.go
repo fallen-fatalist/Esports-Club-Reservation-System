@@ -71,7 +71,7 @@ func Run() {
 		cfg.EmailSender.SMTPHost, int(cfg.EmailSender.SMTPPort))
 
 	// User service
-	userService, _ := implementation.NewUserService(&cfg.OwnerCredentials, userRepository, jwtManager, emailSender)
+	userService, _ := implementation.NewUserService(&cfg.OwnerCredentials, userRepository, jwtManager, emailSender, *minioClient)
 
 	computerService, _ := implementation.NewComputerService(computerRepository)
 	packageService, _ := implementation.NewPackageService(packageRepository)
