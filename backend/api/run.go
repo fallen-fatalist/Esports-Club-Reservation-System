@@ -13,6 +13,7 @@ import (
 	"esports_club_booking/internal/config"
 	"esports_club_booking/internal/email"
 	"esports_club_booking/internal/repository"
+	"esports_club_booking/internal/repository/minio"
 	"esports_club_booking/internal/repository/paypal"
 	"esports_club_booking/internal/repository/postgres"
 	"esports_club_booking/internal/service"
@@ -55,7 +56,18 @@ func Run() {
 	paypalClient, err := paypal.NewPayPalClient(cfg)
 	if err != nil {
 		logger.Error("Failed to create PayPal client", slog.Any("error", err))
-		return
+		os.Exit(1)
+	}
+
+	minioClient, err := minio.NewMinioClient(cfg)
+	if err != nil {
+		logger.Error("Failed to create Minio client", "error", err)
+		os.Exit(1)
+	}
+
+	if err = minioClient.UploadFile(ctx, "pfp", "rauan.avif", "123.avif", "image/avif"); err != nil {
+		logger.Error("Failed uploading a file to minio", "error", err)
+		os.Exit(1)
 	}
 
 	// Services init

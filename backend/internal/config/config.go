@@ -59,8 +59,10 @@ type (
 	}
 
 	Minio struct {
-		User     string
-		Password string
+		Endpoint  string
+		SSL       bool
+		AccessKey string
+		SecretKey string
 	}
 
 	OwnerCredentials struct {
@@ -120,8 +122,10 @@ func NewConfig() *Config {
 			CancelURL:  getEnvStr("CANCEL_URL", "https://guthib.com"),
 		},
 		Minio: Minio{
-			User:     getEnvStr("MINIO_ROOT_USER", ""),
-			Password: getEnvStr("MINIO_ROOT_PASSWORD", ""),
+			Endpoint:  getEnvStr("MINIO_ENDPOINT", "localhost:9000"),
+			SSL:       getEnvBool("MINIO_USE_SSL", "false"),
+			AccessKey: getEnvStr("MINIO_ACCESS_KEY", ""),
+			SecretKey: getEnvStr("MINIO_SECRET_KEY", ""),
 		},
 		OwnerCredentials: OwnerCredentials{
 			Email:    getEnvStr("EMAIL", "owner@mail.com"),
@@ -141,6 +145,13 @@ func getEnvStr(key, fallback string) string {
 		return val
 	}
 	return fallback
+}
+
+func getEnvBool(key, fallback string) bool {
+	if val, ok := os.LookupEnv(key); ok {
+		return val == "true"
+	}
+	return fallback == "true"
 }
 
 func getEnvInt64(key string, fallback int64) int64 {

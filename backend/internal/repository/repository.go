@@ -105,3 +105,6 @@ type PayPalClient interface {
 	Deposit(amount float64, userID int64, description string) (string, string, error)
 	VerifyWebhook(ctx context.Context, r *http.Request) error
 }
+
+type MinioClient interface {
+}
