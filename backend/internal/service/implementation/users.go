@@ -94,7 +94,21 @@ func (s *UserService) Block(userID int64) error {
 	if err := entities.ValidateID(userID); err != nil {
 		return err
 	}
-	return s.repo.Block(userID)
+
+	if err := s.repo.Block(userID); err != nil {
+		return err
+	}
+
+	user, err := s.GetUser(userID)
+	if err != nil {
+		return err
+	}
+
+	return s.emailSender.SendEmail(
+		user.Email,
+		"Account block",
+		"Your account has been blocked in our platform, please contact support",
+	)
 }
 
 func (s *UserService) Unblock(userID int64) error {
