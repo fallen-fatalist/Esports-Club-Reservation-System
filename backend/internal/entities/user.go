@@ -32,6 +32,7 @@ var (
 	ErrFailedToGetUser    = errors.New("failed to get user")
 	ErrFailedToInsertUser = errors.New("failed to insert user")
 	ErrNonNumericID       = errors.New("id is not numeric")
+	ErrIncorrectRole      = errors.New("no such user role")
 )
 
 // Statuses

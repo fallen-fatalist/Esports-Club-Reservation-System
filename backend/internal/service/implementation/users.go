@@ -181,7 +181,7 @@ func (s *UserService) UserBalanceFill(ctx context.Context, userID int64, amount 
 	return s.repo.UpdateBalance(userID, amount)
 }
 
-func (s *UserService) GrantAdmin(userID int64) error {
+func (s *UserService) GrantAdmin(userID int64, role string) error {
 	if err := entities.ValidateID(userID); err != nil {
 		return err
 	}
@@ -195,7 +195,7 @@ func (s *UserService) GrantAdmin(userID int64) error {
 		Username: user.Login,
 		Status:   user.Status,
 		Balance:  user.Balance,
-		Role:     user.Role,
+		Role:     role,
 	}
 	_, err = s.repo.Update(&userDTO)
 	return err

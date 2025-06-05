@@ -135,7 +135,8 @@ func (s *Handler) HandleUserCredit(w http.ResponseWriter, r *http.Request) {
 // @Description  Grants admin privileges to a user with the given ID, only Owner and Manager can grant admin role.
 // @Tags         Users
 // @Security     BearerAuth
-// @Param        id  path  int64  true  "User ID"
+// @Param        id    path  int64   true  "User ID"
+// @Param        role  path  string  true  "User Role" Enums(owner, manager, admin, analyst, client)
 // @Success      204
 // @Failure      400  {object}  utils.HTTPError  "Invalid user ID"
 // @Failure      404  {object}  utils.HTTPError  "User not found"
@@ -143,13 +144,19 @@ func (s *Handler) HandleUserCredit(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/users/{id}/admin [post]
 func (s *Handler) HandleGrantAdmin(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
+	role := r.PathValue("role")
+	if !entities.CheckEnumUserRole(role) {
+		views.WriteError(w, http.StatusBadRequest, entities.ErrIncorrectRole)
+		return
+	}
+
 	userID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		views.WriteError(w, http.StatusBadRequest, entities.ErrNonNumericID)
 		return
 	}
 
-	err = s.service.UserService.GrantAdmin(userID)
+	err = s.service.UserService.GrantAdmin(userID, role)
 	if err != nil {
 		switch {
 		case errors.Is(err, entities.ErrUserNotFound):

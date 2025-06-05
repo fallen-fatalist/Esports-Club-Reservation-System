@@ -64,3 +64,12 @@ func RoleHasSufficientRights(ownrole string, otherrole string) bool {
 	}
 	return false
 }
+
+func CheckEnumUserRole(role string) bool {
+	switch role {
+	case OwnerRole, ManagerRole, AdminRole, AnalystRole, ClientRole:
+		return true
+	default:
+		return false
+	}
+}

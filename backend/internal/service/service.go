@@ -53,7 +53,7 @@ type UserService interface {
 	// AuthUser()
 	Register(userDTO dto.RegisterUser) (int64, error)
 	Login(userDTO dto.LoginUser) (string, error)
-	GrantAdmin(userID int64) error
+	GrantAdmin(userID int64, role string) error
 	VerifyEmail(emailverify dto.VerifyEmailRequest) error
 	SendVerificationCode(dto.EmailVerificationRequest) error
 	SendPasswordResetCode(email string) error
