@@ -20,6 +20,7 @@ type (
 		EmailSender      EmailSender
 		PayPal           PayPal
 		OwnerCredentials OwnerCredentials
+		Minio            Minio
 	}
 
 	Server struct {
@@ -55,6 +56,11 @@ type (
 		WebhookID  string
 		ReturnURL  string
 		CancelURL  string
+	}
+
+	Minio struct {
+		User     string
+		Password string
 	}
 
 	OwnerCredentials struct {
@@ -112,6 +118,10 @@ func NewConfig() *Config {
 			WebhookID:  getEnvStr("PAYPAL_WEBHOOK_ID", ""),
 			ReturnURL:  getEnvStr("RETURN_URL", "https://github.com"),
 			CancelURL:  getEnvStr("CANCEL_URL", "https://guthib.com"),
+		},
+		Minio: Minio{
+			User:     getEnvStr("MINIO_ROOT_USER", ""),
+			Password: getEnvStr("MINIO_ROOT_PASSWORD", ""),
 		},
 		OwnerCredentials: OwnerCredentials{
 			Email:    getEnvStr("EMAIL", "owner@mail.com"),

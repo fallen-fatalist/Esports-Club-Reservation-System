@@ -52,6 +52,12 @@ func Run() {
 	packageRepository, _ := postgres.NewPackageRepository(db)
 	paymentRepository, _ := postgres.NewPaymentRepository(db)
 
+	paypalClient, err := paypal.NewPayPalClient(cfg)
+	if err != nil {
+		logger.Error("Failed to create PayPal client", slog.Any("error", err))
+		return
+	}
+
 	// Services init
 	jwtManager := auth.NewJWTManager(cfg.JWT.Secret, cfg.JWT.Expiration)
 	emailSender := email.NewEmailSender(cfg.EmailSender.FromAddress, cfg.EmailSender.Password,
@@ -71,11 +77,6 @@ func Run() {
 		userService,
 	)
 
-	paypalClient, err := paypal.NewPayPalClient(cfg)
-	if err != nil {
-		logger.Error("Failed to create PayPal client", slog.Any("error", err))
-		return
-	}
 	paymentService := implementation.NewPaymentService(
 		paypalClient,
 		emailSender,
