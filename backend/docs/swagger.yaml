@@ -1,1070 +1,844 @@
-basePath: /api
-definitions:
-  dto.Booking:
-    properties:
-      computer_id:
-        description: |-
-          ComputerID is the ID of the computer being booked.
-          required: true
-        example: 67890
-        type: integer
-      end_time:
-        description: |-
-          EndTime is the end time of the booking in RFC3339 format.
-          required: true
-        example: "2025-05-27T12:00:00+07:00"
-        type: string
-      package_id:
-        description: |-
-          PackageID is the ID of the selected package for the booking.
-          required: true
-        example: 111
-        type: integer
-      start_time:
-        description: |-
-          StartTime is the start time of the booking in RFC3339 format.
-          required: true
-        example: "2025-05-27T10:00:00+07:00"
-        type: string
-      user_id:
-        description: |-
-          UserID is the ID of the user making the booking.
-          required: true
-        example: 12345
-        type: integer
-    type: object
-  dto.EmailVerificationRequest:
-    properties:
-      email:
-        description: |-
-          required: true
-          example: user@example.com
-        type: string
-    type: object
-  dto.LoginUser:
-    properties:
-      identifier:
-        description: |-
-          required: true
-          example: user@example.com
-        type: string
-      password:
-        description: |-
-          required: true
-          example: securePassword123
-        type: string
-    type: object
-  dto.RegisterUser:
-    properties:
-      email:
-        description: |-
-          required: true
-          example: user@example.com
-        type: string
-      login:
-        description: |-
-          required: true
-          example: username123
-        type: string
-      password:
-        description: |-
-          required: true
-          example: securePassword123
-        type: string
-    type: object
-  dto.ResetPasswordConfirm:
-    properties:
-      code:
-        type: string
-      email:
-        type: string
-      new_password:
-        type: string
-    type: object
-  dto.ResetPasswordRequest:
-    properties:
-      email:
-        type: string
-    type: object
-  dto.User:
-    properties:
-      balance:
-        type: integer
-      email:
-        type: string
-      role:
-        type: string
-      status:
-        type: string
-      username:
-        type: string
-    type: object
-  dto.VerifyEmailRequest:
-    properties:
-      code:
-        description: |-
-          required: true
-          example: 123456
-        type: string
-      email:
-        description: |-
-          required: true
-          example: user@example.com
-        type: string
-    type: object
-  entities.Booking:
-    properties:
-      computer_id:
-        type: integer
-      created_at:
-        type: string
-      end_time:
-        type: string
-      id:
-        type: integer
-      is_notified:
-        type: boolean
-      package_id:
-        type: integer
-      start_time:
-        type: string
-      status:
-        type: string
-      user_id:
-        type: integer
-    type: object
-  entities.Computer:
-    properties:
-      cpu:
-        type: string
-      created_at:
-        type: string
-      gpu:
-        type: string
-      hdd:
-        type: string
-      headset:
-        type: string
-      id:
-        type: integer
-      keyboard:
-        type: string
-      monitor:
-        type: string
-      mouse:
-        type: string
-      mousepad:
-        type: string
-      ram:
-        type: string
-      room:
-        type: string
-      ssd:
-        type: string
-      status:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  entities.ComputerOccupiedLeftTime:
-    properties:
-      id:
-        type: integer
-      left_time:
-        type: integer
-    type: object
-  entities.ComputerStatus:
-    properties:
-      id:
-        type: integer
-      status:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  entities.Package:
-    properties:
-      created_at:
-        type: string
-      duration:
-        type: integer
-      end_time:
-        type: string
-      id:
-        type: integer
-      name:
-        type: string
-      price:
-        type: integer
-      room:
-        type: string
-      start_time:
-        type: string
-    type: object
-  entities.User:
-    properties:
-      balance:
-        type: integer
-      created_at:
-        type: string
-      email:
-        type: string
-      id:
-        type: integer
-      login:
-        type: string
-      passwordUpdatedAt:
-        type: string
-      role:
-        type: string
-      status:
-        type: string
-    type: object
-  handlers.JSONAnswer:
-    properties:
-      id:
-        type: integer
-      message:
-        type: string
-    type: object
-  utils.HTTPError:
-    properties:
-      error:
-        type: string
-    type: object
-  utils.Message:
-    properties:
-      message:
-        type: string
-    type: object
-host: localhost:8080
+openapi: 3.0.0
 info:
-  contact: {}
-  description: API for Esports Club Reservation system
   title: Esports Club Booking API
-  version: "1.0"
+  description: API for Esports Club Reservation system
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Development server
 paths:
+  /api/bookings/active:
+    get:
+      summary: Get active bookings
+      description: Returns a list of active bookings with time format "2006-01-02T15:04:05Z07:00"
+      tags:
+        - Booking
+      responses:
+        '200':
+          description: List of active bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Booking'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/bookings/cancelled:
+    get:
+      summary: Get cancelled bookings
+      description: Returns a list of cancelled bookings with time format "2006-01-02T15:04:05Z07:00"
+      tags:
+        - Booking
+      responses:
+        '200':
+          description: List of cancelled bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Booking'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/bookings/finished:
+    get:
+      summary: Get finished bookings
+      description: Returns a list of finished bookings with time format "2006-01-02T15:04:05Z07:00"
+      tags:
+        - Booking
+      responses:
+        '200':
+          description: List of finished bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Booking'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/bookings/pending:
+    get:
+      summary: Get pending bookings
+      description: Returns a list of pending bookings with time format "2006-01-02T15:04:05Z07:00"
+      tags:
+        - Booking
+      responses:
+        '200':
+          description: List of pending bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Booking'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/bookings:
     get:
-      consumes:
-      - application/json
-      description: Returns a list of bookings with filtering by status
-      parameters:
-      - description: 'Filter bookings by status. Options: non-cancelled, pending,
-          finished, active, cancelled. If empty it set non-cancelled'
-        in: query
-        name: filter
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/entities.Booking'
-            type: array
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
       summary: Get all bookings
+      description: Returns a list of bookings with various statuses with time format "2006-01-02T15:04:05Z07:00"
       tags:
-      - Bookings
-    post:
-      consumes:
-      - application/json
-      description: Creates a new booking with the provided start and end times, computer
-        ID and user ID
-      parameters:
-      - description: Booking to create
-        in: body
-        name: booking
-        required: true
-        schema:
-          $ref: '#/definitions/dto.Booking'
-      produces:
-      - application/json
+        - Booking
       responses:
-        "201":
-          description: Booking created successfully
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-        "400":
-          description: Invalid request body
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "404":
-          description: Computer not found
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "500":
+        '200':
+          description: List of bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Booking'
+        '500':
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
       summary: Create a new booking
-      tags:
-      - Bookings
-  /api/bookings/{id}/cancel:
-    post:
-      consumes:
-      - application/json
-      description: Cancels a booking with the given ID. The user must have the correct
-        role to cancel the booking.
-      parameters:
-      - description: Booking ID
-        in: path
-        name: id
+      description: Creates a new booking with the given details
+      requestBody:
         required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Invalid booking ID or non own booking cancel
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "404":
-          description: Booking not found
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-      security:
-      - BearerAuth: []
-      summary: Cancel a booking
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Booking'
       tags:
-      - Bookings
-  /api/computers:
-    get:
-      description: Returns a list of filtered by room computers
-      parameters:
-      - description: Filter by room, may be empty (all computers returned)
-        in: query
-        name: room
-        type: string
-      produces:
-      - application/json
+        - Booking
       responses:
-        "200":
-          description: List of computers
-          schema:
-            items:
-              $ref: '#/definitions/entities.Computer'
-            type: array
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-      summary: Get all computers
-      tags:
-      - Computers
-    post:
-      consumes:
-      - application/json
-      description: Creates a new computer
-      parameters:
-      - description: Computer details
-        in: body
-        name: computer
-        required: true
-        schema:
-          $ref: '#/definitions/entities.Computer'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Computer created successfully
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-        "400":
+        '201':
+          description: Booking created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
           description: Invalid request body
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
           description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-      security:
-      - BearerAuth: []
-      summary: Create a new computer
-      tags:
-      - Computers
-  /api/computers/{id}:
-    delete:
-      description: Deletes a specific computer by ID
-      parameters:
-      - description: Computer ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: Computer deleted successfully
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-        "400":
-          description: Invalid computer ID
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-        "404":
-          description: Computer not found
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-      security:
-      - BearerAuth: []
-      summary: Delete a specific computer
-      tags:
-      - Computers
-    get:
-      description: Returns a specific Computer by ID
-      parameters:
-      - description: Computer ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Computer details
-          schema:
-            $ref: '#/definitions/entities.Computer'
-        "400":
-          description: Invalid Computer ID
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-        "404":
-          description: Computer not found
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-      summary: Get a specific Computer
-      tags:
-      - Computers
-  /api/computers/{id}/bookings:
-    get:
-      consumes:
-      - application/json
-      description: Returns a list of bookings for the specified computer ID
-      parameters:
-      - description: Computer ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of bookings for the computer
-          schema:
-            items:
-              $ref: '#/definitions/entities.Booking'
-            type: array
-        "400":
-          description: Invalid computer ID
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-      summary: Get bookings for a specific computer with time format "2006-01-02T15:04:05Z07:00"
-      tags:
-      - Bookings
-  /api/computers/{id}/remaining:
-    get:
-      consumes:
-      - application/json
-      description: Returns the remaining time (in seconds) that a specific computer
-        will be occupied before it becomes available for a new booking with the given
-        package duration.
-      parameters:
-      - description: ID of the computer to check availability for
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: ID of the package whose duration will be used in the calculation
-        in: query
-        name: packageID
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Remaining time the computer is occupied
-          schema:
-            $ref: '#/definitions/entities.ComputerOccupiedLeftTime'
-        "400":
-          description: Invalid computer ID or package ID
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-      summary: Get remaining occupied time for a computer
-      tags:
-      - Bookings
-  /api/computers/{id}/status:
-    get:
-      consumes:
-      - application/json
-      description: Returns the status of the specified computer ID
-      parameters:
-      - description: Computer ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Computer status
-          schema:
-            $ref: '#/definitions/entities.ComputerStatus'
-        "400":
-          description: Invalid computer ID
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-        "404":
-          description: Computer not found
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-      summary: Get the status of a specific computer
-      tags:
-      - Computers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/computers/remaining:
     get:
-      consumes:
-      - application/json
-      description: Returns a list of computers with the remaining time (in seconds)
-        each will be occupied before becoming available for booking with the specified
-        package.
-      parameters:
-      - description: ID of the package used to calculate remaining occupied time
-        in: query
-        name: packageID
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of computers and their remaining occupied time
-          schema:
-            items:
-              $ref: '#/definitions/entities.ComputerOccupiedLeftTime'
-            type: array
-        "400":
-          description: Invalid package ID
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
       summary: Get remaining occupied time for all computers
+      description: Returns a list of computers with the remaining time (in seconds) each will be occupied before becoming available for booking with the specified package.
       tags:
-      - Bookings
+        - Computers
+      parameters:
+        - name: packageID
+          in: query
+          description: ID of the package used to calculate remaining occupied time
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of computers and their remaining occupied time
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    left_time:
+                      type: integer
+        '400':
+          description: Invalid package ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/computers/statuses:
     get:
-      consumes:
-      - application/json
-      description: Returns a list of all computer statuses
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of computer statuses
-          schema:
-            items:
-              $ref: '#/definitions/entities.ComputerStatus'
-            type: array
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
       summary: Get all computer statuses
+      description: Returns a list of all computer statuses
       tags:
-      - Computers
+        - Computers
+      responses:
+        '200':
+          description: List of computer statuses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ComputerStatus'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/computers/{id}/bookings:
+    get:
+      summary: Get bookings for a specific computer
+      description: Returns a list of bookings for the specified computer ID with time format "2006-01-02T15:04:05Z07:00"
+      tags:
+        - Computers
+      parameters:
+        - name: id
+          in: path
+          description: Computer ID
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of bookings for the computer
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Booking'
+        '400':
+          description: Invalid computer ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/computers/{id}/remaining:
+    get:
+      summary: Get remaining occupied time for a computer
+      description: Returns the remaining time (in seconds) that a specific computer will be occupied before it becomes available for a new booking with the given package duration.
+      tags:
+        - Computers
+      parameters:
+        - name: id
+          in: path
+          description: ID of the computer to check availability for
+          required: true
+          schema:
+            type: integer
+        - name: packageID
+          in: query
+          description: ID of the package whose duration will be used in the calculation
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Remaining time the computer is occupied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  left_time:
+                    type: integer
+        '400':
+          description: Invalid computer ID or package ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/computers/{id}/status:
+    get:
+      summary: Get the status of a specific computer
+      description: Returns the status of the specified computer ID
+      tags:
+        - Computers
+      parameters:
+        - name: id
+          in: path
+          description: Computer ID
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Computer status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComputerStatus'
+        '400':
+          description: Invalid computer ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Computer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/computers/{id}:
+    get:
+      summary: Get a specific computer
+      description: Returns a specific computer by ID
+      tags:
+        - Computers
+      parameters:
+        - name: id
+          in: path
+          description: Computer ID
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Computer details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Computer'
+        '400':
+          description: Invalid computer ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Computer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: Delete a specific computer
+      description: Deletes a specific computer by ID
+      tags:
+        - Computers
+      parameters:
+        - name: id
+          in: path
+          description: Computer ID
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Computer deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid computer ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Computer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/computers:
+    get:
+      summary: Get all computers
+      description: Returns a list of all computers
+      tags:
+        - Computers
+      responses:
+        '200':
+          description: List of computers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Computer'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: Create a new computer
+      description: Creates a new computer
+      tags:
+        - Computers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Computer'
+      responses:
+        '201':
+          description: Computer created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/packages:
     get:
-      description: Returns a list of all packages
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of computers
-          schema:
-            items:
-              $ref: '#/definitions/entities.Package'
-            type: array
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
       summary: Get all packages
+      description: Returns a list of all packages
       tags:
-      - Packages
-  /api/users:
-    get:
-      description: Returns a list of all users
-      produces:
-      - application/json
+        - Packages
       responses:
-        "200":
-          description: List of users
-          schema:
-            items:
-              $ref: '#/definitions/entities.User'
-            type: array
-        "500":
+        '200':
+          description: List of packages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Package'
+        '500':
           description: Internal server error
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-      security:
-      - BearerAuth: []
-      summary: Get all users
-      tags:
-      - Users
-  /api/users//bookings:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/users/{id}/bookings:
     get:
-      consumes:
-      - application/json
-      description: Returns a list of bookings for the specified user ID
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: List of bookings for the user
-          schema:
-            items:
-              $ref: '#/definitions/entities.Booking'
-            type: array
-        "400":
-          description: Invalid user ID
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-        "404":
-          description: User not found
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-        "500":
-          description: Internal server error or unhandled error
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-      security:
-      - BearerAuth: []
       summary: Get bookings for a specific user
+      description: Returns a list of bookings for the specified user ID
       tags:
-      - Bookings
-  /api/users/{id}:
-    delete:
-      description: Deletes a user with the given ID.
+        - Users
       parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Invalid user ID
+        - name: id
+          in: path
+          description: User ID
+          required: true
           schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "404":
+            type: integer
+      responses:
+        '200':
+          description: List of bookings for the user
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Booking'
+        '400':
+          description: Invalid user ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
           description: User not found
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-      security:
-      - BearerAuth: []
-      summary: Delete a user
-      tags:
-      - Users
-  /api/users/{id}/admin:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error or unhandled error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/payment/deposit:
     post:
-      description: Grants admin privileges to a user with the given ID, only Owner
-        and Manager can grant admin role.
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Invalid user ID
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "404":
-          description: User not found
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-      security:
-      - BearerAuth: []
-      summary: Grant admin privileges to a user
+      summary: Deposit money to user account
       tags:
-      - Users
-  /api/users/{id}/block:
+        - Payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                amount:
+                  type: number
+                  format: float
+      responses:
+        '200':
+          description: Deposit successful
+  /api/payment/booking:
     post:
-      description: Blocks a user with the given ID.
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Invalid user ID
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-      security:
-      - BearerAuth: []
-      summary: Block a user
+      summary: Pay for a booking
       tags:
-      - Users
-  /api/users/{id}/credit:
+        - Payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                computer_id:
+                  type: integer
+                end_time:
+                  type: string
+                  format: date-time
+                package_id:
+                  type: integer
+                start_time:
+                  type: string
+                  format: date-time
+                user_id:
+                  type: integer
+      responses:
+        '200':
+          description: Payment successful
+  /api/payment/cancel:
     post:
-      description: Adds a specified amount to the user's balance using their ID.
-      parameters:
-      - description: User ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Amount to add to user's balance
-        in: query
-        name: amount
-        required: true
-        type: number
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Invalid user ID or balance
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "404":
-          description: User not found
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-      security:
-      - BearerAuth: []
-      summary: Fill user balance
+      summary: Cancel pending booking
       tags:
-      - Users
-  /api/users/{id}/unblock:
-    post:
-      description: Unblocks a user with the given ID.
-      parameters:
-      - description: User ID
-        in: path
-        name: id
+        - Payment
+      requestBody:
         required: true
-        type: integer
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                booking_id:
+                  type: integer
       responses:
-        "204":
-          description: No Content
-        "400":
-          description: Invalid user ID
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-      security:
-      - BearerAuth: []
-      summary: Unblock a user
-      tags:
-      - Users
+        '200':
+          description: Payment successful
   /auth/activate:
     post:
-      consumes:
-      - application/json
-      description: Sends a verification code to the email provided in request body
-      parameters:
-      - description: Verification code request
-        in: body
-        name: verificationRequest
-        required: true
-        schema:
-          $ref: '#/definitions/dto.EmailVerificationRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Verification code sent
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-        "400":
-          description: Invalid request
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
       summary: Send verification code to user's email
+      description: Sends a verification code to the email provided in request body
       tags:
-      - Auth
-  /auth/authorized:
-    get:
-      consumes:
-      - application/json
-      description: Returns the user's data if they are authorized
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: User authorized
-          schema:
-            $ref: '#/definitions/dto.User'
-      security:
-      - BearerAuth: []
-      summary: Check if user is authorized
-      tags:
-      - Auth
-  /auth/priveleged:
-    get:
-      description: Returns a 200 status if user is privileged
-      responses:
-        "200":
-          description: OK
-      security:
-      - BearerAuth: []
-      summary: Check if user is privileged
-      tags:
-      - Auth
-  /auth/reset/confirm:
-    post:
-      consumes:
-      - application/json
-      description: Resets user's password using email, code and new password
-      parameters:
-      - description: Password reset confirmation
-        in: body
-        name: resetConfirm
+        - Authorization
+      requestBody:
         required: true
-        schema:
-          $ref: '#/definitions/dto.ResetPasswordConfirm'
-      produces:
-      - application/json
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
       responses:
-        "200":
-          description: Password reset successfully
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-        "400":
-          description: Invalid username or password
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "404":
-          description: User not found
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "429":
-          description: Too many attempts
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "500":
+        '200':
+          description: Verification code sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-      summary: Reset password
-      tags:
-      - Auth
-  /auth/reset/request:
-    post:
-      consumes:
-      - application/json
-      description: Sends a password reset code to the user's email
-      parameters:
-      - description: Password reset request
-        in: body
-        name: resetRequest
-        required: true
-        schema:
-          $ref: '#/definitions/dto.ResetPasswordRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Reset code sent
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-        "400":
-          description: Invalid request or user not found
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-      summary: Request password reset code
-      tags:
-      - Auth
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /auth/sign-in:
     post:
-      consumes:
-      - application/json
-      description: Login user with email, login and password, returns JWT token
-      parameters:
-      - description: Login credentials
-        in: body
-        name: credentials
-        required: true
-        schema:
-          $ref: '#/definitions/dto.LoginUser'
-      produces:
-      - application/json
-      responses:
-        "204":
-          description: No Content, JWT set in HTTPOnly cookie
-        "400":
-          description: Bad request, validation error
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "401":
-          description: Unauthorized, invalid credentials or blocked user
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
       summary: User login
+      description: Login user with email, login and password, returns JWT token
       tags:
-      - Auth
+        - Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                login:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: JWT token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '400':
+          description: Bad request, validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized, invalid credentials or blocked user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /auth/sign-up:
     post:
-      consumes:
-      - application/json
-      description: Registers a user with email, login and password
-      parameters:
-      - description: User registration data
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/dto.RegisterUser'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: User created successfully
-          schema:
-            $ref: '#/definitions/utils.Message'
-        "400":
-          description: Bad request, validation error
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "409":
-          description: User already exists
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
       summary: Register a new user
+      description: Registers a user with email, login and password
       tags:
-      - Auth
+        - Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                login:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Bad request, validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /auth/verify:
     post:
-      consumes:
-      - application/json
-      description: Verifies user's email using a verification code
-      parameters:
-      - description: Email verification request
-        in: body
-        name: verifyEmailRequest
-        required: true
-        schema:
-          $ref: '#/definitions/dto.VerifyEmailRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Email verified successfully
-          schema:
-            $ref: '#/definitions/handlers.JSONAnswer'
-        "400":
-          description: Invalid request or verification error
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "404":
-          description: User not found
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "429":
-          description: Too many attempts
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.HTTPError'
       summary: Verify email with code
+      description: Verifies user's email using a verification code
       tags:
-      - Auth
-swagger: "2.0"
+        - Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                email:
+                  type: string
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid request or verification error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Too many attempts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    Booking:
+      type: object
+      properties:
+        computer_id:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        id:
+          type: integer
+        package_id:
+          type: integer
+        start_time:
+          type: string
+          format: date-time
+        status:
+          type: string
+        user_id:
+          type: integer
+    Computer:
+      type: object
+      properties:
+        cpu:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        gpu:
+          type: string
+        hdd:
+          type: string
+        headset:
+          type: string
+        id:
+          type: integer
+        keyboard:
+          type: string
+        monitor:
+          type: string
+        mouse:
+          type: string
+        mousepad:
+          type: string
+        ram:
+          type: string
+        room:
+          type: string
+        ssd:
+          type: string
+        status:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+    ComputerStatus:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+    Package:
+      type: object
+      properties:
+        created_at:
+          type: string
+          format: date-time
+        duration:
+          type: integer
+        end_time:
+          type: string
+          format: date-time
+        id:
+          type: integer
+        name:
+          type: string
+        price:
+          type: integer
+        room:
+          type: string
+        start_time:
+          type: string
+          format: date-time
+    SuccessResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        message:
+          type: string
+    ErrorResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        message:
+          type: string
+        error:
+          type: string

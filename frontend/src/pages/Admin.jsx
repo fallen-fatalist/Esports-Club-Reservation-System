@@ -46,7 +46,9 @@ import {
   Delete,
   Cancel,
   PersonAdd,
-  MoneyOff
+  MoneyOff,
+  AdminPanelSettings,
+  Security
 } from '@mui/icons-material';
 import { ThemeContext } from '../context/ThemeContext';
 import bookingService from '../services/bookingService';
@@ -76,6 +78,8 @@ const Admin = () => {
   const [error, setError] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalContent, setModalContent] = useState({ title: "", message: "" });
+  const [currentUser, setCurrentUser] = useState(null);
+  const [sessionFilter, setSessionFilter] = useState('all');
 
   const showModal = (title, message) => {
     setModalContent({ title, message });
@@ -140,6 +144,9 @@ const Admin = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        const user = JSON.parse(localStorage.getItem("user"));
+        setCurrentUser(user);
+        
         const [bookingsData, computersData, packagesData] = await Promise.all([
           bookingService.getBookings(),    
           computerService.getComputers(),   
@@ -184,8 +191,11 @@ const Admin = () => {
 
   const filteredBookings = useMemo(() => {
     const selected = format(selectedDate, "yyyy-MM-dd");
-    return transformedBookings.filter((b) => b.date === selected);
-  }, [transformedBookings, selectedDate]);
+    const dateFiltered = transformedBookings.filter((b) => b.date === selected);
+    
+    if (sessionFilter === 'all') return dateFiltered;
+    return dateFiltered.filter(b => b.status === sessionFilter);
+  }, [transformedBookings, selectedDate, sessionFilter]);
 
   const pendingBookings = useMemo(() => 
     filteredBookings.filter(b => b.status === 'pending'), [filteredBookings]);
@@ -289,7 +299,7 @@ const Admin = () => {
       const operationText = balanceOperation === 'add' ? 'added to' : 'deducted from';
       setSnackbar({
         open: true,
-        message: `Successfully ${operationText} ${user.username}: $${amount}`,
+        message: `Successfully ${operationText} ${user.username || user.email}: $${amount}`,
         severity: 'success'
       });
       setBalanceModal(false);
@@ -325,6 +335,26 @@ const Admin = () => {
       setSnackbar({
         open: true,
         message: error.message || 'Failed to cancel booking',
+        severity: 'error'
+      });
+    }
+  };
+
+  const handleGrantAdmin = async (userId) => {
+    try {
+      await usersService.grantAdminByID(userId);
+      setUsers(users.map(user => 
+        user.id === userId ? { ...user, role: 'admin' } : user
+      ));
+      setSnackbar({
+        open: true,
+        message: 'Admin privileges granted successfully',
+        severity: 'success'
+      });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: error.message || 'Failed to grant admin privileges',
         severity: 'error'
       });
     }
@@ -383,7 +413,7 @@ const Admin = () => {
       }}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
           <Typography variant="h4" fontFamily={theme.typography.fontFamily} fontWeight="bold">
-            Admin Dashboard
+            {currentUser?.role === 'owner' ? 'Owner Dashboard' : 'Admin Dashboard'}
           </Typography>
           <Box display="flex" alignItems="center" gap={2}>
             <Button
@@ -499,9 +529,25 @@ const Admin = () => {
 
           {activeTab === 1 && (
             <Box p={3}>
-              <Typography variant="h6" mb={2}>Active Sessions</Typography>
-              {activeSessions.length === 0 ? (
-                <Typography color={theme.palette.text.secondary}>No active sessions for selected date.</Typography>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h6">Active Sessions</Typography>
+                <FormControl size="small" sx={{ minWidth: 180 }}>
+                  <InputLabel>Filter Status</InputLabel>
+                  <Select
+                    value={sessionFilter}
+                    onChange={(e) => setSessionFilter(e.target.value)}
+                    label="Filter Status"
+                  >
+                    <MenuItem value="all">All Sessions</MenuItem>
+                    <MenuItem value="pending">Pending</MenuItem>
+                    <MenuItem value="active">Active</MenuItem>
+                    <MenuItem value="completed">Completed</MenuItem>
+                    <MenuItem value="cancelled">Cancelled</MenuItem>
+                  </Select>
+                </FormControl>
+              </Box>
+              {filteredBookings.length === 0 ? (
+                <Typography color={theme.palette.text.secondary}>No sessions for selected date and filter.</Typography>
               ) : (
                 <TableContainer>
                   <Table>
@@ -512,19 +558,28 @@ const Admin = () => {
                         <TableCell>Computer</TableCell>
                         <TableCell>Package</TableCell>
                         <TableCell>Time</TableCell>
-                        <TableCell>Time Left</TableCell>
+                        <TableCell>Status</TableCell>
                         <TableCell>Actions</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {activeSessions.map((session) => (
+                      {filteredBookings.map((session) => (
                         <TableRow key={session.id}>
                           <TableCell>{session.id}</TableCell>
                           <TableCell>{session.user?.email || session.user?.username}</TableCell>
                           <TableCell>№{session.computer.id}</TableCell>
                           <TableCell>{session.package.name}</TableCell>
                           <TableCell>{session.startTime}</TableCell>
-                          <TableCell>{session.timeLeft}</TableCell>
+                          <TableCell>
+                            <Chip 
+                              label={session.status} 
+                              color={
+                                session.status === 'active' ? 'success' : 
+                                session.status === 'pending' ? 'warning' : 
+                                session.status === 'completed' ? 'primary' : 'error'
+                              } 
+                            />
+                          </TableCell>
                           <TableCell>
                             <IconButton
                               size="small"
@@ -534,6 +589,7 @@ const Admin = () => {
                                 setCancelBookingModal(true);
                               }}
                               title="Cancel Session"
+                              disabled={session.status !== 'active' && session.status !== 'pending'}
                             >
                               <Cancel />
                             </IconButton>
@@ -573,7 +629,10 @@ const Admin = () => {
                         <TableCell>
                           <Chip 
                             label={user.role} 
-                            color={user.role === 'admin' ? 'primary' : 'default'}
+                            color={
+                              user.role === 'owner' ? 'secondary' : 
+                              user.role === 'admin' ? 'primary' : 'default'
+                            }
                             size="small"
                           />
                         </TableCell>
@@ -592,6 +651,7 @@ const Admin = () => {
                                 color="error"
                                 onClick={() => handleBlockUser(user.id)}
                                 title="Block User"
+                                disabled={user.role === 'owner'}
                               >
                                 <Block />
                               </IconButton>
@@ -616,17 +676,55 @@ const Admin = () => {
                             >
                               <AccountBalanceWallet />
                             </IconButton>
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => {
-                                setSelectedUserForDelete(user);
-                                setDeleteUserModal(true);
-                              }}
-                              title="Delete User"
-                            >
-                              <Delete />
-                            </IconButton>
+                            {currentUser?.role === 'owner' && user.role !== 'owner' && (
+                              <>
+                                {user.role === 'admin' ? (
+                                  <IconButton
+                                    size="small"
+                                    color="secondary"
+                                    onClick={() => handleGrantAdmin(user.id)}
+                                    title="Revoke Admin"
+                                    disabled
+                                  >
+                                    <Security />
+                                  </IconButton>
+                                ) : (
+                                  <IconButton
+                                    size="small"
+                                    color="primary"
+                                    onClick={() => handleGrantAdmin(user.id)}
+                                    title="Grant Admin"
+                                  >
+                                    <AdminPanelSettings />
+                                  </IconButton>
+                                )}
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() => {
+                                    setSelectedUserForDelete(user);
+                                    setDeleteUserModal(true);
+                                  }}
+                                  title="Delete User"
+                                >
+                                  <Delete />
+                                </IconButton>
+                              </>
+                            )}
+                            {currentUser?.role === 'admin' && (
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => {
+                                  setSelectedUserForDelete(user);
+                                  setDeleteUserModal(true);
+                                }}
+                                title="Delete User"
+                                disabled
+                              >
+                                <Delete />
+                              </IconButton>
+                            )}
                           </Box>
                         </TableCell>
                       </TableRow>
@@ -666,7 +764,10 @@ const Admin = () => {
                           <TableCell>
                             <Chip 
                               label={user.role} 
-                              color={user.role === 'admin' ? 'primary' : 'default'}
+                              color={
+                                user.role === 'owner' ? 'secondary' : 
+                                user.role === 'admin' ? 'primary' : 'default'
+                              }
                               size="small"
                             />
                           </TableCell>
@@ -722,7 +823,7 @@ const Admin = () => {
               >
                 {users.map(user => (
                   <MenuItem key={user.id} value={user.id.toString()}>
-                    {user.username} ({user.email}) - Current: ${user.balance}
+                    {user.username || user.email} - Current: ${user.balance}
                   </MenuItem>
                 ))}
               </Select>
@@ -830,6 +931,7 @@ const Admin = () => {
               variant="contained" 
               color="warning"
               startIcon={<Cancel />}
+              disabled={selectedBookingForCancel?.status !== 'active' && selectedBookingForCancel?.status !== 'pending'}
             >
               Cancel Booking
             </Button>
@@ -864,7 +966,6 @@ const Admin = () => {
       </Box>
     </ThemeProvider>
   );
-  
 };
 
 export default Admin;
