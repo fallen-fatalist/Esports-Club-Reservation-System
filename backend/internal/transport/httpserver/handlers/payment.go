@@ -29,11 +29,6 @@ import (
 // @Router       /api/payments/deposit [post]
 func (h *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 	var req dto.DepositRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
 
 	token, err := r.Cookie("token")
 	if err == nil {
@@ -50,6 +45,12 @@ func (h *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		views.WriteError(w, http.StatusUnauthorized, entities.ErrMissingToken)
 		h.Logout(w, r)
+		return
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
