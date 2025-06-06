@@ -25,6 +25,19 @@ import {
   InputAdornment,
   Snackbar
 } from "@mui/material";
+import PersonIcon from "@mui/icons-material/Person";
+import EmailIcon from "@mui/icons-material/Email";
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import ComputerIcon from "@mui/icons-material/Computer";
+import PackageIcon from "@mui/icons-material/Inventory";
+import StatusIcon from "@mui/icons-material/FiberManualRecord";
+import PriceIcon from "@mui/icons-material/AttachMoney";
+import CancelIcon from "@mui/icons-material/Cancel";
+import InfoIcon from "@mui/icons-material/Info";
+import VerifiedIcon from "@mui/icons-material/Verified";
+import ShieldIcon from "@mui/icons-material/Shield";
 import paymentService from "../services/paymentService"; 
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers";
@@ -37,6 +50,7 @@ import LockIcon from "@mui/icons-material/Lock";
 import SettingsIcon from "@mui/icons-material/Settings";
 import { AuthContext } from '../context/contextIndex';
 import { api } from '../services/authService';
+import usersService from '../services/usersService';
 import { ThemeContext } from "../context/ThemeContext";
 import bookingService from "../services/bookingService";
 import computerService from "../services/computerService";
@@ -95,6 +109,13 @@ const Profile = ({ onLogout }) => {
     severity: 'info'
   });
 
+  const [userInfo, setUserInfo] = useState({
+    email: '',
+    name: '',
+    isAdmin: false,
+    registrationDate: null
+  });
+
   useEffect(() => {
     const fetchUserBalance = async () => {
       try {
@@ -127,6 +148,28 @@ const Profile = ({ onLogout }) => {
       }
     };
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const [authResponse, privilegeResponse] = await Promise.all([
+          checkAuth(),
+          usersService.checkPrivileges().catch(() => false)
+        ]);
+        
+        setUserInfo({
+          email: authResponse.data.email || '',
+          name: authResponse.data.name || 'User',
+          isAdmin: privilegeResponse,
+          registrationDate: authResponse.data.created_at ? new Date(authResponse.data.created_at) : null
+        });
+        setUserBalance(authResponse.data.balance || 0);
+      } catch (err) {
+        console.error('Error fetching user info:', err);
+      }
+    };
+    fetchUserInfo();
   }, []);
 
   const EXCHANGE_RATE_KZT_TO_USD = 0.0021;
@@ -474,45 +517,132 @@ const Profile = ({ onLogout }) => {
 
         <Box sx={{ maxWidth: 1200, mx: "auto" }}>
           {/* Settings Panel */}
+          {/* User Profile Section */}
           <Card sx={{ mb: 4, p: 3, backgroundColor: "background.paper", boxShadow: 1 }}>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 500, display: 'flex', alignItems: 'center' }}>
-              <SettingsIcon sx={{ mr: 1 }} />
-              Account Settings
+            <Typography variant="h6" sx={{ mb: 3, fontWeight: 500, display: 'flex', alignItems: 'center' }}>
+              <PersonIcon sx={{ mr: 1 }} />
+              Profile Information
             </Typography>
             
-            {/* Balance Section */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-              <Box>
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  Balance
+            {/* User Info Grid */}
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3, mb: 4 }}>
+              {/* Personal Info */}
+              <Card sx={{ p: 2, backgroundColor: 'background.default', border: '1px solid', borderColor: 'divider' }}>
+                <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500, display: 'flex', alignItems: 'center' }}>
+                  <InfoIcon sx={{ mr: 1, fontSize: 20 }} />
+                  Personal Details
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Current balance: {formatBalance(userBalance)}
+                
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <EmailIcon sx={{ mr: 2, color: 'text.secondary', fontSize: 20 }} />
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">Email</Typography>
+                    <Typography variant="body1">{userInfo.email}</Typography>
+                  </Box>
+                </Box>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <PersonIcon sx={{ mr: 2, color: 'text.secondary', fontSize: 20 }} />
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">Name</Typography>
+                    <Typography variant="body1">{userInfo.name}</Typography>
+                  </Box>
+                </Box>
+                
+                {userInfo.registrationDate && (
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <CalendarTodayIcon sx={{ mr: 2, color: 'text.secondary', fontSize: 20 }} />
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">Member Since</Typography>
+                      <Typography variant="body1">
+                        {format(userInfo.registrationDate, 'dd MMM yyyy')}
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+              </Card>
+
+              {/* Account Status */}
+              <Card sx={{ p: 2, backgroundColor: 'background.default', border: '1px solid', borderColor: 'divider' }}>
+                <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500, display: 'flex', alignItems: 'center' }}>
+                  <VerifiedIcon sx={{ mr: 1, fontSize: 20 }} />
+                  Account Status
                 </Typography>
-              </Box>
-              <Button
-                variant="contained"
-                onClick={() => setDepositModalOpen(true)}
-              >
-                Add Funds
-              </Button>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <AccountBalanceWalletIcon sx={{ mr: 2, color: 'success.main', fontSize: 20 }} />
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">Balance</Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {formatBalance(userBalance)}
+                    </Typography>
+                  </Box>
+                </Box>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  {userInfo.isAdmin ? (
+                    <>
+                      <AdminPanelSettingsIcon sx={{ mr: 2, color: 'warning.main', fontSize: 20 }} />
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">Role</Typography>
+                        <Typography variant="body1" sx={{ color: 'warning.main', fontWeight: 500, display: 'flex', alignItems: 'center' }}>
+                          <ShieldIcon sx={{ mr: 0.5, fontSize: 16 }} />
+                          Administrator
+                        </Typography>
+                      </Box>
+                    </>
+                  ) : (
+                    <>
+                      <PersonIcon sx={{ mr: 2, color: 'primary.main', fontSize: 20 }} />
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">Role</Typography>
+                        <Typography variant="body1" sx={{ color: 'primary.main', fontWeight: 500 }}>
+                          Standard User
+                        </Typography>
+                      </Box>
+                    </>
+                  )}
+                </Box>
+              </Card>
             </Box>
-            {/* Password Section */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Box>
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                  Password
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Change your account password
-                </Typography>
-              </Box>
+          </Card>
+
+          {/* Account Actions Section */}
+          <Card sx={{ mb: 4, p: 3, backgroundColor: "background.paper", boxShadow: 1 }}>
+            <Typography variant="h6" sx={{ mb: 3, fontWeight: 500, display: 'flex', alignItems: 'center' }}>
+              <SettingsIcon sx={{ mr: 1 }} />
+              Account Actions
+            </Typography>
+            
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
               <Button
                 variant="contained"
+                size="large"
+                startIcon={<AccountBalanceWalletIcon />}
+                onClick={() => setDepositModalOpen(true)}
+                sx={{ p: 2, justifyContent: 'flex-start' }}
+              >
+                <Box sx={{ textAlign: 'left' }}>
+                  <Typography variant="button" sx={{ display: 'block' }}>Add Funds</Typography>
+                  <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                    Current: {formatBalance(userBalance)}
+                  </Typography>
+                </Box>
+              </Button>
+              
+              <Button
+                variant="contained"
+                size="large"
                 startIcon={<LockIcon />}
                 onClick={handleOpenPasswordModal}
+                sx={{ p: 2, justifyContent: 'flex-start' }}
               >
-                Change Password
+                <Box sx={{ textAlign: 'left' }}>
+                  <Typography variant="button" sx={{ display: 'block' }}>Change Password</Typography>
+                  <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                    Update security
+                  </Typography>
+                </Box>
               </Button>
             </Box>
           </Card>
@@ -534,14 +664,54 @@ const Profile = ({ onLogout }) => {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableCell>ID</TableCell>
-                      <TableCell>Date & Time</TableCell>
-                      <TableCell>Computer</TableCell>
-                      <TableCell>Package</TableCell>
-                      <TableCell>Room</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Price</TableCell>
-                      <TableCell>Actions</TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <InfoIcon sx={{ mr: 1, fontSize: 16 }} />
+                          ID
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <CalendarTodayIcon sx={{ mr: 1, fontSize: 16 }} />
+                          Date & Time
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <ComputerIcon sx={{ mr: 1, fontSize: 16 }} />
+                          Computer
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <PackageIcon sx={{ mr: 1, fontSize: 16 }} />
+                          Package
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <StatusIcon sx={{ mr: 1, fontSize: 16 }} />
+                          Room
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <VerifiedIcon sx={{ mr: 1, fontSize: 16 }} />
+                          Status
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <PriceIcon sx={{ mr: 1, fontSize: 16 }} />
+                          Price
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <CancelIcon sx={{ mr: 1, fontSize: 16 }} />
+                          Actions
+                        </Box>
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -593,25 +763,57 @@ const Profile = ({ onLogout }) => {
               getDisplayBookings().map((booking, idx) => (
                 <Card key={booking.id || idx} sx={{ mb: 2, maxWidth: 360, mx: "auto", backgroundColor: "background.paper", boxShadow: 3, p: 2 }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
-                    <Typography variant="body2" fontWeight={600}>
-                      {booking.dateTime}
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <CalendarTodayIcon sx={{ mr: 1, fontSize: 16, color: 'primary.main' }} />
+                      <Typography variant="body2" fontWeight={600}>
+                        {booking.dateTime}
+                      </Typography>
+                    </Box>
                     <IconButton size="small" sx={{ color: "text.secondary" }}>
                       <CloseIcon fontSize="small" />
                     </IconButton>
                   </Stack>
-                  <Divider sx={{ mb: 1 }} />
-                  <Typography variant="body2" gutterBottom>ID: {booking.id}</Typography>
-                  <Typography variant="body2">Computer: {booking.computerNumber}</Typography>
-                  <Typography variant="body2">Package: {booking.package}</Typography>
-                  <Typography variant="body2">Room: {booking.room}</Typography>
-                  <Typography variant="body2">Status: {booking.status}</Typography>
-                  <Typography variant="body2" sx={{ mb: 2 }}>Price: {booking.price}</Typography>
+                  <Divider sx={{ mb: 2 }} />
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <InfoIcon sx={{ mr: 1, fontSize: 16, color: 'text.secondary' }} />
+                    <Typography variant="body2">ID: {booking.id}</Typography>
+                  </Box>
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <ComputerIcon sx={{ mr: 1, fontSize: 16, color: 'text.secondary' }} />
+                    <Typography variant="body2">Computer: {booking.computerNumber}</Typography>
+                  </Box>
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <PackageIcon sx={{ mr: 1, fontSize: 16, color: 'text.secondary' }} />
+                    <Typography variant="body2">Package: {booking.package}</Typography>
+                  </Box>
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <FiberManualRecordIcon
+                      color={getRoomColor(booking.room)}
+                      sx={{ mr: 1, fontSize: 12 }}
+                    />
+                    <Typography variant="body2">Room: {booking.room}</Typography>
+                  </Box>
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <VerifiedIcon sx={{ mr: 1, fontSize: 16, color: 'text.secondary' }} />
+                    <Typography variant="body2">Status: {booking.status}</Typography>
+                  </Box>
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <PriceIcon sx={{ mr: 1, fontSize: 16, color: 'text.secondary' }} />
+                    <Typography variant="body2">Price: {booking.price}</Typography>
+                  </Box>
+                  
                   <Button
                     variant="outlined"
                     color="error"
                     size="small"
                     fullWidth
+                    startIcon={<CancelIcon />}
                     onClick={() => handleCancelBooking(booking.id)}
                   >
                     Cancel Booking
