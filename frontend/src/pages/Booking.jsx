@@ -10,7 +10,7 @@ import isComputerAvailable from "../components/utils/isComputerAvailable";
 import dateUtils from "../components/utils/dateUtils";
 import ComputerDetailsModal from "../components/BookingSystem/ComputerDetailsModal";
 import BookingForm from "../components/BookingSystem/BookingForm";
-import MyModal from "../components/UI/modal/MyModal"; 
+import paymentService from "../services/paymentService";
 
 const excludedStatuses = ['pending', 'under repair', 'not working', 'unknown'];
 
@@ -187,8 +187,9 @@ const Booking = () => {
       setErrorMessage("Please select a package.");
       return;
     }
+    
     try {
-      setInfoMessage(`Processing booking for ${selectedComputers.length} computer(s)...`);
+      setInfoMessage(`Processing booking and payment for ${selectedComputers.length} computer(s)...`);
       const duration = getCurrentPackageDuration();
       const startTime = dateUtils.parseDate(date, time || getCurrentTimeString());
       const endTime = new Date(startTime.getTime() + duration * 60000);
@@ -196,21 +197,32 @@ const Booking = () => {
       const formattedEndTime = dateUtils.formatWithLocalTimezone(endTime);
       const currentUser = JSON.parse(localStorage.getItem('user'));
       const userId = currentUser?.id || 1;
-      const bookingPromises = selectedComputers.map(computerId =>
-        bookingService.createBooking({
-          user_id: userId,
+
+      const paymentPromises = selectedComputers.map(computerId =>
+        paymentService.payForBooking({
           computer_id: computerId,
           start_time: formattedStartTime,
           end_time: formattedEndTime,
-          package_id: selectedPackage, 
-          status: "pending"
+          package_id: selectedPackage,
+          user_id: userId
         })
       );
-      await Promise.all(bookingPromises);
+
+      await Promise.all(paymentPromises);
       handleBookingSuccess();
     } catch (error) {
       handleBookingError(error);
     }
+  };
+
+  const isInsufficientBalanceError = (message) => {
+    if (!message) return false;
+    const msg = message.toLowerCase();
+    return (
+      msg.includes('insufficient balance') ||
+      msg.includes('not enough balance') ||
+      msg.includes('insufficient funds')
+    );
   };
 
   const handleBookingSuccess = async () => {
@@ -230,21 +242,32 @@ const Booking = () => {
   };
 
   const handleBookingError = (error) => {
-    if (error.response?.status === 401) {
+    let errorMsg = "Error creating booking. Please try again.";
+    let message = error?.response?.data?.message || error?.response?.data?.error || error?.message || '';
+
+    if (error?.response?.status === 401) {
       handleAuthError("Your session has expired. Please log in again.");
       setTimeout(() => navigate("/login"), 2000);
       setInfoMessage(null);
       return;
     }
-    let errorMsg = "Error creating booking. Please try again.";
-    if (error.response?.data?.message) {
-      errorMsg = error.response.data.message;
-    } else if (error.response?.data?.error) {
-      errorMsg = error.response.data.error;
-    } else if (error.message) {
-      errorMsg = `Error: ${error.message}`;
+
+    if (isInsufficientBalanceError(message)) {
+      showModal(
+        "Insufficient Balance",
+        "You don't have enough balance to complete this booking. Please go to your profile to top up your account.",
+        {
+          confirmText: "Go to Profile",
+          cancelText: "Cancel",
+          onConfirm: () => {
+            navigate("/profile");
+          }
+        }
+      );
+    } else {
+      setErrorMessage(message || errorMsg);
     }
-    setErrorMessage(errorMsg);
+
     setInfoMessage(null);
   };
 
@@ -273,8 +296,9 @@ const Booking = () => {
       setErrorMessage("Please select a package.");
       return;
     }
+    
     try {
-      setInfoMessage("Processing your booking...");
+      setInfoMessage("Processing your booking and payment...");
       const duration = getCurrentPackageDuration();
       const startTime = dateUtils.parseDate(date, time || getCurrentTimeString());
       const endTime = new Date(startTime.getTime() + duration * 60000);
@@ -282,14 +306,15 @@ const Booking = () => {
       const formattedEndTime = dateUtils.formatWithLocalTimezone(endTime);
       const currentUser = JSON.parse(localStorage.getItem('user'));
       const userId = currentUser?.id || 1;
-      await bookingService.createBooking({
-        user_id: userId,
+
+      await paymentService.payForBooking({
         computer_id: computerId,
         start_time: formattedStartTime,
         end_time: formattedEndTime,
-        package_id: selectedPackage, 
-        status: "pending"
+        package_id: selectedPackage,
+        user_id: userId
       });
+
       const updated = computers.map(c =>
         c.id === computerId ? { ...c, status: 'busy' } : c
       );

@@ -61,7 +61,8 @@ func (h *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Add("Location", redirectURL)
+	data, _ := json.Marshal(map[string]string{"Location": redirectURL})
+	w.Write(data)
 	w.WriteHeader(http.StatusMovedPermanently)
 }
 

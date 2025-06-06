@@ -17,7 +17,8 @@ api.interceptors.response.use(
         '/api/auth/activate',
         '/api/auth/authorized',
         '/api/auth/reset/request',
-        '/api/auth/reset/confirm'
+        '/api/auth/reset/confirm',
+        '/api/payment/deposit'
       ];
       
       const shouldLogout = !noLogoutEndpoints.some(endpoint => url.includes(endpoint));

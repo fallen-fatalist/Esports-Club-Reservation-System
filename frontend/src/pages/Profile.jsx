@@ -22,8 +22,10 @@ import {
   TextField,
   Alert,
   CircularProgress,
+  InputAdornment,
   Snackbar
 } from "@mui/material";
+import paymentService from "../services/paymentService"; 
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -33,7 +35,8 @@ import CloseIcon from "@mui/icons-material/Close";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import LockIcon from "@mui/icons-material/Lock";
 import SettingsIcon from "@mui/icons-material/Settings";
-
+import { AuthContext } from '../context/contextIndex';
+import { api } from '../services/authService';
 import { ThemeContext } from "../context/ThemeContext";
 import bookingService from "../services/bookingService";
 import computerService from "../services/computerService";
@@ -78,6 +81,12 @@ const Profile = ({ onLogout }) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  const [depositModalOpen, setDepositModalOpen] = useState(false);
+  const [depositAmount, setDepositAmount] = useState('');
+  const [depositLoading, setDepositLoading] = useState(false);
+  const [depositError, setDepositError] = useState('');
+  const [userBalance, setUserBalance] = useState(0); 
+
   const [selectedBookingForCancel, setSelectedBookingForCancel] = useState(null);
   const [cancelBookingModal, setCancelBookingModal] = useState(false);
   const [snackbar, setSnackbar] = useState({
@@ -85,6 +94,18 @@ const Profile = ({ onLogout }) => {
     message: '',
     severity: 'info'
   });
+
+  useEffect(() => {
+    const fetchUserBalance = async () => {
+      try {
+        const response = await checkAuth();
+        setUserBalance(response.data.balance || 0);
+      } catch (err) {
+        console.error('Error fetching user balance:', err);
+      }
+    };
+    fetchUserBalance();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -108,6 +129,56 @@ const Profile = ({ onLogout }) => {
     fetchData();
   }, []);
 
+  const EXCHANGE_RATE_KZT_TO_USD = 0.0021;
+  const EXCHANGE_RATE_USD_TO_KZT = 476;
+
+  const convertToUSD = (amountInKZT) => {
+    return (amountInKZT * EXCHANGE_RATE_KZT_TO_USD).toFixed(2);
+  };
+
+  const convertToKZT = (amountInUSD) => {
+    return Math.round(amountInUSD * EXCHANGE_RATE_USD_TO_KZT);
+  };
+
+  const formatBalance = (balance) => {
+    const usdAmount = convertToUSD(balance);
+    return `${balance}₸ ($${usdAmount})`;
+  };
+
+  const handleDeposit = async () => {
+      const amountUSD = Number(depositAmount);
+
+      if (!depositAmount || isNaN(amountUSD)) {
+          setDepositError('Please enter a valid amount');
+          return;
+      }
+
+      if (amountUSD <= 0) {
+          setDepositError('Amount must be greater than 0');
+          return;
+      }
+
+      if (amountUSD < 1) {
+          setDepositError('Minimum deposit amount is $1');
+          return;
+      }
+
+      try {
+          setDepositError('');
+          const amountKZT = convertToKZT(amountUSD);
+          const data = await paymentService.createDeposit(amountKZT);
+
+          if (data.Location) {
+              window.open(data.Location, '_blank');
+          } else {
+              throw new Error('No payment URL received from server');
+          }
+
+      } catch (error) {
+          setDepositError(`Payment failed: ${error.message || 'Unknown error'}`);
+      }
+  };
+
   const handleCancelBooking = (bookingId) => {
     const bookingToCancel = transformedBookings.find(b => b.id === bookingId);
     if (!bookingToCancel) return;
@@ -122,33 +193,30 @@ const Profile = ({ onLogout }) => {
     try {
       setLoading(true);
 
-      const success = await bookingService.cancelBookingByID(selectedBookingForCancel.id);
+      const result = await paymentService.cancelBooking(selectedBookingForCancel.id);
+      
+      console.log('Cancel booking result:', result);
 
-      if (success) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-        const updatedBookings = await bookingService.getUserBookings();
-        const cancelledBooking = updatedBookings.find(b => b.id === selectedBookingForCancel.id);
+      const updatedBookings = await bookingService.getUserBookings();
+      setBookings(updatedBookings);
 
-        if (!cancelledBooking || cancelledBooking.status === 'cancelled') {
-          setBookings(updatedBookings);
-          setSnackbar({
-            open: true,
-            message: `Booking #${selectedBookingForCancel.id} cancelled successfully`,
-            severity: 'success'
-          });
-        } else {
-          setSnackbar({
-            open: true,
-            message: `Booking cancellation failed - status not updated on server`,
-            severity: 'error'
-          });
-        }
-      }
-    } catch (error) {
       setSnackbar({
         open: true,
-        message: `Failed to cancel booking: ${error.message}`,
+        message: `Booking #${selectedBookingForCancel.id} cancelled successfully`,
+        severity: 'success'
+      });
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+
+    } catch (error) {
+      console.error('Cancel booking error:', error);
+      setSnackbar({
+        open: true,
+        message: `Failed to cancel booking: ${error.message || 'Unknown error'}`,
         severity: 'error'
       });
     } finally {
@@ -412,6 +480,24 @@ const Profile = ({ onLogout }) => {
               Account Settings
             </Typography>
             
+            {/* Balance Section */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <Box>
+                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                  Balance
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Current balance: {formatBalance(userBalance)}
+                </Typography>
+              </Box>
+              <Button
+                variant="contained"
+                onClick={() => setDepositModalOpen(true)}
+              >
+                Add Funds
+              </Button>
+            </Box>
+            {/* Password Section */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Box>
                 <Typography variant="body1" sx={{ fontWeight: 500 }}>
@@ -686,6 +772,72 @@ const Profile = ({ onLogout }) => {
               startIcon={loading ? <CircularProgress size={20} /> : null}
             >
               Yes, Cancel
+            </Button>
+          </DialogActions>
+        </Dialog>
+        <Dialog
+          open={depositModalOpen}
+          onClose={() => {
+            setDepositModalOpen(false);
+            setDepositError('');
+            setDepositAmount('');
+          }}
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogTitle>Add Funds to Account</DialogTitle>
+          <DialogContent>
+            {depositError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {depositError}
+              </Alert>
+            )}
+            
+            <TextField
+              fullWidth
+              label="Amount (USD)"
+              type="number"
+              value={depositAmount}
+              onChange={(e) => setDepositAmount(e.target.value)}
+              InputProps={{
+                startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                inputProps: { 
+                  min: 1,
+                  step: 1
+                }
+              }}
+              sx={{ mt: 1 }}
+              disabled={depositLoading}
+            />
+            
+            {depositAmount && Number(depositAmount) > 0 && (
+              <Typography variant="body2" color="primary" sx={{ mt: 1 }}>
+                ≈ {convertToKZT(Number(depositAmount))}₸ KZT
+              </Typography>
+            )}
+            
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+              Minimum deposit amount: $1 (≈476₸)
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button 
+              onClick={() => {
+                setDepositModalOpen(false);
+                setDepositError('');
+                setDepositAmount('');
+              }}
+              disabled={depositLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDeposit}
+              variant="contained"
+              disabled={depositLoading || !depositAmount}
+              startIcon={depositLoading && <CircularProgress size={16} />}
+            >
+              Proceed to Payment
             </Button>
           </DialogActions>
         </Dialog>
