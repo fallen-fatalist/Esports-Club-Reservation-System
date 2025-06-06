@@ -54,9 +54,9 @@ func (p *PayPalClient) Deposit(amount float64, userID int64, description string)
 	}
 
 	appContext := &paypal.ApplicationContext{
-		ReturnURL:  p.ReturnURL,
-		CancelURL:  p.CancelURL,
-		UserAction: "PAY_NOW",
+		ReturnURL: p.ReturnURL,
+		CancelURL: p.CancelURL,
+		// UserAction: "PAY_NOW", // This line is responsible for immediate redirect
 	}
 
 	// Remove the empty PaymentSource parameter
