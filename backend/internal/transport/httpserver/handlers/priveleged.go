@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"errors"
+	"esports_club_booking/internal/auth"
 	"esports_club_booking/internal/entities"
+	"esports_club_booking/internal/transport/dto"
 	"esports_club_booking/internal/views"
 	"log/slog"
 	"net/http"
@@ -29,7 +31,32 @@ func (s *Handler) IsPriveleged(w http.ResponseWriter, r *http.Request) {
 // @Failure		401	{object}	utils.HTTPError	"Unauthorized"
 // @Failure		500	{object}	utils.HTTPError	"Internal server error"
 // @Router			/api/users/{id}/block [post]
-func (s *Handler) HandleBlock(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandleBlock(w http.ResponseWriter, r *http.Request) {
+	token, err := r.Cookie("token")
+	if err == nil {
+		_, err = h.jwtMng.ValidateToken(token.Value)
+		if err != nil {
+			h.Logout(w, r)
+			views.WriteError(w, http.StatusUnauthorized, entities.ErrInvalidToken)
+			return
+		}
+	}
+	adminIDStr, _ := auth.GetUserIDFromContext(r.Context())
+	adminID, err := strconv.ParseInt(adminIDStr, 10, 64)
+	// Lie to the client who is trying to brute force the token
+	if err != nil {
+		views.WriteError(w, http.StatusUnauthorized, entities.ErrMissingToken)
+		h.Logout(w, r)
+		return
+	}
+
+	admin, err := h.service.UserService.GetUser(adminID)
+	if err != nil {
+		h.logger.Error("failed to get user", slog.Any("error", err))
+		views.WriteJSON(w, http.StatusInternalServerError, dto.JSONAnswer{Message: "internal error"})
+		return
+	}
+
 	userIDStr := r.PathValue("id")
 
 	userID, err := strconv.ParseInt(userIDStr, 10, 64)
@@ -38,7 +65,7 @@ func (s *Handler) HandleBlock(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.service.UserService.Block(userID)
+	err = h.service.UserService.Block(userID, admin.Login)
 	if err != nil {
 		switch {
 		case errors.Is(err, entities.ErrNegativeID),

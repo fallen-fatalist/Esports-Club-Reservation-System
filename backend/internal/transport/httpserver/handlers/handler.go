@@ -62,9 +62,9 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/reset/confirm", h.HandleResetPassword)
 
 	// Payment
-	mux.HandleFunc("POST /payment/deposit", h.handleDeposit)
-	mux.HandleFunc("POST /payment/booking", h.handleBookingPayment)
-	mux.HandleFunc("POST /payment/cancel", h.handleBookingRefund)
+	mux.HandleFunc("POST /payment/deposit", auth.WithAuth(h.jwtMng, entities.AllRoles, h.handleDeposit))
+	mux.HandleFunc("POST /payment/booking", auth.WithAuth(h.jwtMng, entities.AllRoles, h.handleBookingPayment))
+	mux.HandleFunc("POST /payment/cancel", auth.WithAuth(h.jwtMng, entities.AllRoles, h.handleBookingRefund))
 	mux.HandleFunc("POST /payment/webhook", h.handleWebhook)
 
 	mux.HandleFunc("GET /auth/authorized", auth.WithAuth(h.jwtMng, entities.AllRoles, h.IsAuthorized))

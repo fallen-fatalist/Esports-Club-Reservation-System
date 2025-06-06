@@ -9,6 +9,7 @@ import (
 	"esports_club_booking/internal/repository"
 	"esports_club_booking/internal/repository/minio"
 	"esports_club_booking/internal/transport/dto"
+	"fmt"
 	"log"
 	"log/slog"
 )
@@ -97,11 +98,25 @@ func (s *UserService) CreateUser(userDTO *dto.RegisterUser) (int64, error) {
 	return s.repo.Create(&user, hashedPassword)
 }
 
-func (s *UserService) Block(userID int64) error {
+func (s *UserService) Block(userID int64, adminLogin string) error {
 	if err := entities.ValidateID(userID); err != nil {
 		return err
 	}
-	return s.repo.Block(userID)
+
+	if err := s.repo.Block(userID); err != nil {
+		return err
+	}
+
+	user, err := s.GetUser(userID)
+	if err != nil {
+		return err
+	}
+
+	return s.emailSender.SendEmail(
+		user.Email,
+		"Account block",
+		fmt.Sprintf("Your account has been blocked by %s, please contact support", adminLogin),
+	)
 }
 
 func (s *UserService) Unblock(userID int64) error {
@@ -189,6 +204,10 @@ func (s *UserService) UserBalanceFill(ctx context.Context, userID int64, amount 
 }
 
 func (s *UserService) GrantAdmin(userID int64, role string) error {
+	if !entities.CheckEnumUserRole(role) {
+		return entities.ErrIncorrectRole
+	}
+
 	if err := entities.ValidateID(userID); err != nil {
 		return err
 	}

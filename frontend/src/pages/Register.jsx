@@ -1,9 +1,54 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useCallback } from "react";
 import MyInput from "../components/UI/input/MyInput";
 import MyModal from "../components/UI/modal/MyModal";
 import { AuthContext } from "../context/contextIndex";
 import { useNavigate } from "react-router-dom";
 import { signUp, activate, verifyEmail } from "../services/authService";
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+
+const PasswordInput = React.memo(({ name, placeholder, value, onChange, required }) => {
+  const [showPassword, setShowPassword] = useState(false);
+
+  const togglePasswordVisibility = useCallback(() => {
+    setShowPassword(prev => !prev);
+  }, []);
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <MyInput
+        name={name}
+        type={showPassword ? "text" : "password"}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        required={required}
+        style={{ paddingRight: '40px' }}
+      />
+      <button
+        type="button"
+        onClick={togglePasswordVisibility}
+        style={{
+          position: 'absolute',
+          right: '10px',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          padding: '5px',
+          color: '#6c757d',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+        aria-label={showPassword ? "Hide password" : "Show password"}
+      >
+        {showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+      </button>
+    </div>
+  );
+});
 
 const Register = () => {
   const { login: loginContext, showModal } = useContext(AuthContext);
@@ -23,34 +68,34 @@ const Register = () => {
     code: ""
   });
 
-  const showLocalModal = (title, message) => {
+  const showLocalModal = useCallback((title, message) => {
     setModalContent({ title, message });
     setModalVisible(true);
-  };
+  }, []);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = useCallback((e) => {
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
     if (error) setError("");
-  };
+  }, [error]);
 
-  const validateEmail = (email) => {
+  const validateEmail = useCallback((email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
-  };
+  }, []);
 
-  const validateLogin = (login) => {
+  const validateLogin = useCallback((login) => {
     // Латинские буквы (a–z), цифры (0–9), подчёркивание (_), длина от 3 до 20 символов
     const loginRegex = /^[a-zA-Z0-9_]{3,20}$/;
     return loginRegex.test(login);
-  };
+  }, []);
 
-  const validatePassword = (password) => {
+  const validatePassword = useCallback((password) => {
     // Минимум 8 символов, одна заглавная, одна строчная, одна цифра, один спецсимвол
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
     return passwordRegex.test(password);
-  };
+  }, []);
 
-  const validateForm = () => {  
+  const validateForm = useCallback(() => {  
     const { email, login, password, confirmPassword } = form;
 
     if (!email || !login || !password || !confirmPassword) {
@@ -79,9 +124,9 @@ const Register = () => {
     }
 
     return true;
-  };
+  }, [form, validateEmail, validateLogin, validatePassword]);
 
-  const handleRegister = async (event) => {
+  const handleRegister = useCallback(async (event) => {
     event.preventDefault();
     setError("");
     setIsLoading(true);
@@ -108,9 +153,9 @@ const Register = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [form, validateForm, showLocalModal]);
 
-  const handleVerify = async (event) => {
+  const handleVerify = useCallback(async (event) => {
     event.preventDefault();
     setError("");
     setIsLoading(true);
@@ -150,10 +195,9 @@ const Register = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [form.code, form.email, form.password, loginContext, navigate, showLocalModal]);
 
-
-  const resendActivationCode = async () => {
+  const resendActivationCode = useCallback(async () => {
     setError("");
     setIsLoading(true);
     try {
@@ -169,17 +213,21 @@ const Register = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [form.email, showLocalModal]);
 
-  const goBackToRegistration = () => {
+  const goBackToRegistration = useCallback(() => {
     setStep(1);
     setError("");
-    setForm((prev) => ({ ...prev, code: "" }));
-  };
+    setForm(prev => ({ ...prev, code: "" }));
+  }, []);
 
-  const handleModalClose = () => {
+  const handleModalClose = useCallback(() => {
     setModalVisible(false);
-  };
+  }, []);
+
+  const navigateToLogin = useCallback(() => {
+    navigate("/login");
+  }, [navigate]);
 
   return (
     <>
@@ -207,17 +255,15 @@ const Register = () => {
                   onChange={handleChange}
                   required
                 />
-                <MyInput
+                <PasswordInput
                   name="password"
-                  type="password"
                   placeholder="Create password (8+ chars, upper, lower, digit, special)"
                   value={form.password}
                   onChange={handleChange}
                   required
                 />
-                <MyInput
+                <PasswordInput
                   name="confirmPassword"
-                  type="password"
                   placeholder="Confirm password"
                   value={form.confirmPassword}
                   onChange={handleChange}
@@ -235,7 +281,7 @@ const Register = () => {
                     <button
                       type="button"
                       className="details-button"
-                      onClick={() => navigate("/login")}
+                      onClick={navigateToLogin}
                     >
                       Login here
                     </button>
@@ -272,7 +318,7 @@ const Register = () => {
                   <button type="button" className="details-button" onClick={goBackToRegistration} style={{ flex: 1 }}>
                     Back
                   </button>
-                  <button type="button" className="details-button" onClick={() => navigate("/login")} style={{ flex: 1 }}>
+                  <button type="button" className="details-button" onClick={navigateToLogin} style={{ flex: 1 }}>
                     Login
                   </button>
                 </div>

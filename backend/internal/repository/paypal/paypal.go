@@ -53,19 +53,13 @@ func (p *PayPalClient) Deposit(amount float64, userID int64, description string)
 		},
 	}
 
-	appContext := &paypal.ApplicationContext{
-		ReturnURL:  p.ReturnURL,
-		CancelURL:  p.CancelURL,
-		UserAction: "PAY_NOW",
-	}
-
 	// Remove the empty PaymentSource parameter
 	order, err := p.Client.CreateOrder(
 		context.Background(),
 		paypal.OrderIntentCapture,
 		unit,
 		nil, // Don't pass PaymentSource here
-		appContext,
+		nil,
 	)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to create order: %w", err)
@@ -100,13 +94,4 @@ func (p *PayPalClient) VerifyWebhook(ctx context.Context, r *http.Request) error
 	}
 
 	return nil
-}
-
-func (p *PayPalClient) checkOrderStatus(orderID string) (string, error) {
-	order, err := p.Client.GetOrder(context.Background(), orderID)
-
-	if err != nil {
-		return "", fmt.Errorf("failed to get order status: %w", err)
-	}
-	return order.Status, nil
 }

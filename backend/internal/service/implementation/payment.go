@@ -3,6 +3,7 @@ package implementation
 import (
 	"context"
 	"fmt"
+	"log"
 	"log/slog"
 	"net/http"
 	"time"
@@ -55,6 +56,15 @@ func (s *PaymentService) Deposit(ctx context.Context, userID int64, amount float
 		return err
 	}
 
+	err = s.emailSender.SendEmail(
+		user.Email,
+		"Balance changes",
+		fmt.Sprintf("Your balance has increased by %.2f", amount),
+	)
+
+	if err != nil {
+		log.Printf("failed to send balance update email to %s: %v", user.Email, err)
+	}
 	_, err = s.repo.PaymentRepository.Deposit(ctx, user, amount)
 	return err
 }

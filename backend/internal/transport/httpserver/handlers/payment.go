@@ -29,11 +29,6 @@ import (
 // @Router       /api/payments/deposit [post]
 func (h *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 	var req dto.DepositRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Println(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
 
 	token, err := r.Cookie("token")
 	if err == nil {
@@ -53,6 +48,12 @@ func (h *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	_, redirectURL, err := h.service.PaymentService.RequestDeposit(context.Background(), userID, req.Amount)
 	if err != nil {
 		log.Println(err)
@@ -60,7 +61,8 @@ func (h *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Add("Location", redirectURL)
+	data, _ := json.Marshal(map[string]string{"Location": redirectURL})
+	w.Write(data)
 	w.WriteHeader(http.StatusMovedPermanently)
 }
 
