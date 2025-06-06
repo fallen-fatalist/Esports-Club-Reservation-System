@@ -38,7 +38,6 @@ import CancelIcon from "@mui/icons-material/Cancel";
 import InfoIcon from "@mui/icons-material/Info";
 import VerifiedIcon from "@mui/icons-material/Verified";
 import ShieldIcon from "@mui/icons-material/Shield";
-import paymentService from "../services/paymentService"; 
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -55,6 +54,7 @@ import { ThemeContext } from "../context/ThemeContext";
 import bookingService from "../services/bookingService";
 import computerService from "../services/computerService";
 import packageService from "../services/packageService";
+import paymentService from "../services/paymentService"; 
 import { checkAuth, requestPasswordReset, confirmPasswordReset } from "../services/authService";
 
 const capitalizeFirst = (str) => {
@@ -100,6 +100,7 @@ const Profile = ({ onLogout }) => {
   const [depositLoading, setDepositLoading] = useState(false);
   const [depositError, setDepositError] = useState('');
   const [userBalance, setUserBalance] = useState(0); 
+  const { userRole } = useContext(AuthContext);
 
   const [selectedBookingForCancel, setSelectedBookingForCancel] = useState(null);
   const [cancelBookingModal, setCancelBookingModal] = useState(false);
@@ -112,7 +113,7 @@ const Profile = ({ onLogout }) => {
   const [userInfo, setUserInfo] = useState({
     email: '',
     name: '',
-    isAdmin: false,
+    role: userRole || 'client',
     registrationDate: null
   });
 
@@ -150,27 +151,22 @@ const Profile = ({ onLogout }) => {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    const fetchUserInfo = async () => {
-      try {
-        const [authResponse, privilegeResponse] = await Promise.all([
-          checkAuth(),
-          usersService.checkPrivileges().catch(() => false)
-        ]);
-        
-        setUserInfo({
-          email: authResponse.data.email || '',
-          name: authResponse.data.name || 'User',
-          isAdmin: privilegeResponse,
-          registrationDate: authResponse.data.created_at ? new Date(authResponse.data.created_at) : null
-        });
-        setUserBalance(authResponse.data.balance || 0);
-      } catch (err) {
-        console.error('Error fetching user info:', err);
-      }
-    };
-    fetchUserInfo();
-  }, []);
+  const fetchUserInfo = async () => {
+    try {
+      const authResponse = await checkAuth();
+      
+      setUserInfo({
+        email: authResponse.data.email || '',
+        name: authResponse.data.name || 'User',
+        role: userRole || authResponse.data.role || 'client', // Используем userRole из контекста
+        registrationDate: authResponse.data.created_at ? new Date(authResponse.data.created_at) : null
+      });
+      
+      setUserBalance(authResponse.data.balance || 0);
+    } catch (err) {
+      console.error('Error fetching user info:', err);
+    }
+  };
 
   const EXCHANGE_RATE_KZT_TO_USD = 0.0021;
   const EXCHANGE_RATE_USD_TO_KZT = 476;
@@ -580,7 +576,18 @@ const Profile = ({ onLogout }) => {
                 </Box>
                 
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  {userInfo.isAdmin ? (
+                  {userInfo.role === 'owner' ? (
+                    <>
+                      <AdminPanelSettingsIcon sx={{ mr: 2, color: 'error.main', fontSize: 20 }} />
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">Role</Typography>
+                        <Typography variant="body1" sx={{ color: 'error.main', fontWeight: 500, display: 'flex', alignItems: 'center' }}>
+                          <ShieldIcon sx={{ mr: 0.5, fontSize: 16 }} />
+                          Owner
+                        </Typography>
+                      </Box>
+                    </>
+                  ) : userInfo.role === 'admin' || userInfo.role === 'privileged' ? (
                     <>
                       <AdminPanelSettingsIcon sx={{ mr: 2, color: 'warning.main', fontSize: 20 }} />
                       <Box>
@@ -597,7 +604,7 @@ const Profile = ({ onLogout }) => {
                       <Box>
                         <Typography variant="body2" color="text.secondary">Role</Typography>
                         <Typography variant="body1" sx={{ color: 'primary.main', fontWeight: 500 }}>
-                          Standard User
+                          Client
                         </Typography>
                       </Box>
                     </>

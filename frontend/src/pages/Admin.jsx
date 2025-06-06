@@ -56,6 +56,7 @@ import computerService from '../services/computerService';
 import packageService from '../services/packageService';
 import usersService from '../services/usersService';
 import { checkAuth } from '../services/authService';
+import paymentService from "../services/paymentService"; 
 
 const Admin = () => {
   const { isDarkTheme } = useContext(ThemeContext);
@@ -274,8 +275,9 @@ const Admin = () => {
 
   const handleBalanceOperation = async () => {
     if (!selectedUser || !balanceAmount) return;
+    
     try {
-      const amount = parseFloat(balanceAmount);
+      const amount = Math.abs(parseFloat(balanceAmount));
       const userId = parseInt(selectedUser);
       const user = users.find(u => u.id === userId);
       if (!user) return;
@@ -289,7 +291,7 @@ const Admin = () => {
       const newBalance = balanceOperation === 'add' 
         ? user.balance + amount 
         : user.balance - amount;
-        
+      
       setUsers(users.map(u => 
         u.id === userId 
           ? { ...u, balance: Math.max(0, newBalance) }
@@ -302,6 +304,7 @@ const Admin = () => {
         message: `Successfully ${operationText} ${user.username || user.email}: $${amount}`,
         severity: 'success'
       });
+      
       setBalanceModal(false);
       setSelectedUser('');
       setBalanceAmount('');
@@ -319,6 +322,15 @@ const Admin = () => {
     if (!selectedBookingForCancel) return;
     try {
       await bookingService.cancelBookingByID(selectedBookingForCancel.id);
+      
+      if (selectedBookingForCancel.status === 'pending') {
+        try {
+          await bookingService.cancelPendingPayment();
+        } catch (paymentError) {
+          console.warn('Payment cancellation failed:', paymentError);
+        }
+      }
+      
       setBookings(bookings.map(booking => 
         booking.id === selectedBookingForCancel.id 
           ? { ...booking, status: 'cancelled' }
@@ -340,21 +352,33 @@ const Admin = () => {
     }
   };
 
-  const handleGrantAdmin = async (userId) => {
+  const handleGrantAdmin = async (userId, currentRole) => {
     try {
-      await usersService.grantAdminByID(userId);
-      setUsers(users.map(user => 
-        user.id === userId ? { ...user, role: 'admin' } : user
-      ));
-      setSnackbar({
-        open: true,
-        message: 'Admin privileges granted successfully',
-        severity: 'success'
-      });
+      if (currentRole === 'admin') {
+        await usersService.revokeAdminByID(userId);
+        setUsers(users.map(user => 
+          user.id === userId ? { ...user, role: 'client' } : user
+        ));
+        setSnackbar({
+          open: true,
+          message: 'Admin privileges revoked successfully',
+          severity: 'success'
+        });
+      } else {
+        await usersService.grantAdminByID(userId);
+        setUsers(users.map(user => 
+          user.id === userId ? { ...user, role: 'admin' } : user
+        ));
+        setSnackbar({
+          open: true,
+          message: 'Admin privileges granted successfully',
+          severity: 'success'
+        });
+      }
     } catch (error) {
       setSnackbar({
         open: true,
-        message: error.message || 'Failed to grant admin privileges',
+        message: error.message || 'Failed to update user privileges',
         severity: 'error'
       });
     }
@@ -651,7 +675,7 @@ const Admin = () => {
                                 color="error"
                                 onClick={() => handleBlockUser(user.id)}
                                 title="Block User"
-                                disabled={user.role === 'owner'}
+                                disabled={user.role === 'owner' || (currentUser?.role === 'admin' && user.role === 'admin')}
                               >
                                 <Block />
                               </IconButton>
@@ -665,6 +689,7 @@ const Admin = () => {
                                 <PersonAdd />
                               </IconButton>
                             )}
+                            
                             <IconButton
                               size="small"
                               color="primary"
@@ -676,28 +701,21 @@ const Admin = () => {
                             >
                               <AccountBalanceWallet />
                             </IconButton>
+
+                            {/* Owner-only actions */}
                             {currentUser?.role === 'owner' && user.role !== 'owner' && (
                               <>
-                                {user.role === 'admin' ? (
-                                  <IconButton
-                                    size="small"
-                                    color="secondary"
-                                    onClick={() => handleGrantAdmin(user.id)}
-                                    title="Revoke Admin"
-                                    disabled
-                                  >
-                                    <Security />
-                                  </IconButton>
-                                ) : (
-                                  <IconButton
-                                    size="small"
-                                    color="primary"
-                                    onClick={() => handleGrantAdmin(user.id)}
-                                    title="Grant Admin"
-                                  >
-                                    <AdminPanelSettings />
-                                  </IconButton>
-                                )}
+                                {/* Admin role management */}
+                                <IconButton
+                                  size="small"
+                                  color={user.role === 'admin' ? "warning" : "primary"}
+                                  onClick={() => handleGrantAdmin(user.id, user.role)}
+                                  title={user.role === 'admin' ? "Revoke Admin" : "Grant Admin"}
+                                >
+                                  {user.role === 'admin' ? <Security /> : <AdminPanelSettings />}
+                                </IconButton>
+                                
+                                {/* Delete user */}
                                 <IconButton
                                   size="small"
                                   color="error"
@@ -711,7 +729,9 @@ const Admin = () => {
                                 </IconButton>
                               </>
                             )}
-                            {currentUser?.role === 'admin' && (
+
+                            {/* Admin actions - only block/unblock, no delete */}
+                            {currentUser?.role === 'admin' && user.role !== 'owner' && user.role !== 'admin' && (
                               <IconButton
                                 size="small"
                                 color="error"
@@ -720,13 +740,15 @@ const Admin = () => {
                                   setDeleteUserModal(true);
                                 }}
                                 title="Delete User"
-                                disabled
+                                disabled={true}
+                                style={{ opacity: 0.3 }}
                               >
                                 <Delete />
                               </IconButton>
                             )}
                           </Box>
                         </TableCell>
+
                       </TableRow>
                     ))}
                   </TableBody>

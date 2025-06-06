@@ -1,4 +1,3 @@
-// App.js
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import Navbar from './components/Navbar';
@@ -37,26 +36,25 @@ function App() {
     }
   };
 
-  const isAdmin = () => {
-    return userRole === 'admin' || userRole === 'privileged' || userRole === 'owner';
-  };
+  const isOwner = () => userRole === 'owner';
+  const isAdmin = () => ['admin', 'privileged', 'owner'].includes(userRole);
+  const isPrivileged = () => ['privileged', 'owner'].includes(userRole);
 
   const checkUserAuth = async () => {
     try {
       setLoading(true);
       const res = await checkAuth();
+      
       if (res.data?.role) {
         setIsAuth(true);
         setUserRole(res.data.role);
         console.log("User authenticated with role:", res.data.role);
         
-        // Дополнительно проверим привилегии для админа
-        if (res.data.role === 'admin' || res.data.role === 'privileged') {
+        if (isAdmin() && !isOwner()) {
           try {
             await checkIsPriveleged();
             console.log("Admin privileges confirmed");
           } catch (error) {
-            // Если ошибка 403, то не админ - это нормально
             if (error.response?.status !== 403) {
               console.error('Privilege check error:', error);
             }
@@ -85,11 +83,8 @@ function App() {
         setUserRole(res.data.role);
         console.log("Login auth check - user role:", res.data.role);
         return true;
-      } else {
-        setIsAuth(false);
-        setUserRole(null);
-        throw new Error('No user role in response');
       }
+      throw new Error('No user role in response');
     } catch (error) {
       setIsAuth(false);
       setUserRole(null);
@@ -107,16 +102,14 @@ function App() {
       }
       
       console.log("Sign in successful, checking auth...");
-      const authResult = await checkUserAuthForLogin();
-      console.log("Login process completed successfully");
+      await checkUserAuthForLogin();
       
-      // Возвращаем информацию о пользователе для использования в Login компоненте
       return {
         success: true,
-        userRole: userRole,
-        isAdmin: isAdmin()
+        userRole,
+        isAdmin: isAdmin(),
+        isOwner: isOwner()
       };
-      
     } catch (error) {
       console.error("Login error:", error);
       throw error;
@@ -153,6 +146,8 @@ function App() {
       userRole,
       setUserRole,
       isAdmin,
+      isOwner,
+      isPrivileged,
       login,
       logout,
       handleAuthError,
