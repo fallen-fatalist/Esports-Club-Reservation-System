@@ -1,9 +1,45 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useCallback } from "react";
 import MyInput from "../components/UI/input/MyInput";
 import MyModal from "../components/UI/modal/MyModal";
 import { AuthContext } from "../context/contextIndex";
 import { useNavigate } from "react-router-dom";
 import { requestPasswordReset, confirmPasswordReset } from "../services/authService";
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+
+const PasswordInput = ({ name, placeholder, value, onChange, showPassword, toggleShow, required = false }) => (
+  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+    <MyInput
+      name={name}
+      type={showPassword ? "text" : "password"}
+      placeholder={placeholder}
+      value={value}
+      onChange={onChange}
+      required={required}
+      style={{ paddingRight: '50px' }}
+    />
+    <button
+      type="button"
+      onClick={toggleShow}
+      style={{
+        position: 'absolute',
+        right: '10px',
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '5px',
+        color: '#666',
+        zIndex: 1
+      }}
+      aria-label={showPassword ? "Hide password" : "Show password"}
+    >
+      {showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+    </button>
+  </div>
+);
 
 const Login = () => {
   const navigate = useNavigate();
@@ -14,6 +50,11 @@ const Login = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalContent, setModalContent] = useState({ title: "", message: "" });
   const { login, showModal, isAdmin, userRole } = useContext(AuthContext);
+
+  // Состояния для видимости паролей
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordStep, setForgotPasswordStep] = useState(1);
@@ -48,6 +89,18 @@ const Login = () => {
 
   const validatePassword = (password) => /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/.test(password);
 
+  const togglePasswordVisibility = useCallback(() => {
+    setShowPassword(!showPassword);
+  }, [showPassword]);
+
+  const toggleNewPasswordVisibility = useCallback(() => {
+    setShowNewPassword(!showNewPassword);
+  }, [showNewPassword]);
+
+  const toggleConfirmPasswordVisibility = useCallback(() => {
+    setShowConfirmPassword(!showConfirmPassword);
+  }, [showConfirmPassword]);
+
   const handleLogin = async (event) => {
     event.preventDefault();
     console.log("Attempting login with:", form.identifier);
@@ -61,19 +114,14 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      // Выполняем логин и получаем информацию о пользователе
       await login(form);
       
       console.log("Login successful");
       
-      // Показываем модальное окно с успехом
       showModal("Login Successful", "You have successfully logged in!");
       
-      // Небольшая задержка перед навигацией для показа модального окна
       setTimeout(() => {
         setModalVisible(false);
-        // AppRouter автоматически перенаправит на нужную страницу
-        // благодаря AuthRoute компоненту
       }, 1500);
       
     } catch (err) {
@@ -202,6 +250,9 @@ const Login = () => {
     setForgotPasswordStep(1);
     setForgotPasswordForm({ email: "", code: "", newPassword: "", confirmPassword: "" });
     setForgotPasswordError("");
+    // Сбрасываем состояния видимости паролей
+    setShowNewPassword(false);
+    setShowConfirmPassword(false);
   };
 
   const handleModalClose = () => {
@@ -253,20 +304,22 @@ const Login = () => {
           <>
             <h3 className="login__header">Set New Password</h3>
             <p className="auth-footer">Enter your new password below.</p>
-            <MyInput
+            <PasswordInput
               name="newPassword"
-              type="password"
               placeholder="New password"
               value={forgotPasswordForm.newPassword}
               onChange={handleForgotPasswordChange}
+              showPassword={showNewPassword}
+              toggleShow={toggleNewPasswordVisibility}
               required
             />
-            <MyInput
+            <PasswordInput
               name="confirmPassword"
-              type="password"
               placeholder="Confirm new password"
               value={forgotPasswordForm.confirmPassword}
               onChange={handleForgotPasswordChange}
+              showPassword={showConfirmPassword}
+              toggleShow={toggleConfirmPasswordVisibility}
               required
             />
           </>
@@ -293,12 +346,13 @@ const Login = () => {
                 onChange={handleChange}
                 required
               />
-              <MyInput
+              <PasswordInput
                 name="password"
-                type="password"
                 placeholder="Enter password"
                 value={form.password}
                 onChange={handleChange}
+                showPassword={showPassword}
+                toggleShow={togglePasswordVisibility}
                 required
               />
               {error && <div className="error-message"><p>{error}</p></div>}
