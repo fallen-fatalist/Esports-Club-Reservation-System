@@ -831,9 +831,6 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "user_id": {
-                    "type": "integer"
-                  },
                   "amount": {
                     "type": "number",
                     "format": "float"
@@ -876,9 +873,6 @@
                   "start_time": {
                     "type": "string",
                     "format": "date-time"
-                  },
-                  "user_id": {
-                    "type": "integer"
                   }
                 }
               }
