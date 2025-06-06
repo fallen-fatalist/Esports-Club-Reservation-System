@@ -145,11 +145,6 @@ func (s *Handler) HandleUserCredit(w http.ResponseWriter, r *http.Request) {
 func (s *Handler) HandleGrantAdmin(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	role := r.PathValue("role")
-	if !entities.CheckEnumUserRole(role) {
-		views.WriteError(w, http.StatusBadRequest, entities.ErrIncorrectRole)
-		return
-	}
-
 	userID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		views.WriteError(w, http.StatusBadRequest, entities.ErrNonNumericID)
