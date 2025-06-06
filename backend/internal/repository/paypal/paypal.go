@@ -56,7 +56,6 @@ func (p *PayPalClient) Deposit(amount float64, userID int64, description string)
 	appContext := &paypal.ApplicationContext{
 		ReturnURL: p.ReturnURL,
 		CancelURL: p.CancelURL,
-		// UserAction: "PAY_NOW", // This line is responsible for immediate redirect
 	}
 
 	// Remove the empty PaymentSource parameter
@@ -100,13 +99,4 @@ func (p *PayPalClient) VerifyWebhook(ctx context.Context, r *http.Request) error
 	}
 
 	return nil
-}
-
-func (p *PayPalClient) checkOrderStatus(orderID string) (string, error) {
-	order, err := p.Client.GetOrder(context.Background(), orderID)
-
-	if err != nil {
-		return "", fmt.Errorf("failed to get order status: %w", err)
-	}
-	return order.Status, nil
 }
