@@ -30,4 +30,30 @@
     .ps5-label {
         font-size: 0.9rem;
     }
+      .navbar {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .navbar__nav-links--desktop,
+  .navbar__controls--desktop {
+    display: none;
+  }
+
+  .navbar__controls--mobile {
+    display: flex;
+  }
+
+  .navbar__logo {
+    font-size: var(--font-size-lg);
+  }
+
+  .navbar__mobile-menu {
+    width: 100%;
+    right: -100%;
+  }
+
+  .navbar__mobile-menu-content {
+    padding: 70px var(--space-md) var(--space-md);
+  }
 }
+

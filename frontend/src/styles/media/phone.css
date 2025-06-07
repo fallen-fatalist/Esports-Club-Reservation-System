@@ -12,4 +12,16 @@
     .computer-grid {
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     }
+
+    .navbar {
+        padding: var(--space-xs) var(--space-sm);
+    }
+
+    .navbar__logo {
+        font-size: var(--font-size-md);
+    }
+
+    .navbar__mobile-menu-content {
+        padding: 60px var(--space-sm) var(--space-sm);
+    }
 }

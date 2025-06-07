@@ -14,6 +14,8 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import BookOnlineIcon from '@mui/icons-material/BookOnline';
 import HomeIcon from '@mui/icons-material/Home';
 import ComputerIcon from '@mui/icons-material/Computer';
+import MenuIcon from '@mui/icons-material/Menu';
+import CloseIcon from '@mui/icons-material/Close';
 import { CircularProgress, Tooltip, IconButton } from '@mui/material';
 import { checkAuth } from "../services/authService";
 
@@ -24,6 +26,7 @@ const Navbar = () => {
   
   const [userBalance, setUserBalance] = useState(0);
   const [balanceLoading, setBalanceLoading] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const EXCHANGE_RATE_KZT_TO_USD = 0.0021;
 
@@ -50,6 +53,28 @@ const Navbar = () => {
     fetchUserBalance();
   }, [isAuth]);
 
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (mobileMenuOpen && !event.target.closest('.navbar__mobile-menu') && !event.target.closest('.navbar__burger-btn')) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 768) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const handleThemeToggle = () => {
     toggleTheme(); 
   };
@@ -58,6 +83,7 @@ const Navbar = () => {
     try {
       await logout();   
       navigate('/');
+      setMobileMenuOpen(false);
     } catch (error) {
       console.error("Logout error:", error);
     }
@@ -77,6 +103,14 @@ const Navbar = () => {
     }
   };
 
+  const handleMobileMenuToggle = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const handleMobileNavClick = () => {
+    setMobileMenuOpen(false);
+  };
+
   return (
     <header className="header">
       <nav className="navbar" aria-label="Main Navigation">
@@ -85,7 +119,8 @@ const Navbar = () => {
           eReserve
         </Link>
         
-        <div className="navbar__nav-links">
+        {/* Desktop Navigation */}
+        <div className="navbar__nav-links navbar__nav-links--desktop">
           <Tooltip title="Home">
             <Link to="/" className="navbar__nav-item">
               <HomeIcon />
@@ -119,7 +154,8 @@ const Navbar = () => {
           )}
         </div>
 
-        <div className="navbar__controls">
+        {/* Desktop Controls */}
+        <div className="navbar__controls navbar__controls--desktop">
           {isAuth && (
             <div className="navbar__balance">
               <AccountBalanceWalletIcon className="balance-icon" />
@@ -186,6 +222,118 @@ const Navbar = () => {
             )}
           </div>
         </div>
+
+        {/* Mobile Controls */}
+        <div className="navbar__controls--mobile">
+          <Tooltip title={isDarkTheme ? "Switch to Light Mode" : "Switch to Dark Mode"}>
+            <button className="theme-toggle-btn" onClick={handleThemeToggle}>   
+              <img
+                src={isDarkTheme ? sunnyOutline : moonOutline}
+                alt="Theme Toggle Icon"
+                className="theme-icon"
+              />
+            </button>
+          </Tooltip>
+
+          <button 
+            className="navbar__burger-btn"
+            onClick={handleMobileMenuToggle}
+            aria-label="Toggle mobile menu"
+          >
+            {mobileMenuOpen ? <CloseIcon /> : <MenuIcon />}
+          </button>
+        </div>
+
+        {/* Mobile Menu */}
+        <div className={`navbar__mobile-menu ${mobileMenuOpen ? 'navbar__mobile-menu--open' : ''}`}>
+          <div className="navbar__mobile-menu-content">
+            {/* Mobile Balance */}
+            {isAuth && (
+              <div className="navbar__balance navbar__balance--mobile">
+                <AccountBalanceWalletIcon className="balance-icon" />
+                <span className="balance-text">{formatBalance(userBalance)}</span>
+                <IconButton
+                  size="small"
+                  onClick={handleRefreshBalance}
+                  disabled={balanceLoading}
+                  className="balance-refresh-btn"
+                >
+                  {balanceLoading ? (
+                    <CircularProgress size={16} />
+                  ) : (
+                    <RefreshIcon fontSize="small" />
+                  )}
+                </IconButton>
+              </div>
+            )}
+
+            {/* Mobile Navigation Links */}
+            <div className="navbar__mobile-nav">
+              <Link to="/" className="navbar__mobile-nav-item" onClick={handleMobileNavClick}>
+                <HomeIcon />
+                <span>Home</span>
+              </Link>
+              
+              <Link to="/booking" className="navbar__mobile-nav-item" onClick={handleMobileNavClick}>
+                <BookOnlineIcon />
+                <span>Booking</span>
+              </Link>
+              
+              {isAuth && (
+                <Link to="/profile" className="navbar__mobile-nav-item" onClick={handleMobileNavClick}>
+                  <PersonIcon />
+                  <span>Profile</span>
+                </Link>
+              )}
+              
+              {isAuth && isAdmin() && (
+                <Link to="/admin" className="navbar__mobile-nav-item admin-link" onClick={handleMobileNavClick}>
+                  <AdminPanelSettingsIcon />
+                  <span>Admin</span>
+                </Link>
+              )}
+            </div>
+
+            {/* Mobile Auth */}
+            <div className="navbar__mobile-auth">
+              {!isAuth ? (
+                <>
+                  <button 
+                    className="mobile-auth-btn login-btn" 
+                    onClick={() => {
+                      navigate("/login");
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <LoginIcon />
+                    <span>Login</span>
+                  </button>
+                  <button 
+                    className="mobile-auth-btn register-btn" 
+                    onClick={() => {
+                      navigate("/register");
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <PersonAddIcon />
+                    <span>Register</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  className="mobile-auth-btn logout-btn"
+                  onClick={handleLogout}
+                >
+                  <LogoutIcon />
+                  <span>Logout ({userRole})</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Menu Overlay */}
+        {mobileMenuOpen && <div className="navbar__mobile-overlay" onClick={() => setMobileMenuOpen(false)} />}
       </nav>
     </header>
   );
