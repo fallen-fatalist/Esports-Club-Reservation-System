@@ -59,10 +59,10 @@ func (s *Handler) Bookings(w http.ResponseWriter, r *http.Request) {
 // @Produce		json
 // @Param			booking	body		dto.Booking	true	"Booking to create"
 // @Success		201		{object}	handlers.JSONAnswer	"Booking created successfully"
-// @Failure		400		{object}	utils.HTTPError	"Invalid request body"
-// @Failure		401		{object}	utils.HTTPError	"Unauthorized"
-// @Failure		404		{object}	utils.HTTPError	"Computer not found"
-// @Failure		500		{object}	utils.HTTPError	"Internal server error"
+// @Failure		400		{object}	views.HTTPError	"Invalid request body"
+// @Failure		401		{object}	views.HTTPError	"Unauthorized"
+// @Failure		404		{object}	views.HTTPError	"Computer not found"
+// @Failure		500		{object}	views.HTTPError	"Internal server error"
 // @Router			/api/bookings [post]
 func (s *Handler) PostBooking(w http.ResponseWriter, r *http.Request) {
 	var booking dto.Booking
@@ -492,10 +492,10 @@ func (s *Handler) UserBookings(w http.ResponseWriter, r *http.Request) {
 // @Produce		json
 // @Param			id	path		int64				true	"Booking ID"
 // @Success		204
-// @Failure		400	{object}	utils.HTTPError	"Invalid booking ID or non own booking cancel"
-// @Failure		401	{object}	utils.HTTPError	"Unauthorized"
-// @Failure		404	{object}	utils.HTTPError	"Booking not found"
-// @Failure		500	{object}	utils.HTTPError	"Internal server error"
+// @Failure		400	{object}	views.HTTPError	"Invalid booking ID or non own booking cancel"
+// @Failure		401	{object}	views.HTTPError	"Unauthorized"
+// @Failure		404	{object}	views.HTTPError	"Booking not found"
+// @Failure		500	{object}	views.HTTPError	"Internal server error"
 // @Router			/api/bookings/{id}/cancel [post]
 func (s *Handler) HandleCancel(w http.ResponseWriter, r *http.Request) {
 	bookingIDStr := r.PathValue("id")

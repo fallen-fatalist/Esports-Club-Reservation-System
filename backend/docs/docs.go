@@ -55,6 +55,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Creates a new booking with the provided start and end times, computer ID and user ID",
                 "consumes": [
                     "application/json"
@@ -87,25 +92,153 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request body",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Computer not found",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bookings/active": {
+            "get": {
+                "description": "Returns a list of active bookings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Get active bookings with time format \"2006-01-02T15:04:05Z07:00\"",
+                "responses": {
+                    "200": {
+                        "description": "List of active bookings",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entities.Booking"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bookings/cancelled": {
+            "get": {
+                "description": "Returns a list of cancelled bookings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Get cancelled bookings with time format \"2006-01-02T15:04:05Z07:00\"",
+                "responses": {
+                    "200": {
+                        "description": "List of cancelled bookings",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entities.Booking"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bookings/finished": {
+            "get": {
+                "description": "Returns a list of finished bookings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Get finished bookings with time format \"2006-01-02T15:04:05Z07:00\"",
+                "responses": {
+                    "200": {
+                        "description": "List of finished bookings",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entities.Booking"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bookings/pending": {
+            "get": {
+                "description": "Returns a list of pending bookings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bookings"
+                ],
+                "summary": "Get pending bookings with time format \"2006-01-02T15:04:05Z07:00\"",
+                "responses": {
+                    "200": {
+                        "description": "List of pending bookings",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entities.Booking"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.JSONAnswer"
                         }
                     }
                 }
@@ -145,25 +278,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid booking ID or non own booking cancel",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "404": {
                         "description": "Booking not found",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     }
                 }
@@ -608,6 +741,160 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/payments/booking": {
+            "post": {
+                "description": "Pays for a booking using the user's balance",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Pay for a booking",
+                "parameters": [
+                    {
+                        "description": "Booking payment request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.BookingPaymentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Payment successful",
+                        "schema": {
+                            "$ref": "#/definitions/dto.JSONAnswer"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.JSONAnswer"
+                        }
+                    },
+                    "402": {
+                        "description": "Insufficient balance",
+                        "schema": {
+                            "$ref": "#/definitions/dto.JSONAnswer"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.JSONAnswer"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/payments/bookings/{id}": {
+            "delete": {
+                "description": "Cancels a booking and refunds the payment to the user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Cancel booking and refund",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Booking ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Refund successful",
+                        "schema": {
+                            "$ref": "#/definitions/dto.JSONAnswer"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid booking ID",
+                        "schema": {
+                            "$ref": "#/definitions/dto.JSONAnswer"
+                        }
+                    },
+                    "404": {
+                        "description": "Booking not found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.JSONAnswer"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.JSONAnswer"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/payments/deposit": {
+            "post": {
+                "description": "Deposits funds to the user's account via PayPal and returns a redirect URL",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Make a deposit",
+                "parameters": [
+                    {
+                        "description": "Deposit request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.DepositRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Deposit initiated, redirect to payment gateway",
+                        "schema": {
+                            "$ref": "#/definitions/dto.JSONAnswer"
+                        },
+                        "headers": {
+                            "Location": {
+                                "type": "string",
+                                "description": "URL to redirect user for completing payment"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.JSONAnswer"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.JSONAnswer"
+                        }
+                    }
+                }
+            }
+        },
         "/api/users": {
             "get": {
                 "security": [
@@ -642,7 +929,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/users//bookings": {
+        "/api/users/bookings": {
             "get": {
                 "security": [
                     {
@@ -719,65 +1006,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid user ID",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "404": {
                         "description": "User not found",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/users/{id}/admin": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Grants admin privileges to a user with the given ID, only Owner and Manager can grant admin role.",
-                "tags": [
-                    "Users"
-                ],
-                "summary": "Grant admin privileges to a user",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "User ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Invalid user ID",
-                        "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
-                        }
-                    },
-                    "404": {
-                        "description": "User not found",
-                        "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     }
                 }
@@ -811,19 +1052,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid user ID",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     }
                 }
@@ -864,19 +1105,77 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid user ID or balance",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "404": {
                         "description": "User not found",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{id}/grant": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Grants a role (admin, analyst, etc.) to a user with the given ID. Only users with \"owner\" or \"manager\" roles can perform this action.",
+                "tags": [
+                    "Users"
+                ],
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "manager",
+                            "admin",
+                            "analyst",
+                            "client"
+                        ],
+                        "type": "string",
+                        "description": "Role to grant",
+                        "name": "role",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Role granted successfully"
+                    },
+                    "400": {
+                        "description": "Invalid user ID or input",
+                        "schema": {
+                            "$ref": "#/definitions/views.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/views.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     }
                 }
@@ -910,19 +1209,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid user ID",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     }
                 }
@@ -962,13 +1261,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     }
                 }
@@ -1055,25 +1354,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid username or password",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "404": {
                         "description": "User not found",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "429": {
                         "description": "Too many attempts",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     }
                 }
@@ -1113,13 +1412,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request or user not found",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     }
                 }
@@ -1156,13 +1455,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad request, validation error",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "401": {
                         "description": "Unauthorized, invalid credentials or blocked user",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     }
                 }
@@ -1196,25 +1495,25 @@ const docTemplate = `{
                     "201": {
                         "description": "User created successfully",
                         "schema": {
-                            "$ref": "#/definitions/utils.Message"
+                            "$ref": "#/definitions/views.Message"
                         }
                     },
                     "400": {
                         "description": "Bad request, validation error",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "409": {
                         "description": "User already exists",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     }
                 }
@@ -1254,25 +1553,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request or verification error",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "404": {
                         "description": "User not found",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "429": {
                         "description": "Too many attempts",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/utils.HTTPError"
+                            "$ref": "#/definitions/views.HTTPError"
                         }
                     }
                 }
@@ -1310,11 +1609,36 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.BookingPaymentRequest": {
+            "type": "object",
+            "properties": {
+                "booking_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.DepositRequest": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                }
+            }
+        },
         "dto.EmailVerificationRequest": {
             "type": "object",
             "properties": {
                 "email": {
                     "description": "required: true\nexample: user@example.com",
+                    "type": "string"
+                }
+            }
+        },
+        "dto.JSONAnswer": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "description": "example: success message",
                     "type": "string"
                 }
             }
@@ -1375,7 +1699,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "balance": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "email": {
                     "type": "string"
@@ -1530,7 +1854,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "price": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "room": {
                     "type": "string"
@@ -1544,7 +1868,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "balance": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "created_at": {
                     "type": "string"
@@ -1580,7 +1904,7 @@ const docTemplate = `{
                 }
             }
         },
-        "utils.HTTPError": {
+        "views.HTTPError": {
             "type": "object",
             "properties": {
                 "error": {
@@ -1588,7 +1912,7 @@ const docTemplate = `{
                 }
             }
         },
-        "utils.Message": {
+        "views.Message": {
             "type": "object",
             "properties": {
                 "message": {

@@ -48,12 +48,12 @@ type UserService interface {
 	GetUser(int64) (*entities.User, error)
 	CreateUser(*dto.RegisterUser) (int64, error)
 	Delete(ctx context.Context, userID int64) error
-	Block(userID int64, adminLogin string) error
+	Block(ctx context.Context, userID int64, adminLogin string) error
 	Unblock(userID int64) error
 	// AuthUser()
 	Register(userDTO dto.RegisterUser) (int64, error)
 	Login(userDTO dto.LoginUser) (string, error)
-	GrantAdmin(userID int64, role string) error
+	Grant(ctx context.Context, userID int64, grantRole string) (int64, error)
 	VerifyEmail(emailverify dto.VerifyEmailRequest) error
 	SendVerificationCode(dto.EmailVerificationRequest) error
 	SendPasswordResetCode(email string) error

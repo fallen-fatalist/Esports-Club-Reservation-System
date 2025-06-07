@@ -1,6 +1,9 @@
 package entities
 
-import "errors"
+import (
+	"errors"
+	"esports_club_booking/internal/utils"
+)
 
 var (
 	ErrUnauthorized         = errors.New("not authorized")
@@ -10,8 +13,18 @@ var (
 	ErrInvalidToken         = errors.New("invalid token")
 	ErrInsufficientPriv     = errors.New("insufficient privileges")
 	ErrMissingToken         = errors.New("missing token")
+	// Only hierarchical grant, can grant only lower priviliges:
+	// 1. Owner can grant to managers, administrators, analysts
+	// 2. Managers can grant administrators, analysts
+	// 3. Administrator nobody
+	ErrGrantEmptyRole              = errors.New("empty role to grant provided")
+	ErrGrantOwner                  = errors.New("can't grant owner role")
+	ErrGrantSameRole               = errors.New("can't grant the same privileged role")
+	ErrGrantInsufficientPriviliges = errors.New("insufficient priviliges to grant role")
 )
 
+// MUST BE: In descending priviliges order
+// If it's not sorted the descending order, the privilged operations will be broken
 var AllRoles []string = []string{
 	OwnerRole,
 	ManagerRole,
@@ -45,26 +58,75 @@ var (
 	ClientRole  = "client"
 )
 
-// RoleHasSufficientRights returns true if the first role is more privileged than the second.
+func RequesterMorePriviliged(requesterRole, subjectUserRole string) bool {
+	if !utils.In(requesterRole, AllRoles) || !(utils.In(subjectUserRole, AllRoles)) {
+		return false
+	}
+
+	var requesterID int = -1
+	var subjectUserID int = -1
+	for idx, role := range AllRoles {
+		if role == requesterRole {
+			requesterID = idx
+		} else if role == subjectUserRole {
+			subjectUserID = idx
+		}
+	}
+
+	return requesterID < subjectUserID
+}
+
+// RoleHasSufficientRightsToDelete returns true if the client role has privilige to delete the another user.
 // Order of privilege:
 // 1. Owner
 // 2. Manager
 // 3. Admin
 // 4. Analyst
 // 5. Client
-func RoleHasSufficientRights(ownrole string, otherrole string) bool {
-	if otherrole == OwnerRole {
+func RoleHasSufficientRightsToDelete(requesterRole string, subjectUserRole string) bool {
+	if subjectUserRole == OwnerRole {
 		return false
-	} else if ownrole == OwnerRole {
+	} else if !RequesterMorePriviliged(requesterRole, subjectUserRole) {
+		return false
+	} else if requesterRole == OwnerRole {
 		return true
-	} else if ownrole == ManagerRole && (otherrole == AdminRole || otherrole == AnalystRole || otherrole == ClientRole) {
-		return true
-	} else if ownrole == AdminRole && (otherrole == AnalystRole || otherrole == ClientRole) {
+	} else if requesterRole == ManagerRole && (subjectUserRole == AdminRole || subjectUserRole == AnalystRole || subjectUserRole == ClientRole) {
 		return true
 	}
 	return false
 }
 
+func RoleHasSufficientRightsToBlock(requesterRole string, subjectUserRole string) bool {
+	if subjectUserRole == OwnerRole {
+		return false
+	} else if !RequesterMorePriviliged(requesterRole, subjectUserRole) {
+		return false
+	} else if requesterRole == OwnerRole {
+		return true
+	} else if requesterRole == ManagerRole && (subjectUserRole == AdminRole || subjectUserRole == AnalystRole || subjectUserRole == ClientRole) {
+		return true
+	} else if requesterRole == AdminRole && (subjectUserRole == AnalystRole || subjectUserRole == ClientRole) {
+		return true
+	}
+	return false
+}
+
+func RoleHasSufficientRightsToGrant(requesterRole string, subjectUserRole string) bool {
+	if !IsCorrectRole(requesterRole) || !IsCorrectRole(subjectUserRole) {
+		return false
+	} else if !utils.In(requesterRole, ManagementRoles) {
+		return false
+	} else if RequesterMorePriviliged(requesterRole, subjectUserRole) {
+		return true
+	}
+	return false
+}
+
+func IsCorrectRole(role string) bool {
+	return utils.In(role, AllRoles)
+}
+
+// switch case 0_0
 func CheckEnumUserRole(role string) bool {
 	switch role {
 	case OwnerRole, ManagerRole, AdminRole, AnalystRole, ClientRole:

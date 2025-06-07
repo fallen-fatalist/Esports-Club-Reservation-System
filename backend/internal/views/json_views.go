@@ -42,7 +42,7 @@ func WriteError(w http.ResponseWriter, status int, err error) {
 	httpErr := HTTPError{Error: err.Error()}
 
 	if encodeErr := json.NewEncoder(&buf).Encode(httpErr); encodeErr != nil {
-		slog.Error("Failed to encode error JSON", "error", encodeErr, "original_error", err)
+		slog.Error("Failed to encode error JSON", "encode_error", encodeErr, "original_error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}

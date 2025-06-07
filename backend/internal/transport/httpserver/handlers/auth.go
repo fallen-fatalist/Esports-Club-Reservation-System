@@ -22,10 +22,10 @@ import (
 // @Accept			json
 // @Produce		json
 // @Param			user	body		dto.RegisterUser	true	"User registration data"
-// @Success		201		{object}	utils.Message	"User created successfully"
-// @Failure		400		{object}	utils.HTTPError		"Bad request, validation error"
-// @Failure		409		{object}	utils.HTTPError		"User already exists"
-// @Failure		500		{object}	utils.HTTPError		"Internal server error"
+// @Success		201		{object}	views.Message	"User created successfully"
+// @Failure		400		{object}	views.HTTPError		"Bad request, validation error"
+// @Failure		409		{object}	views.HTTPError		"User already exists"
+// @Failure		500		{object}	views.HTTPError		"Internal server error"
 // @Router			/auth/sign-up [post]
 func (s *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("token")
@@ -99,8 +99,8 @@ func (s *Handler) Register(w http.ResponseWriter, r *http.Request) {
 // @Produce		json
 // @Param			credentials	body		dto.LoginUser		true	"Login credentials"
 // @Success		204			"No Content, JWT set in HTTPOnly cookie"
-// @Failure		400			{object}	utils.HTTPError		"Bad request, validation error"
-// @Failure		401			{object}	utils.HTTPError		"Unauthorized, invalid credentials or blocked user"
+// @Failure		400			{object}	views.HTTPError		"Bad request, validation error"
+// @Failure		401			{object}	views.HTTPError		"Unauthorized, invalid credentials or blocked user"
 // @Router			/auth/sign-in [post]
 func (s *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var userPayload dto.LoginUser
@@ -155,8 +155,8 @@ func (s *Handler) Login(w http.ResponseWriter, r *http.Request) {
 // @Produce		json
 // @Param			verificationRequest	body		dto.EmailVerificationRequest	true	"Verification code request"
 // @Success		200					{object}	JSONAnswer				"Verification code sent"
-// @Failure		400					{object}	utils.HTTPError			"Invalid request"
-// @Failure		500					{object}	utils.HTTPError			"Internal server error"
+// @Failure		400					{object}	views.HTTPError			"Invalid request"
+// @Failure		500					{object}	views.HTTPError			"Internal server error"
 // @Router			/auth/activate [post]
 func (h *Handler) RequestCode(w http.ResponseWriter, r *http.Request) {
 	var req dto.EmailVerificationRequest
@@ -184,10 +184,10 @@ func (h *Handler) RequestCode(w http.ResponseWriter, r *http.Request) {
 // @Produce		json
 // @Param			verifyEmailRequest	body		dto.VerifyEmailRequest	true	"Email verification request"
 // @Success		200					{object}	JSONAnswer				"Email verified successfully"
-// @Failure		400					{object}	utils.HTTPError			"Invalid request or verification error"
-// @Failure		404					{object}	utils.HTTPError			"User not found"
-// @Failure		429					{object}	utils.HTTPError			"Too many attempts"
-// @Failure		500					{object}	utils.HTTPError			"Internal server error"
+// @Failure		400					{object}	views.HTTPError			"Invalid request or verification error"
+// @Failure		404					{object}	views.HTTPError			"User not found"
+// @Failure		429					{object}	views.HTTPError			"Too many attempts"
+// @Failure		500					{object}	views.HTTPError			"Internal server error"
 // @Router			/auth/verify [post]
 func (h *Handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	var req dto.VerifyEmailRequest
@@ -276,8 +276,8 @@ func (h *Handler) IsAuthorized(w http.ResponseWriter, r *http.Request) {
 // @Produce		json
 // @Param			resetRequest	body		dto.ResetPasswordRequest	true	"Password reset request"
 // @Success		200				{object}	JSONAnswer					"Reset code sent"
-// @Failure		400				{object}	utils.HTTPError				"Invalid request or user not found"
-// @Failure		500				{object}	utils.HTTPError				"Internal server error"
+// @Failure		400				{object}	views.HTTPError				"Invalid request or user not found"
+// @Failure		500				{object}	views.HTTPError				"Internal server error"
 // @Router			/auth/reset/request [post]
 func (h *Handler) HandleRequestPasswordResetCode(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
@@ -319,12 +319,12 @@ func (h *Handler) requestPasswordResetCode(w http.ResponseWriter, r *http.Reques
 // @Produce		json
 // @Param			resetConfirm	body		dto.ResetPasswordConfirm	true	"Password reset confirmation"
 // @Success		200				{object}	JSONAnswer					"Password reset successfully"
-// @Failure		400				{object}	utils.HTTPError				"Invalid request or verification code"
-// @Failure		404				{object}	utils.HTTPError				"User not found"
-// @Failure		429				{object}	utils.HTTPError				"Too many attempts"
-// @Failure		500				{object}	utils.HTTPError				"Internal server error"
-// @Failure		400				{object}	utils.HTTPError				"Password recently changed"
-// @Failure		400				{object}	utils.HTTPError				"Invalid username or password"
+// @Failure		400				{object}	views.HTTPError				"Invalid request or verification code"
+// @Failure		404				{object}	views.HTTPError				"User not found"
+// @Failure		429				{object}	views.HTTPError				"Too many attempts"
+// @Failure		500				{object}	views.HTTPError				"Internal server error"
+// @Failure		400				{object}	views.HTTPError				"Password recently changed"
+// @Failure		400				{object}	views.HTTPError				"Invalid username or password"
 // @Router			/auth/reset/confirm [post]
 func (h *Handler) HandleResetPassword(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
@@ -386,6 +386,13 @@ func (h *Handler) resetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// @Summary      Logout user
+// @Description  Logs out the currently authenticated user by clearing the authentication cookie.
+// @Tags         Auth
+// @Security     BearerAuth
+// @Success      204  {string}  string  "Successfully logged out"
+// @Failure      401  {object}  utils.HTTPError  "Unauthorized"
+// @Router       /api/auth/logout [post]
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "token",

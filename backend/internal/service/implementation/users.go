@@ -2,15 +2,18 @@ package implementation
 
 import (
 	"context"
+	"errors"
 	"esports_club_booking/internal/auth"
 	"esports_club_booking/internal/config"
 	"esports_club_booking/internal/email"
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/repository"
 	"esports_club_booking/internal/transport/dto"
+	"esports_club_booking/internal/utils"
 	"fmt"
 	"log"
 	"log/slog"
+	"strconv"
 )
 
 type UserService struct {
@@ -91,9 +94,24 @@ func (s *UserService) CreateUser(userDTO *dto.RegisterUser) (int64, error) {
 	return s.repo.Create(&user, hashedPassword)
 }
 
-func (s *UserService) Block(userID int64, adminLogin string) error {
+func (s *UserService) Block(ctx context.Context, userID int64, adminLogin string) error {
 	if err := entities.ValidateID(userID); err != nil {
 		return err
+	}
+
+	requesterIDStr, _ := auth.GetUserIDFromContext(ctx)
+	requesterID, err := strconv.ParseInt(requesterIDStr, 10, 64)
+	// Lie to the client who is trying to brute force the token
+	if err != nil {
+		return entities.ErrMissingToken
+	}
+	requester, err := s.GetUser(requesterID)
+	if err != nil {
+		if errors.Is(err, entities.ErrUserNotFound) {
+			return err
+		}
+		slog.Error("Error while blocking user: getting requester", slog.Any("error", err))
+		return entities.ErrUnhandledError
 	}
 
 	if err := s.repo.Block(userID); err != nil {
@@ -165,13 +183,13 @@ func (s *UserService) Delete(ctx context.Context, userID int64) error {
 		return err
 	}
 
-	role, roleExists := auth.GetRoleFromContext(ctx)
+	requesterRole, roleExists := auth.GetRoleFromContext(ctx)
 	if !roleExists {
-		slog.Error("Error while deleting user: getting role from context", slog.Any("error", err), slog.String("role", role))
+		slog.Error("Error while deleting user: getting role from context", slog.Any("error", err), slog.String("role", requesterRole))
 		return entities.ErrUnhandledError
 	}
 
-	if !entities.RoleHasSufficientRights(role, user.Role) {
+	if !entities.RoleHasSufficientRightsToDelete(requesterRole, user.Role) {
 		return entities.ErrInsufficientPriv
 	}
 
@@ -196,26 +214,48 @@ func (s *UserService) UserBalanceFill(ctx context.Context, userID int64, amount 
 	return s.repo.UpdateBalance(userID, amount)
 }
 
-func (s *UserService) GrantAdmin(userID int64, role string) error {
-	if !entities.CheckEnumUserRole(role) {
-		return entities.ErrIncorrectRole
+func (s *UserService) Grant(ctx context.Context, userID int64, grantRole string) (int64, error) {
+	requesterRole, roleExists := auth.GetRoleFromContext(ctx)
+	if !roleExists {
+		slog.Error("fetching role from context")
+		return -1, entities.ErrUnhandledError
 	}
 
-	if err := entities.ValidateID(userID); err != nil {
-		return err
+	if grantRole == "" {
+		return -1, entities.ErrGrantEmptyRole
 	}
+
+	// Possbile caution: if there are more roles who can grants, they can grant lower priviliges to people with higher privileges
+	// for example manager can grant to owner the client role, now in this function it is prohibited, but there is no check that second grant is lower than requesterRole
+	if !utils.In(grantRole, entities.AllRoles) {
+		return -1, entities.ErrIncorrectRole
+	} else if grantRole == entities.OwnerRole {
+		return -1, entities.ErrGrantOwner
+	} else if grantRole == requesterRole {
+		return -1, entities.ErrGrantSameRole
+	} else if err := entities.ValidateID(userID); err != nil {
+		return -1, err
+	}
+
 	user, err := s.GetUser(userID)
 	if err != nil {
-		return err
+		return -1, err
 	}
-	user.Role = entities.AdminRole
+
+	if !entities.RoleHasSufficientRightsToGrant(requesterRole, user.Role) {
+		return -1, entities.ErrGrantInsufficientPriviliges
+	}
+
+	user.Role = grantRole
+
 	userDTO := dto.User{
 		Email:    user.Email,
 		Username: user.Login,
 		Status:   user.Status,
 		Balance:  user.Balance,
-		Role:     role,
+		Role:     user.Role,
 	}
-	_, err = s.repo.Update(&userDTO)
-	return err
+
+	id, err := s.repo.Update(&userDTO)
+	return id, err
 }

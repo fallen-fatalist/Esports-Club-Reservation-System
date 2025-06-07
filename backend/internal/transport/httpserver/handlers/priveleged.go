@@ -2,9 +2,7 @@ package handlers
 
 import (
 	"errors"
-	"esports_club_booking/internal/auth"
 	"esports_club_booking/internal/entities"
-	"esports_club_booking/internal/transport/dto"
 	"esports_club_booking/internal/views"
 	"log/slog"
 	"net/http"
@@ -27,9 +25,9 @@ func (s *Handler) IsPriveleged(w http.ResponseWriter, r *http.Request) {
 // @Security BearerAuth
 // @Param			id	path		int64				true	"User ID"
 // @Success		204
-// @Failure		400	{object}	utils.HTTPError	"Invalid user ID"
-// @Failure		401	{object}	utils.HTTPError	"Unauthorized"
-// @Failure		500	{object}	utils.HTTPError	"Internal server error"
+// @Failure		400	{object}	views.HTTPError	"Invalid user ID"
+// @Failure		401	{object}	views.HTTPError	"Unauthorized"
+// @Failure		500	{object}	views.HTTPError	"Internal server error"
 // @Router			/api/users/{id}/block [post]
 func (h *Handler) HandleBlock(w http.ResponseWriter, r *http.Request) {
 	token, err := r.Cookie("token")
@@ -41,22 +39,6 @@ func (h *Handler) HandleBlock(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	adminIDStr, _ := auth.GetUserIDFromContext(r.Context())
-	adminID, err := strconv.ParseInt(adminIDStr, 10, 64)
-	// Lie to the client who is trying to brute force the token
-	if err != nil {
-		views.WriteError(w, http.StatusUnauthorized, entities.ErrMissingToken)
-		h.Logout(w, r)
-		return
-	}
-
-	admin, err := h.service.UserService.GetUser(adminID)
-	if err != nil {
-		h.logger.Error("failed to get user", slog.Any("error", err))
-		views.WriteJSON(w, http.StatusInternalServerError, dto.JSONAnswer{Message: "internal error"})
-		return
-	}
-
 	userIDStr := r.PathValue("id")
 
 	userID, err := strconv.ParseInt(userIDStr, 10, 64)
@@ -65,7 +47,7 @@ func (h *Handler) HandleBlock(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.service.UserService.Block(userID, admin.Login)
+	err = h.service.UserService.Block(r.Context(), userID)
 	if err != nil {
 		switch {
 		case errors.Is(err, entities.ErrNegativeID),
@@ -90,9 +72,9 @@ func (h *Handler) HandleBlock(w http.ResponseWriter, r *http.Request) {
 // @Security BearerAuth
 // @Param			id	path		int64				true	"User ID"
 // @Success		204
-// @Failure		400	{object}	utils.HTTPError	"Invalid user ID"
-// @Failure		401	{object}	utils.HTTPError	"Unauthorized"
-// @Failure		500	{object}	utils.HTTPError	"Internal server error"
+// @Failure		400	{object}	views.HTTPError	"Invalid user ID"
+// @Failure		401	{object}	views.HTTPError	"Unauthorized"
+// @Failure		500	{object}	views.HTTPError	"Internal server error"
 // @Router			/api/users/{id}/unblock [post]
 func (s *Handler) HandleUnblock(w http.ResponseWriter, r *http.Request) {
 	userIDStr := r.PathValue("id")

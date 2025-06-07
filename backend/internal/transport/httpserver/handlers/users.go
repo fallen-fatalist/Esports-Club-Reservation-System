@@ -40,9 +40,9 @@ func (s *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
 // @Security BearerAuth
 // @Param			id	path		int64	true	"User ID"
 // @Success		204
-// @Failure		400	{object}	utils.HTTPError	"Invalid user ID"
-// @Failure		404	{object}	utils.HTTPError	"User not found"
-// @Failure		500	{object}	utils.HTTPError	"Internal server error"
+// @Failure		400	{object}	views.HTTPError	"Invalid user ID"
+// @Failure		404	{object}	views.HTTPError	"User not found"
+// @Failure		500	{object}	views.HTTPError	"Internal server error"
 // @Router			/api/users/{id} [delete]
 func (s *Handler) HandleUserDelete(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
@@ -85,9 +85,9 @@ func (s *Handler) HandleUserDelete(w http.ResponseWriter, r *http.Request) {
 // @Param        id      path    int64   true  "User ID"
 // @Param        amount  query   float64 true  "Amount to add to user's balance"
 // @Success      204
-// @Failure      400     {object} utils.HTTPError "Invalid user ID or balance"
-// @Failure      404     {object} utils.HTTPError "User not found"
-// @Failure      500     {object} utils.HTTPError "Internal server error"
+// @Failure      400     {object} views.HTTPError "Invalid user ID or balance"
+// @Failure      404     {object} views.HTTPError "User not found"
+// @Failure      500     {object} views.HTTPError "Internal server error"
 // @Router       /api/users/{id}/credit [post]
 func (s *Handler) HandleUserCredit(w http.ResponseWriter, r *http.Request) {
 	userIDStr := r.PathValue("id")
@@ -131,27 +131,29 @@ func (s *Handler) HandleUserCredit(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// @Summary      Grant admin privileges to a user
-// @Description  Grants admin privileges to a user with the given ID, only Owner and Manager can grant admin role.
+// @Description  Grants a role (admin, analyst, etc.) to a user with the given ID. Only users with "owner" or "manager" roles can perform this action.
 // @Tags         Users
 // @Security     BearerAuth
-// @Param        id    path  int64   true  "User ID"
-// @Param        role  path  string  true  "User Role" Enums(owner, manager, admin, analyst, client)
-// @Success      204
-// @Failure      400  {object}  utils.HTTPError  "Invalid user ID"
-// @Failure      404  {object}  utils.HTTPError  "User not found"
-// @Failure      500  {object}  utils.HTTPError  "Internal server error"
-// @Router       /api/users/{id}/admin [post]
-func (s *Handler) HandleGrantAdmin(w http.ResponseWriter, r *http.Request) {
+// @Param        id    path     int64   true   "User ID"
+// @Param        role  query    string  true   "Role to grant" Enums(manager,admin, analyst, client)
+// @Success      204   "Role granted successfully"
+// @Failure      400   {object}  views.HTTPError  "Invalid user ID or input"
+// @Failure      404   {object}  views.HTTPError  "User not found"
+// @Failure      500   {object}  views.HTTPError  "Internal server error"
+// @Router       /api/users/{id}/grant [post]
+func (s *Handler) HandleGrant(w http.ResponseWriter, r *http.Request) {
+	// Id of user who we need to grant role
 	idStr := r.PathValue("id")
-	role := r.PathValue("role")
 	userID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		views.WriteError(w, http.StatusBadRequest, entities.ErrNonNumericID)
 		return
 	}
 
-	err = s.service.UserService.GrantAdmin(userID, role)
+	// Role to grant
+	grantRole := r.URL.Query().Get("role")
+
+	_, err = s.service.UserService.Grant(r.Context(), userID, grantRole)
 	if err != nil {
 		switch {
 		case errors.Is(err, entities.ErrUserNotFound):
@@ -162,6 +164,14 @@ func (s *Handler) HandleGrantAdmin(w http.ResponseWriter, r *http.Request) {
 			return
 		case errors.Is(err, entities.ErrUnhandledError):
 			views.WriteError(w, http.StatusInternalServerError, err)
+			return
+		case errors.Is(err, entities.ErrGrantInsufficientPriviliges) ||
+			errors.Is(err, entities.ErrGrantOwner) ||
+			errors.Is(err, entities.ErrGrantSameRole) ||
+			errors.Is(err, entities.ErrIncorrectRole) ||
+			errors.Is(err, entities.ErrGrantEmptyRole):
+
+			views.WriteError(w, http.StatusBadRequest, err)
 			return
 		default:
 			slog.Error("error granting admin to user", slog.Int64("userID", userID), slog.Any("error", err))
