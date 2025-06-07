@@ -69,6 +69,7 @@ func Run() {
 		computerService,
 		packageService,
 		userService,
+		emailSender,
 	)
 
 	paypalClient, err := paypal.NewPayPalClient(cfg)

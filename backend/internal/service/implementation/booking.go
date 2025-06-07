@@ -31,7 +31,7 @@ type BookingService struct {
 }
 
 func NewBookingService(repository repository.BookingRepository, computerService service.ComputerService,
-	packageService service.PackageService, userService service.UserService,
+	packageService service.PackageService, userService service.UserService, emailSender email.EmailSender,
 ) (*BookingService, error) {
 	if repository == nil {
 		log.Fatal("Nil repository provided to booking service")
@@ -55,6 +55,7 @@ func NewBookingService(repository repository.BookingRepository, computerService 
 		computerService: computerService,
 		packageService:  packageService,
 		computerNumber:  computerNum,
+		emailSender:     emailSender,
 		userService:     userService,
 	}
 
@@ -526,7 +527,7 @@ func (s *BookingService) Cancel(ctx context.Context, bookingdID int64) error {
 	}
 
 	// TODO: In case of invalid token, show it or block the user's ip in middleware
-	role, ok := auth.GetRoleFromContext(ctx)
+	requesterRole, ok := auth.GetRoleFromContext(ctx)
 	if !ok {
 		return entities.ErrUnauthorized
 	}
@@ -536,7 +537,7 @@ func (s *BookingService) Cancel(ctx context.Context, bookingdID int64) error {
 		return entities.ErrUnauthorized
 	}
 
-	TokenUserID, err := strconv.ParseInt(userID, 10, 64)
+	requesterUserID, err := strconv.ParseInt(userID, 10, 64)
 	if err != nil {
 		return entities.ErrUnauthorized
 	}
@@ -560,9 +561,9 @@ func (s *BookingService) Cancel(ctx context.Context, bookingdID int64) error {
 	}
 
 	// Check if non privelleged must cancel only own booking
-	if utils.In(role, entities.NonPrivellegedRoles) && user.ID != TokenUserID {
+	if utils.In(requesterRole, entities.NonPrivellegedRoles) && user.ID != requesterUserID {
 		return entities.ErrNonOwnBookingCancel
-	} else if !utils.In(role, entities.PrivellegedRoles) {
+	} else if user.ID != requesterUserID && entities.RequesterMorePriviliged(requesterRole, user.Role) {
 		return entities.ErrCancelInsufficientPriviliges
 	}
 
