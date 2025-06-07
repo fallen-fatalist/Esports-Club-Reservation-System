@@ -42,12 +42,7 @@ const usersService = {
 
 async blockUserByID(id) {
   try {
-    console.log(`Attempting to block user ID: ${id}`);
-    console.log(`URL: /api/users/${id}/block`);
-    console.log('Auth headers:', api.defaults.headers.common);
-    
     const response = await api.post(`/api/users/${id}/block`);
-    console.log('Block response:', response);
     return response.status === 200 || response.status === 204;
   } catch (error) {
     console.error(`Full error details for user ${id}:`, {

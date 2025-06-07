@@ -470,20 +470,20 @@ const Admin = () => {
           </Box>
         </LocalizationProvider>
 
-        <Grid container spacing={3} mb={4}>
-          <Grid item xs={12} sm={6} md={3}>
+        <Grid columns={12} spacing={3} sx={{ mb: 4 }}>
+          <Grid columnSpan={{ xs: 12, sm: 6, md: 3 }}>
             <StatCard title="Total Users" value={users.length} icon={<People />} color="#4CAF50" />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid columnSpan={{ xs: 12, sm: 6, md: 3 }}>
             <StatCard title="Active Sessions" value={activeSessions.length} icon={<Schedule />} color="#2196F3" />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid columnSpan={{ xs: 12, sm: 6, md: 3 }}>
             <StatCard title="Total Computers" value={computers.length} icon={<Computer />} color="#FF9800" />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-              <StatCard title="Blocked Users" value={blockedUsers.length} icon={<Block />} color="#F44336" />
-          </Grid> 
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid columnSpan={{ xs: 12, sm: 6, md: 3 }}>
+            <StatCard title="Blocked Users" value={blockedUsers.length} icon={<Block />} color="#F44336" />
+          </Grid>
+          <Grid columnSpan={{ xs: 12, sm: 6, md: 3 }}>
             <StatCard title="Cancelled Bookings" value={cancelledBookings.length} icon={<Cancel />} color="#9E9E9E" />
           </Grid>
         </Grid>

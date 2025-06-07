@@ -24,7 +24,6 @@ api.interceptors.response.use(
       const shouldLogout = !noLogoutEndpoints.some(endpoint => url.includes(endpoint));
       
       if (shouldLogout) {
-        console.warn('Unauthorized, logging out...');
         window.dispatchEvent(new CustomEvent('auth-error'));
       } else {
         console.log('401 error for auth endpoint:', url);

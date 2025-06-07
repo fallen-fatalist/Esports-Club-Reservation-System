@@ -51,7 +51,6 @@ const Login = () => {
   const [modalContent, setModalContent] = useState({ title: "", message: "" });
   const { login, showModal, isAdmin, userRole } = useContext(AuthContext);
 
-  // Состояния для видимости паролей
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -68,7 +67,6 @@ const Login = () => {
   const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
 
   const showLocalModal = (title, message) => {
-    console.log("Modal shown:", title, message);
     setModalContent({ title, message });
     setModalVisible(true);
   };
@@ -103,7 +101,6 @@ const Login = () => {
 
   const handleLogin = async (event) => {
     event.preventDefault();
-    console.log("Attempting login with:", form.identifier);
     setError("");
 
     if (!validateForm()) {
@@ -114,10 +111,7 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      await login(form);
-      
-      console.log("Login successful");
-      
+      await login(form);   
       showModal("Login Successful", "You have successfully logged in!");
       
       setTimeout(() => {
@@ -149,7 +143,11 @@ const Login = () => {
 
       console.error("Login error:", msg);
       setError(msg);
-      setModalContent({ title: "Login Error", message: msg });
+      setModalContent({
+        type: "error",
+        title: "Login Error",
+        message: msg
+      });
       setModalVisible(true);
       setForm((prev) => ({ ...prev, password: "" }));
     } finally {
@@ -164,7 +162,6 @@ const Login = () => {
 
     try {
       if (forgotPasswordStep === 1) {
-        console.log("Requesting password reset for:", forgotPasswordForm.email);
         if (!forgotPasswordForm.email.trim()) {
           setForgotPasswordError("Email is required");
           return;
@@ -177,7 +174,6 @@ const Login = () => {
         setForgotPasswordStep(2);
         showLocalModal("Reset Code Sent", `We've sent a reset code to ${forgotPasswordForm.email}. Please check your email.`);
       } else if (forgotPasswordStep === 2) {
-        console.log("Verification code entered:", forgotPasswordForm.code);
         if (!forgotPasswordForm.code.trim()) {
           setForgotPasswordError("Verification code is required");
           return;
@@ -185,7 +181,6 @@ const Login = () => {
         setForgotPasswordStep(3);
         showLocalModal("Code Verified", "Please enter your new password.");
       } else if (forgotPasswordStep === 3) {
-        console.log("Submitting new password for:", forgotPasswordForm.email);
         const { newPassword, confirmPassword } = forgotPasswordForm;
         if (!newPassword || !confirmPassword) {
           setForgotPasswordError("Both password fields are required");
@@ -250,18 +245,13 @@ const Login = () => {
     setForgotPasswordStep(1);
     setForgotPasswordForm({ email: "", code: "", newPassword: "", confirmPassword: "" });
     setForgotPasswordError("");
-    // Сбрасываем состояния видимости паролей
     setShowNewPassword(false);
     setShowConfirmPassword(false);
   };
 
   const handleModalClose = () => {
     setModalVisible(false);
-    
-    // Если это успешный логин, AppRouter автоматически перенаправит
-    // благодаря AuthRoute компоненту, который проверяет isAuth
     if (modalContent.title === "Login Successful") {
-      // Просто закрываем модал, перенаправление произойдет автоматически
       console.log("Login modal closed, redirect will happen automatically");
     }
   };
@@ -431,14 +421,16 @@ const Login = () => {
       </MyModal>
 
       <MyModal visible={modalVisible} setVisible={setModalVisible}>
-        <div className="auth__container">
-          <div className="login__email">
-            <h3 className={modalContent.title.includes("Error") ? "error-title" : "success-title"}>
-              {modalContent.title}
-            </h3>
-            <p>{modalContent.message}</p>
-            <button className="auth-btn" onClick={handleModalClose}>OK</button>
-          </div>
+        <div style={{ padding: "20px", textAlign: "center" }}>
+          <h3 style={{ 
+            color: modalContent.title?.includes("Error") ? "#d8000c" : "#28a745",
+            fontWeight: "bold",
+            marginBottom: "10px"
+          }}>
+            {modalContent.title}
+          </h3>
+          <p style={{ marginBottom: "20px" }}>{modalContent.message}</p>
+          <button className="auth-btn" onClick={handleModalClose}>OK</button>
         </div>
       </MyModal>
     </>

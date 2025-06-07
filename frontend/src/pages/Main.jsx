@@ -125,11 +125,6 @@ const Main = (props) => {
                           <div className="detail-item">
                             <span>{pkg.room} Room</span>
                           </div>
-                          {/* {pkg.name.includes('+') && (
-                            <div className="detail-item bonus">
-                              <span>Bonus Time Included</span>
-                            </div>
-                          )} */}
                         </div>
 
                         <Link to={`/booking?packageId=${pkg.id}`} className="package-btn">

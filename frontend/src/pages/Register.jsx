@@ -7,9 +7,11 @@ import { signUp, activate, verifyEmail } from "../services/authService";
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
+// Password input component with toggle for showing/hiding password characters
 const PasswordInput = React.memo(({ name, placeholder, value, onChange, required }) => {
   const [showPassword, setShowPassword] = useState(false);
 
+  // Toggle password visibility state
   const togglePasswordVisibility = useCallback(() => {
     setShowPassword(prev => !prev);
   }, []);
@@ -51,15 +53,23 @@ const PasswordInput = React.memo(({ name, placeholder, value, onChange, required
 });
 
 const Register = () => {
-  const { login: loginContext, showModal } = useContext(AuthContext);
-  const navigate = useNavigate();
+  const { login: loginContext, showModal } = useContext(AuthContext); // Get login function and modal from context
+  const navigate = useNavigate(); // Router navigation hook
 
+  // Step controls the registration stage: 1 = fill form, 2 = verify email code
   const [step, setStep] = useState(1);
+
+  // State for form error messages
   const [error, setError] = useState("");
+
+  // Loading state for async requests
   const [isLoading, setIsLoading] = useState(false);
+
+  // Modal visibility and content state
   const [modalVisible, setModalVisible] = useState(false);
   const [modalContent, setModalContent] = useState({ title: "", message: "" });
 
+  // Form data state
   const [form, setForm] = useState({
     email: "",
     login: "",
@@ -68,33 +78,37 @@ const Register = () => {
     code: ""
   });
 
+  // Show modal with dynamic title and message
   const showLocalModal = useCallback((title, message) => {
     setModalContent({ title, message });
     setModalVisible(true);
   }, []);
 
+  // Handle form input changes and clear errors
   const handleChange = useCallback((e) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
     if (error) setError("");
   }, [error]);
 
+  // Email validation with regex
   const validateEmail = useCallback((email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   }, []);
 
+  // Login validation: 3-20 chars, latin letters, digits, underscore
   const validateLogin = useCallback((login) => {
-    // Латинские буквы (a–z), цифры (0–9), подчёркивание (_), длина от 3 до 20 символов
     const loginRegex = /^[a-zA-Z0-9_]{3,20}$/;
     return loginRegex.test(login);
   }, []);
 
+  // Password validation: min 8 chars, uppercase, lowercase, digit, special char
   const validatePassword = useCallback((password) => {
-    // Минимум 8 символов, одна заглавная, одна строчная, одна цифра, один спецсимвол
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
     return passwordRegex.test(password);
   }, []);
 
+  // Validate all form fields before submission
   const validateForm = useCallback(() => {  
     const { email, login, password, confirmPassword } = form;
 
@@ -126,6 +140,7 @@ const Register = () => {
     return true;
   }, [form, validateEmail, validateLogin, validatePassword]);
 
+  // Handle registration form submit
   const handleRegister = useCallback(async (event) => {
     event.preventDefault();
     setError("");
@@ -139,9 +154,10 @@ const Register = () => {
     const { email, login, password } = form;
 
     try {
+      // Call signup API and send activation email
       await signUp({ email, login, password });
       await activate(email);
-      setStep(2);
+      setStep(2); // Move to email verification step
       showLocalModal("Registration Successful!", "Please check your email and enter the verification code.");
     } catch (err) {
       const errorMessage =
@@ -155,6 +171,7 @@ const Register = () => {
     }
   }, [form, validateForm, showLocalModal]);
 
+  // Handle verification code submission
   const handleVerify = useCallback(async (event) => {
     event.preventDefault();
     setError("");
@@ -167,9 +184,11 @@ const Register = () => {
     }
 
     try {
+      // Verify the email code with backend
       const res = await verifyEmail({ email: form.email, code: form.code });
 
       if (res.status === 200 || res.data?.success) {
+        // If verification succeeds, log user in and navigate to homepage
         await loginContext({
           identifier: form.email,
           password: form.password, 
@@ -197,6 +216,7 @@ const Register = () => {
     }
   }, [form.code, form.email, form.password, loginContext, navigate, showLocalModal]);
 
+  // Resend activation code email
   const resendActivationCode = useCallback(async () => {
     setError("");
     setIsLoading(true);
@@ -215,16 +235,19 @@ const Register = () => {
     }
   }, [form.email, showLocalModal]);
 
+  // Go back to registration form from verification step
   const goBackToRegistration = useCallback(() => {
     setStep(1);
     setError("");
     setForm(prev => ({ ...prev, code: "" }));
   }, []);
 
+  // Close modal handler
   const handleModalClose = useCallback(() => {
     setModalVisible(false);
   }, []);
 
+  // Navigate to login page
   const navigateToLogin = useCallback(() => {
     navigate("/login");
   }, [navigate]);
@@ -238,6 +261,7 @@ const Register = () => {
         <div className="auth__container">
           <div className="login__email">
             {step === 1 ? (
+              // Registration form
               <form onSubmit={handleRegister}>
                 <MyInput
                   name="email"
@@ -289,6 +313,7 @@ const Register = () => {
                 </div>
               </form>
             ) : (
+              // Email verification form
               <form onSubmit={handleVerify}>
                 <div style={{ marginBottom: "20px", textAlign: "center" }}>
                   <h3 style={{ color: "#28a745" }}>Check Your Email</h3>
@@ -328,6 +353,7 @@ const Register = () => {
         </div>
       </section>
 
+      {/* Modal for success/error messages */}
       <MyModal visible={modalVisible} setVisible={setModalVisible}>
         <div style={{ padding: "20px", textAlign: "center" }}>
           <h3 style={{ 
