@@ -15,31 +15,36 @@ function App() {
   const [modalContent, setModalContent] = useState({ title: "", message: "" });
   const [loading, setLoading] = useState(true);
 
+  // Show reusable modal
   const showModal = (title, message) => {
     setModalContent({ title, message });
     setModalVisible(true);
   };
 
+  // Handle authentication errors globally
   const handleAuthError = (message = "Authentication required") => {
     logout();
     showModal("Authentication Error", message);
   };
 
+  // Logout the user and reset state
   const logout = async () => {
     try {
       await logoutRequest(); 
     } catch (error) {
-      console.error("Logout request failed:", error);
+      // Silent catch
     } finally {
       setIsAuth(false);
       setUserRole(null);
     }
   };
 
+  // Role checking helpers
   const isOwner = () => userRole === 'owner';
   const isAdmin = () => ['admin', 'privileged', 'owner'].includes(userRole);
   const isPrivileged = () => ['privileged', 'owner'].includes(userRole);
 
+  // Check if user is authenticated (used on initial load)
   const checkUserAuth = async () => {
     try {
       setLoading(true);
@@ -48,15 +53,14 @@ function App() {
       if (res.data?.role) {
         setIsAuth(true);
         setUserRole(res.data.role);
-        console.log("User authenticated with role:", res.data.role);
-        
+
+        // Extra privilege check for admins (excluding owner)
         if (isAdmin() && !isOwner()) {
           try {
             await checkIsPriveleged();
-            console.log("Admin privileges confirmed");
           } catch (error) {
             if (error.response?.status !== 403) {
-              console.error('Privilege check error:', error);
+              // Silent fail for unexpected errors
             }
           }
         }
@@ -67,21 +71,18 @@ function App() {
     } catch (error) {
       setIsAuth(false);
       setUserRole(null);
-      if (error.response?.status !== 401) {
-        console.error('Auth check error:', error);
-      }
     } finally {
       setLoading(false);
     }
   };
 
+  // Used during login process to confirm and store user role
   const checkUserAuthForLogin = async () => {
     try {
       const res = await checkAuth();
       if (res.data?.role) {
         setIsAuth(true);
         setUserRole(res.data.role);
-        console.log("Login auth check - user role:", res.data.role);
         return true;
       }
       throw new Error('No user role in response');
@@ -92,18 +93,13 @@ function App() {
     }
   };
 
+  // Handle login logic and update auth state
   const login = async (credentials) => {
     try {
-      console.log("Attempting login...");
       const signInResponse = await signIn(credentials);
-      
-      if (signInResponse.status !== 200) {
-        throw new Error('Sign in failed');
-      }
-      
-      console.log("Sign in successful, checking auth...");
+      if (signInResponse.status !== 200) throw new Error('Sign in failed');
+
       await checkUserAuthForLogin();
-      
       return {
         success: true,
         userRole,
@@ -111,11 +107,11 @@ function App() {
         isOwner: isOwner()
       };
     } catch (error) {
-      console.error("Login error:", error);
       throw error;
     }
   };
 
+  // Initial auth check and global auth-error listener
   useEffect(() => {
     checkUserAuth();
 
@@ -125,10 +121,7 @@ function App() {
     };
 
     window.addEventListener('auth-error', handleAuthEvent);
-    
-    return () => {
-      window.removeEventListener('auth-error', handleAuthEvent);
-    };
+    return () => window.removeEventListener('auth-error', handleAuthEvent);
   }, []);
 
   if (loading) {
@@ -161,7 +154,6 @@ function App() {
           <div className="App">
             <Navbar />
             <AppRouter />
-            
             <MyModal visible={modalVisible} setVisible={setModalVisible}>
               <div style={{ padding: "20px", textAlign: "center" }}>
                 <h3 style={{

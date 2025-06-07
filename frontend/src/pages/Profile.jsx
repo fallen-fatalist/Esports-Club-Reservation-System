@@ -696,33 +696,23 @@ const Profile = ({ onLogout }) => {
               <SettingsIcon sx={{ mr: 1 }} />
               Account Actions
             </Typography>
-            
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-              <Button
-                variant="contained"
-                size="large"
-                startIcon={<AccountBalanceWalletIcon />}
-                onClick={() => setDepositModalOpen(true)}
-                sx={{ p: 2, justifyContent: 'flex-start' }}
-              >
-                <Box sx={{ textAlign: 'left', flexGrow: 1 }}>
-                  <Typography variant="button" sx={{ display: 'block' }}>Add Funds</Typography>
-                  <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                    Current: {formatBalance(userBalance)}
-                  </Typography>
-                </Box>
-                <IconButton
-                  size="small"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRefreshBalance();
-                  }}
-                  disabled={loading}
-                  sx={{ ml: 1, color: 'inherit' }}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Button
+                  variant="contained"
+                  size="large"
+                  startIcon={<AccountBalanceWalletIcon />}
+                  onClick={() => setDepositModalOpen(true)}
+                  sx={{ p: 2, flexGrow: 1, justifyContent: 'flex-start' }}
                 >
-                  {loading ? <CircularProgress size={16} color="inherit" /> : <RefreshIcon />}
-                </IconButton>
-              </Button>
+                  <Box sx={{ textAlign: 'left', flexGrow: 1 }}>
+                    <Typography variant="button" sx={{ display: 'block' }}>Add Funds</Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                      Current: {formatBalance(userBalance)}
+                    </Typography>
+                  </Box>
+                </Button>
+              </Box>
               
               <Button
                 variant="contained"

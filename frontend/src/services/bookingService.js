@@ -22,20 +22,17 @@ const bookingService = {
 
     async createBooking(bookingData) {
       try {
-        console.log('Request payload:', JSON.stringify(bookingData, null, 2));
         
         try {
           const response = await api.post('/api/bookings', bookingData);
           return response.data;
         } catch (error) {
           if (error.response && error.response.status === 500) {
-            console.log('Attempting fallback approaches...');
             
             try {
               const altResponse = await api.post('/api/booking', bookingData);
               return altResponse.data;
             } catch (alt1Error) {
-              console.log('Alternative endpoint 1 failed, trying next approach');
               
               try {
                 const modifiedData = {
@@ -48,7 +45,6 @@ const bookingService = {
                 const modResponse = await api.post('/api/bookings', modifiedData);
                 return modResponse.data;
               } catch (modError) {
-                console.log('Modified data approach failed');
                 throw modError; 
               }
             }
@@ -95,8 +91,6 @@ const bookingService = {
         } else if (typeof response.data === 'number') {
           secondsLeft = response.data;
         }
-        
-        console.log("Extracted seconds left:", secondsLeft);
         
         return {
           secondsLeft: secondsLeft,
