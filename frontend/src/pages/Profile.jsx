@@ -26,6 +26,7 @@ import {
   Snackbar
 } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import EmailIcon from "@mui/icons-material/Email";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
@@ -130,43 +131,47 @@ const Profile = ({ onLogout }) => {
   }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchInitialData = async () => {
       try {
         setLoading(true);
+        
+        const authResponse = await checkAuth();
+        const userData = authResponse.data || {};
+
+        setUserInfo({
+          email: userData.email || '',
+          name: userData.name || userData.login || userData.username || 'User',
+          role: userRole || userData.role || 'client',
+          registrationDate: userData.created_at ? new Date(userData.created_at) : null
+        });
+        
+        setUserBalance(userData.balance || 0);
+
         const [bookingsData, computersData, packagesData] = await Promise.all([
           bookingService.getUserBookings(),
           computerService.getComputers(),
           packageService.getPackages()
         ]);
+        
         setBookings(bookingsData);
         setComputers(computersData);
         setPackages(packagesData);
+        
       } catch (err) {
         console.error('Error fetching data:', err);
         setError('Failed to load data');
+        setSnackbar({
+          open: true,
+          message: 'Failed to load user data',
+          severity: 'error'
+        });
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, []);
 
-  const fetchUserInfo = async () => {
-    try {
-      const authResponse = await checkAuth();
-      
-      setUserInfo({
-        email: authResponse.data.email || '',
-        name: authResponse.data.name || 'User',
-        role: userRole || authResponse.data.role || 'client', // Используем userRole из контекста
-        registrationDate: authResponse.data.created_at ? new Date(authResponse.data.created_at) : null
-      });
-      
-      setUserBalance(authResponse.data.balance || 0);
-    } catch (err) {
-      console.error('Error fetching user info:', err);
-    }
-  };
+    fetchInitialData();
+  }, []);
 
   const EXCHANGE_RATE_KZT_TO_USD = 0.0021;
   const EXCHANGE_RATE_USD_TO_KZT = 476;
@@ -184,38 +189,98 @@ const Profile = ({ onLogout }) => {
     return `${balance}₸ ($${usdAmount})`;
   };
 
+  const refreshUserBalance = async () => {
+    try {
+      const authResponse = await checkAuth();
+      const userData = authResponse.data || {};
+      setUserBalance(userData.balance || 0);
+      return userData.balance || 0;
+    } catch (error) {
+      console.error('Error refreshing balance:', error);
+      return null;
+    }
+  };
+
   const handleDeposit = async () => {
-      const amountUSD = Number(depositAmount);
+    const amountUSD = Number(depositAmount);
 
-      if (!depositAmount || isNaN(amountUSD)) {
-          setDepositError('Please enter a valid amount');
-          return;
+    if (!amountUSD || amountUSD < 1) {
+      setSnackbar({
+        open: true,
+        message: 'Minimum deposit is $1',
+        severity: 'error'
+      });
+      return;
+    }
+
+    try {
+      setDepositLoading(true);
+      const amountKZT = convertToKZT(amountUSD);
+      const data = await paymentService.createDeposit(amountKZT);
+
+      if (!data?.Location) {
+        throw new Error('Payment link not received');
       }
 
-      if (amountUSD <= 0) {
-          setDepositError('Amount must be greater than 0');
-          return;
-      }
+      const paymentWindow = window.open(data.Location, '_blank');
+      setDepositModalOpen(false);
+      setDepositAmount('');
 
-      if (amountUSD < 1) {
-          setDepositError('Minimum deposit amount is $1');
-          return;
-      }
+      setSnackbar({
+        open: true,
+        message: 'Complete the payment in PayPal. Click "Refresh Balance" button when done.',
+        severity: 'info',
+        autoHideDuration: 15000,
+      });
 
-      try {
-          setDepositError('');
-          const amountKZT = convertToKZT(amountUSD);
-          const data = await paymentService.createDeposit(amountKZT);
+      const checkPaymentStatus = setInterval(async () => {
+        if (paymentWindow?.closed) {
+          clearInterval(checkPaymentStatus);
+          setTimeout(async () => {
+            const newBalance = await refreshUserBalance();
+            if (newBalance !== null && newBalance > userBalance) {
+              setSnackbar({
+                open: true,
+                message: `Payment successful! Balance updated: ${formatBalance(newBalance)}`,
+                severity: 'success'
+              });
+            }
+          }, 2000);
+        }
+      }, 2000);
 
-          if (data.Location) {
-              window.open(data.Location, '_blank');
-          } else {
-              throw new Error('No payment URL received from server');
-          }
+      setTimeout(() => clearInterval(checkPaymentStatus), 300000);
 
-      } catch (error) {
-          setDepositError(`Payment failed: ${error.message || 'Unknown error'}`);
-      }
+    } catch (err) {
+      console.error('Deposit error:', err);
+      setSnackbar({
+        open: true,
+        message: `Error: ${err.message}`,
+        severity: 'error'
+      });
+    } finally {
+      setDepositLoading(false);
+    }
+  };
+
+  const handleRefreshBalance = async () => {
+    setLoading(true);
+    const newBalance = await refreshUserBalance();
+    setLoading(false);
+
+    if (newBalance !== null) {
+      setSnackbar({
+        open: true,
+        message: `Balance refreshed: ${formatBalance(newBalance)}`,
+        severity: 'success'
+      });
+    } else {
+      setSnackbar({
+        open: true,
+        message: 'Failed to refresh balance',
+        severity: 'error'
+      });
+    }
   };
 
   const handleCancelBooking = (bookingId) => {
@@ -565,14 +630,25 @@ const Profile = ({ onLogout }) => {
                   Account Status
                 </Typography>
                 
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <AccountBalanceWalletIcon sx={{ mr: 2, color: 'success.main', fontSize: 20 }} />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">Balance</Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {formatBalance(userBalance)}
-                    </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <AccountBalanceWalletIcon sx={{ mr: 2, color: 'success.main', fontSize: 20 }} />
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">Balance</Typography>
+                      <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                        {formatBalance(userBalance)}
+                      </Typography>
+                    </Box>
                   </Box>
+                  <IconButton
+                    size="small"
+                    onClick={handleRefreshBalance}
+                    disabled={loading}
+                    title="Refresh balance"
+                    sx={{ ml: 1 }}
+                  >
+                    {loading ? <CircularProgress size={16} /> : <RefreshIcon />}
+                  </IconButton>
                 </Box>
                 
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -629,12 +705,23 @@ const Profile = ({ onLogout }) => {
                 onClick={() => setDepositModalOpen(true)}
                 sx={{ p: 2, justifyContent: 'flex-start' }}
               >
-                <Box sx={{ textAlign: 'left' }}>
+                <Box sx={{ textAlign: 'left', flexGrow: 1 }}>
                   <Typography variant="button" sx={{ display: 'block' }}>Add Funds</Typography>
                   <Typography variant="caption" sx={{ opacity: 0.8 }}>
                     Current: {formatBalance(userBalance)}
                   </Typography>
                 </Box>
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRefreshBalance();
+                  }}
+                  disabled={loading}
+                  sx={{ ml: 1, color: 'inherit' }}
+                >
+                  {loading ? <CircularProgress size={16} color="inherit" /> : <RefreshIcon />}
+                </IconButton>
               </Button>
               
               <Button

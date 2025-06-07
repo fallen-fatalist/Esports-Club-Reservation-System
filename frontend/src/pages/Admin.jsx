@@ -207,6 +207,9 @@ const Admin = () => {
   const blockedUsers = useMemo(() => 
     users.filter(user => user.status === 'blocked'), [users]);
 
+  const cancelledBookings = useMemo(() => 
+    filteredBookings.filter(b => b.status === 'cancelled'), [filteredBookings]);
+
   const handleBlockUser = async (userId) => {
     try {
       await usersService.blockUserByID(userId);
@@ -478,11 +481,11 @@ const Admin = () => {
             <StatCard title="Total Computers" value={computers.length} icon={<Computer />} color="#FF9800" />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <StatCard title="Pending Bookings" value={pendingBookings.length} icon={<Settings />} color="#F44336" />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
               <StatCard title="Blocked Users" value={blockedUsers.length} icon={<Block />} color="#F44336" />
           </Grid> 
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard title="Cancelled Bookings" value={cancelledBookings.length} icon={<Cancel />} color="#9E9E9E" />
+          </Grid>
         </Grid>
 
         <Paper sx={{ 
@@ -493,7 +496,6 @@ const Admin = () => {
           mb: 3
         }}>
           <Tabs value={activeTab} onChange={(e, newVal) => setActiveTab(newVal)}>
-            <Tab label="Pending Bookings" />
             <Tab label="Active Sessions" />
             <Tab label="Users Management" />
             <Tab label="Blocked Users" />
@@ -554,7 +556,13 @@ const Admin = () => {
           {activeTab === 1 && (
             <Box p={3}>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                <Typography variant="h6">Active Sessions</Typography>
+                <Typography variant="h6">
+                  {sessionFilter === 'all' ? 'All Sessions' : 
+                  sessionFilter === 'pending' ? 'Pending Sessions' : 
+                  sessionFilter === 'active' ? 'Active Sessions' : 
+                  sessionFilter === 'completed' ? 'Completed Sessions' : 
+                  'Cancelled Sessions'}
+                </Typography>
                 <FormControl size="small" sx={{ minWidth: 180 }}>
                   <InputLabel>Filter Status</InputLabel>
                   <Select
@@ -571,7 +579,13 @@ const Admin = () => {
                 </FormControl>
               </Box>
               {filteredBookings.length === 0 ? (
-                <Typography color={theme.palette.text.secondary}>No sessions for selected date and filter.</Typography>
+                <Typography color={theme.palette.text.secondary}>
+                  No {sessionFilter === 'all' ? 'sessions' : 
+                      sessionFilter === 'pending' ? 'pending sessions' : 
+                      sessionFilter === 'active' ? 'active sessions' : 
+                      sessionFilter === 'completed' ? 'completed sessions' : 
+                      'cancelled sessions'} for selected date.
+                </Typography>
               ) : (
                 <TableContainer>
                   <Table>
