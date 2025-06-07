@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
 
 	"esports_club_booking/internal/entities"
@@ -61,8 +62,9 @@ type UserService interface {
 	DeleteUnverifiedUsers() error
 	UserBalanceFill(ctx context.Context, userID int64, amount float64) error
 	// FillBalance()
-	// UploadPfp(r io.Reader)
-	// DeletePfp()
+	ChangePfp(ctx context.Context, userID string, r io.Reader, objectSize int64, contentType string) error
+	GetPfpURL(ctx context.Context, userID string) (string, error)
+	DeletePfp(ctx context.Context, userID string) error
 }
 
 type BookingService interface {

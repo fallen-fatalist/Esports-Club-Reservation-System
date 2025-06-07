@@ -50,6 +50,8 @@ func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("POST /users/{id}/credit", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.HandleUserCredit))
 	mux.HandleFunc("POST /users/{id}/admin", auth.WithAuth(h.jwtMng, entities.ManagementRoles, h.HandleGrantAdmin))
 	mux.HandleFunc("DELETE /users/{id}", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.HandleUserDelete))
+	mux.HandleFunc("POST /users/upload_pfp", auth.WithAuth(h.jwtMng, entities.PrivellegedRoles, h.))
+
 
 	//Auth
 	mux.HandleFunc("POST /auth/sign-up", h.Register)

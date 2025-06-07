@@ -10,6 +10,7 @@ import (
 	"esports_club_booking/internal/repository/minio"
 	"esports_club_booking/internal/transport/dto"
 	"fmt"
+	"io"
 	"log"
 	"log/slog"
 )
@@ -225,4 +226,16 @@ func (s *UserService) GrantAdmin(userID int64, role string) error {
 	}
 	_, err = s.repo.Update(&userDTO)
 	return err
+}
+
+func (s *UserService) ChangePfp(ctx context.Context, userID string, r io.Reader, objectSize int64, contentType string) error {
+	return s.minio.ChangePfp(ctx, userID, r, objectSize, contentType)
+}
+
+func (s *UserService) GetPfpURL(ctx context.Context, userID string) (string, error) {
+	return s.minio.GetPfpURL(ctx, userID)
+}
+
+func (s *UserService) DeletePfp(ctx context.Context, userID string) error {
+	return s.minio.DeletePfp(ctx, userID)
 }

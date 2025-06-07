@@ -1,14 +1,20 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/transport/dto"
 	"esports_club_booking/internal/views"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
+
+	"github.com/minio/minio-go/v7"
 )
 
 // @Summary		Get all users
@@ -170,4 +176,233 @@ func (s *Handler) HandleGrantAdmin(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+}
+
+// UploadPFP handles profile picture upload
+func (h *Handler) UploadPFP(w http.ResponseWriter, r *http.Request) {
+	// Parse multipart form (32MB max)
+	err := r.ParseMultipartForm(32 << 20)
+	if err != nil {
+		http.Error(w, "File too large", http.StatusBadRequest)
+		return
+	}
+
+	// Get user ID from URL params
+	vars := mux.Vars(r)
+	userIDStr := vars["userID"]
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	// Get file from form
+	file, header, err := r.FormFile("profile_picture")
+	if err != nil {
+		http.Error(w, "No file provided", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// Validate file type
+	contentType := header.Header.Get("Content-Type")
+	if !isValidImageType(contentType) {
+		http.Error(w, "Invalid file type. Only JPEG, PNG, and WebP are allowed", http.StatusBadRequest)
+		return
+	}
+
+	// Validate file size (5MB max)
+	if header.Size > 5*1024*1024 {
+		http.Error(w, "File size too large. Maximum 5MB allowed", http.StatusBadRequest)
+		return
+	}
+
+	// Generate filename: user_id_timestamp.extension
+	ext := getFileExtension(contentType)
+	filename := fmt.Sprintf("user_%d_%d%s", userID, time.Now().Unix(), ext)
+
+	// Upload to MinIO
+	_, err = h.minioClient.client.PutObject(
+		r.Context(),
+		"pfp",
+		filename,
+		file,
+		header.Size,
+		minio.PutObjectOptions{
+			ContentType: contentType,
+		},
+	)
+	if err != nil {
+		http.Error(w, "Failed to upload image", http.StatusInternalServerError)
+		return
+	}
+
+	// Generate presigned URL for immediate use
+	imageURL, err := h.minioClient.GetFileURL(r.Context(), filename)
+	if err != nil {
+		// Upload succeeded but URL generation failed
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(Response{
+			Success: true,
+			Message: "Image uploaded successfully",
+			Data: map[string]string{
+				"filename": filename,
+			},
+		})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(Response{
+		Success: true,
+		Message: "Image uploaded successfully",
+		Data: PFPResponse{
+			ImageURL: imageURL,
+			Filename: filename,
+		},
+	})
+}
+
+// GetPFPURL returns the presigned URL for a profile picture
+func (h *Handler) GetPFPURL(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	userIDStr := vars["userID"]
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	// Get filename from query param or generate pattern
+	filename := r.URL.Query().Get("filename")
+	if filename == "" {
+		// If no specific filename, find the latest pfp for this user
+		// This requires listing objects and finding the most recent one
+		filename, err = h.findLatestPFP(r.Context(), userID)
+		if err != nil {
+			http.Error(w, "Profile picture not found", http.StatusNotFound)
+			return
+		}
+	}
+
+	// Generate presigned URL
+	imageURL, err := h.minioClient.GetFileURL(r.Context(), filename)
+	if err != nil {
+		http.Error(w, "Failed to generate image URL", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(Response{
+		Success: true,
+		Message: "URL generated successfully",
+		Data: PFPResponse{
+			ImageURL: imageURL,
+			Filename: filename,
+		},
+	})
+}
+
+// DeletePFP deletes a profile picture
+func (h *Handler) DeletePFP(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	userIDStr := vars["userID"]
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	// Get filename from query param
+	filename := r.URL.Query().Get("filename")
+	if filename == "" {
+		http.Error(w, "Filename is required", http.StatusBadRequest)
+		return
+	}
+
+	// Validate that the filename belongs to this user (security check)
+	if !strings.HasPrefix(filename, fmt.Sprintf("user_%d_", userID)) {
+		http.Error(w, "Unauthorized", http.StatusForbidden)
+		return
+	}
+
+	// Delete from MinIO
+	err = h.minioClient.client.RemoveObject(r.Context(), "pfp", filename, minio.RemoveObjectOptions{})
+	if err != nil {
+		http.Error(w, "Failed to delete image", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(Response{
+		Success: true,
+		Message: "Profile picture deleted successfully",
+	})
+}
+
+// Helper function to find the latest profile picture for a user
+func (h *Handler) findLatestPFP(ctx context.Context, userID int64) (string, error) {
+	prefix := fmt.Sprintf("user_%d_", userID)
+
+	// List objects with the user prefix
+	objectCh := h.minioClient.client.ListObjects(ctx, "pfp", minio.ListObjectsOptions{
+		Prefix: prefix,
+	})
+
+	var latestFile string
+	var latestTime int64
+
+	for object := range objectCh {
+		if object.Err != nil {
+			return "", object.Err
+		}
+
+		// Extract timestamp from filename (user_123_1234567890.jpg)
+		parts := strings.Split(object.Key, "_")
+		if len(parts) >= 3 {
+			timestampStr := strings.Split(parts[2], ".")[0]
+			timestamp, err := strconv.ParseInt(timestampStr, 10, 64)
+			if err == nil && timestamp > latestTime {
+				latestTime = timestamp
+				latestFile = object.Key
+			}
+		}
+	}
+
+	if latestFile == "" {
+		return "", fmt.Errorf("no profile picture found for user %d", userID)
+	}
+
+	return latestFile, nil
+}
+
+// Helper functions
+func isValidImageType(contentType string) bool {
+	validTypes := []string{
+		"image/jpeg",
+		"image/jpg",
+		"image/png",
+		"image/webp",
+	}
+
+	for _, validType := range validTypes {
+		if contentType == validType {
+			return true
+		}
+	}
+	return false
+}
+
+func getFileExtension(contentType string) string {
+	switch contentType {
+	case "image/jpeg", "image/jpg":
+		return ".jpg"
+	case "image/png":
+		return ".png"
+	case "image/webp":
+		return ".webp"
+	default:
+		return ".jpg"
+	}
 }

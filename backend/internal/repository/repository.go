@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"esports_club_booking/internal/transport/dto"
+	"io"
 	"net/http"
 	"time"
 
@@ -107,4 +108,7 @@ type PayPalClient interface {
 }
 
 type MinioClient interface {
+	ChangePfp(ctx context.Context, userID string, r io.Reader, objectSize int64, contentType string) error
+	GetPfpURL(ctx context.Context, userID string) (string, error)
+	DeletePfp(ctx context.Context, userID string) error
 }

@@ -3,12 +3,16 @@ package minio
 import (
 	"context"
 	"esports_club_booking/internal/config"
+	"esports_club_booking/internal/repository"
 	"io"
 	"log"
+	"time"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
+
+var _ repository.MinioClient = (*MinioClient)(nil)
 
 type MinioClient struct {
 	client *minio.Client
@@ -41,30 +45,31 @@ func NewMinioClient(cfg *config.Config) (*MinioClient, error) {
 		}
 		log.Println("Successfully created bucket 'pfp'")
 	} else {
+		log.Println("Bucket 'pfp' already exists")
 	}
 
 	return client, nil
 }
 
 // UploadFile uploads a file to the specified bucket
-func (mc *MinioClient) UploadFile(ctx context.Context, objectName string, r io.Reader, objectSize int64, contentType string) error {
-	_, err := mc.client.PutObject(ctx, "pfp", objectName, r, objectSize, minio.PutObjectOptions{
+func (mc *MinioClient) ChangePfp(ctx context.Context, userID string, r io.Reader, objectSize int64, contentType string) error {
+	_, err := mc.client.PutObject(ctx, "pfp", userID, r, objectSize, minio.PutObjectOptions{
 		ContentType: contentType,
 	})
 	return err
 }
 
-// GetFileURL generates a presigned URL for file access
-func (mc *MinioClient) GetFileURL(ctx context.Context, objectName string) (string, error) {
-	reqParams := make(map[string][]string)
-	presignedURL, err := mc.client.PresignedGetObject(ctx, "pfp", objectName, 3600, reqParams) // 1 hour expiry
+func (mc *MinioClient) GetPfpURL(ctx context.Context, userID string) (string, error) {
+	// Always generate a new presigned URL
+	presignedURL, err := mc.client.PresignedGetObject(ctx, "pfp", userID, time.Hour, nil)
 	if err != nil {
 		return "", err
 	}
+
 	return presignedURL.String(), nil
 }
 
 // DeleteFile removes a file from the bucket
-func (mc *MinioClient) DeleteFile(ctx context.Context, objectName string) error {
-	return mc.client.RemoveObject(ctx, "pfp", objectName, minio.RemoveObjectOptions{})
+func (mc *MinioClient) DeletePfp(ctx context.Context, userID string) error {
+	return mc.client.RemoveObject(ctx, "pfp", userID, minio.RemoveObjectOptions{})
 }
