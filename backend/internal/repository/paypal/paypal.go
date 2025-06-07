@@ -53,13 +53,19 @@ func (p *PayPalClient) Deposit(amount float64, userID int64, description string)
 		},
 	}
 
+	appCtx := &paypal.ApplicationContext{
+		ReturnURL:  p.ReturnURL,
+		CancelURL:  p.CancelURL,
+		UserAction: "PAY_NOW",
+	}
+
 	// Remove the empty PaymentSource parameter
 	order, err := p.Client.CreateOrder(
 		context.Background(),
 		paypal.OrderIntentCapture,
 		unit,
 		nil, // Don't pass PaymentSource here
-		nil,
+		appCtx,
 	)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to create order: %w", err)
