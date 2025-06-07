@@ -33,6 +33,7 @@ import {
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { Tooltip } from '@mui/material';
 import { format, parseISO } from "date-fns";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import {
@@ -57,6 +58,7 @@ import packageService from '../services/packageService';
 import usersService from '../services/usersService';
 import { checkAuth } from '../services/authService';
 import paymentService from "../services/paymentService"; 
+import { AuthContext } from "../context/contextIndex";
 
 const Admin = () => {
   const { isDarkTheme } = useContext(ThemeContext);
@@ -81,6 +83,10 @@ const Admin = () => {
   const [modalContent, setModalContent] = useState({ title: "", message: "" });
   const [currentUser, setCurrentUser] = useState(null);
   const [sessionFilter, setSessionFilter] = useState('all');
+  const [roleModal, setRoleModal] = useState(false);
+  const [selectedUserForRole, setSelectedUserForRole] = useState(null);
+  const [newRole, setNewRole] = useState('');
+  const { isAuth, userRole: currentUserRole, handleAuthError } = useContext(AuthContext);
 
   const showModal = (title, message) => {
     setModalContent({ title, message });
@@ -134,7 +140,12 @@ const Admin = () => {
   const fetchAllUsers = async () => {
     try {
       const usersData = await usersService.getUsers();
-      setUsers(usersData);
+      setUsers(
+        usersData.map(user => ({
+          ...user,
+          name: user.name || user.login || 'User'
+        }))
+      );
     } catch (error) {
       console.error('Error fetching users:', error);
       setError('Failed to load users data');
@@ -145,8 +156,20 @@ const Admin = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const user = JSON.parse(localStorage.getItem("user"));
-        setCurrentUser(user);
+        try {
+          const authResponse = await checkAuth();
+          setCurrentUser({
+            ...authResponse.data,
+            name: authResponse.data.name || authResponse.data.login || authResponse.data.username || 'Admin'
+          });
+        } catch (authError) {
+          console.error('Auth check failed:', authError);
+          const user = JSON.parse(localStorage.getItem("user"));
+          setCurrentUser({
+            ...user,
+            name: user?.name || user?.login || user?.username || 'Admin'
+          });
+        }
         
         const [bookingsData, computersData, packagesData] = await Promise.all([
           bookingService.getBookings(),    
@@ -179,7 +202,12 @@ const Admin = () => {
       const timeRange = `${format(startTime, 'HH:mm')}-${format(endTime, 'HH:mm')}`;
       return {
         id: booking.id,
-        user: user || { id: booking.user_id, email: `user${booking.user_id}@example.com`, username: `User ${booking.user_id}` },
+        user: user || { 
+          id: booking.user_id, 
+          email: `user${booking.user_id}@example.com`, 
+          name: `User ${booking.user_id}`,
+          username: `User ${booking.user_id}`
+        },
         computer: computer || { id: booking.computer_id, name: `Computer ${booking.computer_id}` },
         package: pkg || { name: 'Unknown Package' },
         startTime: `${dateStr} ${timeRange}`,
@@ -285,11 +313,17 @@ const Admin = () => {
       const user = users.find(u => u.id === userId);
       if (!user) return;
       
-      if (balanceOperation === 'add') {
-        await usersService.creditUserByID(userId, amount);
-      } else {
-        await usersService.creditUserByID(userId, -amount);
+      if (balanceOperation === 'subtract' && user.balance < amount) {
+        setSnackbar({
+          open: true,
+          message: 'Cannot subtract more than current balance',
+          severity: 'error'
+        });
+        return;
       }
+      const finalAmount = balanceOperation === 'add' ? amount : -amount;
+      
+      await usersService.creditUserByID(userId, finalAmount);
       
       const newBalance = balanceOperation === 'add' 
         ? user.balance + amount 
@@ -304,7 +338,7 @@ const Admin = () => {
       const operationText = balanceOperation === 'add' ? 'added to' : 'deducted from';
       setSnackbar({
         open: true,
-        message: `Successfully ${operationText} ${user.username || user.email}: $${amount}`,
+        message: `Successfully ${operationText} ${user.name || user.email}: $${amount}`,
         severity: 'success'
       });
       
@@ -355,35 +389,190 @@ const Admin = () => {
     }
   };
 
-  const handleGrantAdmin = async (userId, currentRole) => {
-    try {
-      if (currentRole === 'admin') {
-        await usersService.revokeAdminByID(userId);
-        setUsers(users.map(user => 
-          user.id === userId ? { ...user, role: 'client' } : user
-        ));
-        setSnackbar({
-          open: true,
-          message: 'Admin privileges revoked successfully',
-          severity: 'success'
-        });
-      } else {
-        await usersService.grantAdminByID(userId);
-        setUsers(users.map(user => 
-          user.id === userId ? { ...user, role: 'admin' } : user
-        ));
-        setSnackbar({
-          open: true,
-          message: 'Admin privileges granted successfully',
-          severity: 'success'
-        });
-      }
-    } catch (error) {
+  const handleGrantAdmin = async (userId, newRole) => {
+    console.log('=== HANDLE GRANT ADMIN START ===');
+    console.log('User ID:', userId);
+    console.log('Requested new role:', newRole);
+
+    if (!isAuth) {
+      handleAuthError("Authorization required to change roles");
+      return;
+    }
+
+    console.log('Current user role:', currentUserRole);
+
+    const validRoles = ['admin', 'client'];
+    if (!validRoles.includes(newRole)) {
       setSnackbar({
         open: true,
-        message: error.message || 'Failed to update user privileges',
+        message: `Invalid role: ${newRole}. Available roles: ${validRoles.join(', ')}`,
         severity: 'error'
       });
+      return;
+    }
+
+    const permissionMatrix = {
+      owner: {
+        canAssign: ['admin', 'client'],
+        cannotModify: ['owner'], 
+        description: 'Full system access'
+      },
+      admin: {
+        canAssign: ['client'],
+        cannotModify: ['owner', 'admin'], 
+        description: 'Limited management access'
+      },
+      client: {
+        canAssign: [],
+        cannotModify: ['owner', 'admin', 'client'], 
+        description: 'No management access'
+      }
+    };
+
+    const currentUserPermissions = permissionMatrix[currentUserRole];
+    if (!currentUserPermissions) {
+      setSnackbar({
+        open: true,
+        message: `Unknown user role: ${currentUserRole}`,
+        severity: 'error'
+      });
+      return;
+    }
+
+    const targetUser = users.find(user => user.id === userId);
+    if (!targetUser) {
+      setSnackbar({
+        open: true,
+        message: 'User not found',
+        severity: 'error'
+      });
+      return;
+    }
+
+    console.log('Target user:', {
+      id: targetUser.id,
+      name: targetUser.name || targetUser.email,
+      currentRole: targetUser.role
+    });
+
+    if (currentUserPermissions.cannotModify.includes(targetUser.role)) {
+      setSnackbar({
+        open: true,
+        message: `You cannot modify users with role: ${targetUser.role}`,
+        severity: 'error'
+      });
+      return;
+    }
+
+    if (!currentUserPermissions.canAssign.includes(newRole)) {
+      setSnackbar({
+        open: true,
+        message: `You cannot assign role: ${newRole}. Available roles for your level: ${currentUserPermissions.canAssign.join(', ') || 'none'}`,
+        severity: 'error'
+      });
+      return;
+    }
+
+    if (targetUser.role === newRole) {
+      setSnackbar({
+        open: true,
+        message: `User already has role: ${newRole}`,
+        severity: 'warning'
+      });
+      return;
+    }
+
+    const isPromotingToAdmin = newRole === 'admin' && targetUser.role === 'client';
+    const isDemotingFromAdmin = newRole === 'client' && targetUser.role === 'admin';
+    
+    if (isPromotingToAdmin || isDemotingFromAdmin) {
+      const actionType = isPromotingToAdmin ? 'promote' : 'demote';
+      const confirmed = window.confirm(
+        `Are you sure you want to ${actionType} ${targetUser.name || targetUser.email} ${isPromotingToAdmin ? 'to Admin' : 'to Client'}?\n\nThis will ${isPromotingToAdmin ? 'grant administrative privileges' : 'remove administrative privileges'}.`
+      );
+      
+      if (!confirmed) {
+        console.log('Role change cancelled by user confirmation');
+        return;
+      }
+    }
+
+    try {
+      console.log('Attempting to change role via API...');
+      
+      setSnackbar({
+        open: true,
+        message: 'Updating user role...',
+        severity: 'info'
+      });
+
+      const response = await usersService.grantRoleByID(userId, newRole);
+      
+      console.log('API Response:', response);
+
+      setUsers(prevUsers => 
+        prevUsers.map(user => 
+          user.id === userId 
+            ? { ...user, role: newRole }
+            : user
+        )
+      );
+
+      const userName = targetUser.name || targetUser.email || `User #${targetUser.id}`;
+      const roleChangeMessage = `${userName} role successfully changed from ${targetUser.role} to ${newRole}`;
+
+      setSnackbar({
+        open: true,
+        message: roleChangeMessage,
+        severity: 'success'
+      });
+
+      console.log('Role change completed successfully');
+
+      if (currentUser?.id === userId) {
+        setTimeout(() => {
+          setSnackbar({
+            open: true,
+            message: 'Your role has been changed. Please refresh the page to see updated permissions.',
+            severity: 'info'
+          });
+        }, 2000);
+      }
+
+    } catch (error) {
+      console.error('Role change error:', error);
+      
+      let errorMessage = 'Failed to change user role';
+      
+      if (error.response?.status === 403) {
+        errorMessage = 'Insufficient privileges to change roles';
+      } else if (error.response?.status === 404) {
+        errorMessage = 'User not found or role endpoint unavailable';
+      } else if (error.response?.status === 400) {
+        errorMessage = error.response?.data?.message || 'Invalid role or request format';
+      } else if (error.response?.status === 409) {
+        errorMessage = 'User already has the specified role';
+      } else if (error.response?.status === 500) {
+        errorMessage = 'Server error occurred while changing role';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: 'error'
+      });
+
+      console.error('Detailed error info:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+
+    } finally {
+      console.log('=== HANDLE GRANT ADMIN COMPLETE ===');
     }
   };
 
@@ -470,22 +659,32 @@ const Admin = () => {
           </Box>
         </LocalizationProvider>
 
-        <Grid columns={12} spacing={3} sx={{ mb: 4 }}>
-          <Grid columnSpan={{ xs: 12, sm: 6, md: 3 }}>
-            <StatCard title="Total Users" value={users.length} icon={<People />} color="#4CAF50" />
+        <Grid container spacing={3} mb={4} justifyContent="flex-start">
+          <Grid size="auto">
+            <Box sx={{ width: 250 }}>
+              <StatCard title="Total Users" value={users.length} icon={<People />} color="#4CAF50" />
+            </Box>
           </Grid>
-          <Grid columnSpan={{ xs: 12, sm: 6, md: 3 }}>
-            <StatCard title="Active Sessions" value={activeSessions.length} icon={<Schedule />} color="#2196F3" />
+          <Grid size="auto">
+            <Box sx={{ width: 250 }}>
+              <StatCard title="Active Sessions" value={activeSessions.length} icon={<Schedule />} color="#2196F3" />
+            </Box>
           </Grid>
-          <Grid columnSpan={{ xs: 12, sm: 6, md: 3 }}>
-            <StatCard title="Total Computers" value={computers.length} icon={<Computer />} color="#FF9800" />
+          <Grid size="auto">
+            <Box sx={{ width: 250 }}>
+              <StatCard title="Total Computers" value={computers.length} icon={<Computer />} color="#FF9800" />
+            </Box>
           </Grid>
-          <Grid columnSpan={{ xs: 12, sm: 6, md: 3 }}>
-            <StatCard title="Blocked Users" value={blockedUsers.length} icon={<Block />} color="#F44336" />
+          <Grid size="auto">
+            <Box sx={{ width: 250 }}>
+              <StatCard title="Pending Bookings" value={pendingBookings.length} icon={<Settings />} color="#F44336" />
+            </Box>
           </Grid>
-          <Grid columnSpan={{ xs: 12, sm: 6, md: 3 }}>
-            <StatCard title="Cancelled Bookings" value={cancelledBookings.length} icon={<Cancel />} color="#9E9E9E" />
-          </Grid>
+          <Grid size="auto">
+            <Box sx={{ width: 250 }}>
+              <StatCard title="Blocked Users" value={blockedUsers.length} icon={<Block />} color="#F44336" />
+            </Box>
+          </Grid> 
         </Grid>
 
         <Paper sx={{ 
@@ -496,7 +695,7 @@ const Admin = () => {
           mb: 3
         }}>
           <Tabs value={activeTab} onChange={(e, newVal) => setActiveTab(newVal)}>
-            <Tab label="Active Sessions" />
+            <Tab label="Sessions" />
             <Tab label="Users Management" />
             <Tab label="Blocked Users" />
           </Tabs>
@@ -609,18 +808,25 @@ const Admin = () => {
                     {users.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell>{user.id}</TableCell>
-                        <TableCell>{user.username}</TableCell>
+                        <TableCell>{user.name}</TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>${user.balance}</TableCell>
                         <TableCell>
-                          <Chip 
-                            label={user.role} 
-                            color={
-                              user.role === 'owner' ? 'secondary' : 
-                              user.role === 'admin' ? 'primary' : 'default'
-                            }
-                            size="small"
-                          />
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <Chip 
+                              label={user.role} 
+                              color={
+                                user.role === 'owner' ? 'secondary' : 
+                                user.role === 'admin' ? 'primary' : 'default'
+                              }
+                              size="small"
+                            />
+                            {currentUser?.role === 'owner' && user.role !== 'owner' && (
+                              <Typography variant="caption" color="text.secondary">
+                                (manageable)
+                              </Typography>
+                            )}
+                          </Box>
                         </TableCell>
                         <TableCell>
                           <Chip 
@@ -631,6 +837,7 @@ const Admin = () => {
                         </TableCell>
                         <TableCell>
                           <Box display="flex" gap={1}>
+                            {/* Block/Unblock button */}
                             {user.status === 'active' ? (
                               <IconButton
                                 size="small"
@@ -652,6 +859,7 @@ const Admin = () => {
                               </IconButton>
                             )}
                             
+                            {/* Manage Balance button */}
                             <IconButton
                               size="small"
                               color="primary"
@@ -664,36 +872,24 @@ const Admin = () => {
                               <AccountBalanceWallet />
                             </IconButton>
 
-                            {/* Owner-only actions */}
+                            {/* Manage Role button - только для Owner */}
                             {currentUser?.role === 'owner' && user.role !== 'owner' && (
-                              <>
-                                {/* Admin role management */}
-                                <IconButton
-                                  size="small"
-                                  color={user.role === 'admin' ? "warning" : "primary"}
-                                  onClick={() => handleGrantAdmin(user.id, user.role)}
-                                  title={user.role === 'admin' ? "Revoke Admin" : "Grant Admin"}
-                                >
-                                  {user.role === 'admin' ? <Security /> : <AdminPanelSettings />}
-                                </IconButton>
-                                
-                                {/* Delete user */}
-                                <IconButton
-                                  size="small"
-                                  color="error"
-                                  onClick={() => {
-                                    setSelectedUserForDelete(user);
-                                    setDeleteUserModal(true);
-                                  }}
-                                  title="Delete User"
-                                >
-                                  <Delete />
-                                </IconButton>
-                              </>
+                              <IconButton
+                                size="small"
+                                color="secondary"
+                                onClick={() => {
+                                  setSelectedUserForRole(user);
+                                  setNewRole(user.role);
+                                  setRoleModal(true);
+                                }}
+                                title="Manage Role"
+                              >
+                                <AdminPanelSettings />
+                              </IconButton>
                             )}
 
-                            {/* Admin actions - only block/unblock, no delete */}
-                            {currentUser?.role === 'admin' && user.role !== 'owner' && user.role !== 'admin' && (
+                            {/* Delete button - только для Admin и только для клиентов */}
+                            {currentUser?.role === 'admin' && user.role === 'client' && (
                               <IconButton
                                 size="small"
                                 color="error"
@@ -702,15 +898,12 @@ const Admin = () => {
                                   setDeleteUserModal(true);
                                 }}
                                 title="Delete User"
-                                disabled={true}
-                                style={{ opacity: 0.3 }}
                               >
                                 <Delete />
                               </IconButton>
                             )}
                           </Box>
                         </TableCell>
-
                       </TableRow>
                     ))}
                   </TableBody>
@@ -742,7 +935,7 @@ const Admin = () => {
                       {blockedUsers.map((user) => (
                         <TableRow key={user.id}>
                           <TableCell>{user.id}</TableCell>
-                          <TableCell>{user.username}</TableCell>
+                          <TableCell>{user.name}</TableCell>
                           <TableCell>{user.email}</TableCell>
                           <TableCell>${user.balance}</TableCell>
                           <TableCell>
@@ -807,7 +1000,7 @@ const Admin = () => {
               >
                 {users.map(user => (
                   <MenuItem key={user.id} value={user.id.toString()}>
-                    {user.username || user.email} - Current: ${user.balance}
+                    {user.name || user.email} - Current: ${user.balance}
                   </MenuItem>
                 ))}
               </Select>
@@ -934,6 +1127,87 @@ const Admin = () => {
           <DialogActions>
             <Button onClick={() => setModalVisible(false)} autoFocus>
               OK
+            </Button>
+          </DialogActions>
+        </Dialog>
+        <Dialog open={roleModal} onClose={() => setRoleModal(false)} fullWidth maxWidth="sm">
+          <DialogTitle>Manage User Role</DialogTitle>
+          <DialogContent>
+            {selectedUserForRole && (
+              <Box>
+                <Typography variant="body1" sx={{ mb: 2 }}>
+                  Change role for: <strong>{selectedUserForRole.name || selectedUserForRole.email}</strong>
+                </Typography>
+                
+                <Box sx={{ mb: 2, p: 2, bgcolor: theme.palette.background.default, borderRadius: 1 }}>
+                  <Typography variant="body2">
+                    <strong>Current Role:</strong> {selectedUserForRole.role}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Email:</strong> {selectedUserForRole.email}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Balance:</strong> ${selectedUserForRole.balance}
+                  </Typography>
+                </Box>
+                
+                <FormControl fullWidth margin="dense">
+                  <InputLabel>Select New Role</InputLabel>
+                  <Select
+                    value={newRole}
+                    onChange={(e) => setNewRole(e.target.value)}
+                    label="Select New Role"
+                  >
+                    <MenuItem value="client">
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <Security fontSize="small" />
+                        Client
+                      </Box>
+                    </MenuItem>
+                    <MenuItem value="admin">
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <AdminPanelSettings fontSize="small" />
+                        Admin
+                      </Box>
+                    </MenuItem>
+                  </Select>
+                </FormControl>
+
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  <Typography variant="body2">
+                    {newRole === 'admin' 
+                      ? 'Admin users can manage bookings, users, and system settings.'
+                      : newRole === 'client'
+                      ? 'Client users can only make bookings and manage their own account.'
+                      : 'Select a role to see description.'
+                    }
+                  </Typography>
+                </Alert>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => {
+              setRoleModal(false);
+              setSelectedUserForRole(null);
+              setNewRole('');
+            }}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (selectedUserForRole && newRole !== selectedUserForRole.role) {
+                  handleGrantAdmin(selectedUserForRole.id, newRole);
+                }
+                setRoleModal(false);
+                setSelectedUserForRole(null);
+                setNewRole('');
+              }}
+              variant="contained" 
+              disabled={!newRole || newRole === selectedUserForRole?.role}
+              startIcon={<AdminPanelSettings />}
+            >
+              Update Role
             </Button>
           </DialogActions>
         </Dialog>

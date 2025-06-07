@@ -297,30 +297,33 @@ const Profile = ({ onLogout }) => {
     try {
       setLoading(true);
 
-      const result = await paymentService.cancelBooking(selectedBookingForCancel.id);
-      
-      console.log('Cancel booking result:', result);
+      const success = await bookingService.cancelBookingByID(selectedBookingForCancel.id);
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (success) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const updatedBookings = await bookingService.getUserBookings();
-      setBookings(updatedBookings);
+        const updatedBookings = await bookingService.getUserBookings();
+        const cancelledBooking = updatedBookings.find(b => b.id === selectedBookingForCancel.id);
 
-      setSnackbar({
-        open: true,
-        message: `Booking #${selectedBookingForCancel.id} cancelled successfully`,
-        severity: 'success'
-      });
-
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
-
+        if (!cancelledBooking || cancelledBooking.status === 'cancelled') {
+          setBookings(updatedBookings);
+          setSnackbar({
+            open: true,
+            message: `Booking #${selectedBookingForCancel.id} cancelled successfully`,
+            severity: 'success'
+          });
+        } else {
+          setSnackbar({
+            open: true,
+            message: `Booking cancellation failed - status not updated on server`,
+            severity: 'error'
+          });
+        }
+      }
     } catch (error) {
-      console.error('Cancel booking error:', error);
       setSnackbar({
         open: true,
-        message: `Failed to cancel booking: ${error.message || 'Unknown error'}`,
+        message: `Failed to cancel booking: ${error.message}`,
         severity: 'error'
       });
     } finally {

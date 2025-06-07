@@ -10,7 +10,6 @@
 .navbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   max-width: var(--max-width);
   margin: 0 auto;
   padding: var(--space-md) var(--space-lg);
@@ -42,10 +41,14 @@
 
 .navbar__nav-links--desktop {
   display: flex;
+  margin-left: auto;
+  gap: var(--space-lg);
 }
 
 .navbar__controls--desktop {
   display: flex;
+  gap: var(--space-md);
+  margin-left: var(--space-lg);
 }
 
 .navbar__nav-item {
