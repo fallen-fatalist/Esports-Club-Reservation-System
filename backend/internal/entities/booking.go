@@ -33,6 +33,14 @@ var bookingStatuses = []string{
 	"cancelled",
 }
 
+// Booking Statuses
+const (
+	BookingPendingStatus   = "pending"
+	BookingActiveStatus    = "active"
+	BookingFinishedStatus  = "finished"
+	BookingCancelledStatus = "cancelled"
+)
+
 // One class is compared with another, compared with what is passed as an argument
 func (b *Booking) Compare(secondBooking *Booking) int {
 	t1, err1 := time.Parse(time.RFC3339, b.StartTime)
@@ -68,6 +76,8 @@ var (
 	ErrEmptyStatus            = errors.New("status must not be empty")
 	ErrInvalidTimeFormat      = errors.New("invalid time format, must be RFC3339 format")
 	ErrInvalidDuration        = errors.New("booking duration must correspond to the package duration")
+
+	ErrCancelInsufficientPriviliges = errors.New("insufficient priviliges to cancel booking")
 )
 
 func (b *Booking) Validate() error {

@@ -2,6 +2,7 @@ package implementation
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"log/slog"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"esports_club_booking/internal/auth"
+	"esports_club_booking/internal/email"
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/repository"
 	"esports_club_booking/internal/service"
@@ -24,6 +26,7 @@ type BookingService struct {
 	computerService service.ComputerService
 	packageService  service.PackageService
 	userService     service.UserService
+	emailSender     email.EmailSender
 	computerNumber  int
 }
 
@@ -107,7 +110,7 @@ func (s *BookingService) CreateBooking(ctx context.Context, bookingDTO *dto.Book
 		PackageID:  bookingDTO.PackageID,
 		StartTime:  bookingDTO.StartTime,
 		EndTime:    bookingDTO.EndTime,
-		Status:     "pending",
+		Status:     entities.BookingPendingStatus,
 	}
 
 	if err := booking.Validate(); err != nil {
@@ -135,35 +138,32 @@ func (s *BookingService) CreateBooking(ctx context.Context, bookingDTO *dto.Book
 		return 0, entities.ErrComputerNotFound
 	}
 
-	if packageExists && computerExists {
-		if bookingPackage.Room != computerPackage.Room {
-			return 0, entities.ErrNotCorrespondenceOfRoom
-		}
-
-		// Parse StartTime and EndTime
-		start, err := time.Parse(time.RFC3339, bookingDTO.StartTime)
-		if err != nil {
-			return -1, entities.ErrInvalidTimeFormat
-		}
-		end, err := time.Parse(time.RFC3339, booking.EndTime)
-		if err != nil {
-			return -1, entities.ErrInvalidTimeFormat
-		}
-
-		// Check that packet duration corresponds to the duration from the start_time till end_time
-		if float64(bookingPackage.Duration)-(end.Sub(start).Hours()) > entities.EPS {
-			return 0, entities.ErrInvalidDuration
-		}
-
-		if id, err := s.repository.Create(ctx, booking); err != nil {
-			slog.Error("Unhandled error creating booking:", slog.Any("error", err))
-			return 0, service.ErrUnhandledError
-		} else {
-			return id, nil
-		}
+	if bookingPackage.Room != computerPackage.Room {
+		return 0, entities.ErrNotCorrespondenceOfRoom
 	}
 
-	return 0, service.ErrUnhandledError
+	// Parse StartTime and EndTime
+	start, err := time.Parse(time.RFC3339, bookingDTO.StartTime)
+	if err != nil {
+		return -1, entities.ErrInvalidTimeFormat
+	}
+	end, err := time.Parse(time.RFC3339, booking.EndTime)
+	if err != nil {
+		return -1, entities.ErrInvalidTimeFormat
+	}
+
+	// Check that packet duration corresponds to the duration from the start_time till end_time
+	if float64(bookingPackage.Duration)-(end.Sub(start).Hours()) > entities.EPS {
+		return 0, entities.ErrInvalidDuration
+	}
+
+	id, err := s.repository.Create(ctx, booking)
+
+	if err != nil {
+		slog.Error("Unhandled error creating booking:", slog.Any("error", err))
+		return 0, service.ErrUnhandledError
+	}
+	return id, nil
 
 }
 
@@ -476,57 +476,6 @@ func (s *BookingService) RefreshBookings() {
 	s.repository.RefreshBookings()
 }
 
-const eps = 0.0000000001
-
-// func (s *BookingService) GenerateBooking(ctx context.Context) {
-// 	retryNum := 0
-// 	userID := int64(rand.Intn(43) + 1)
-// 	computerID := int64(rand.Intn(40) + 1)
-
-// 	startTime := time.Now().UTC().Add(time.Duration(rand.Intn(30)+1) * time.Minute)
-// 	endTime := startTime.Add(time.Duration(rand.Intn(3)+1) * time.Hour)
-
-// 	var packageID int
-// 	diff := endTime.Sub(startTime).Hours()
-// 	switch {
-// 	case diff-1.0 < eps:
-// 		packageID = 1
-// 	case diff-2.0 < eps:
-// 		packageID = 2
-// 	case diff-3.0 < eps:
-// 		packageID = 3
-// 	}
-
-// 	generatedBooking := &entities.Booking{
-// 		UserID:     userID,
-// 		ComputerID: computerID,
-// 		PackageID:  int64(packageID),
-// 		StartTime:  startTime.Format(time.RFC3339),
-// 		EndTime:    endTime.Format(time.RFC3339),
-// 		Status:     "pending",
-// 	}
-
-// 	_, err := s.CreateBooking(ctx, generatedBooking)
-// 	if err != nil {
-// 		if errors.Is(err, entities.ErrBookingOverlap) {
-// 			s.GenerateBooking(ctx)
-// 		}
-
-// 		retryNum++
-// 		if retryNum >= 5 {
-// 			return
-// 		} else {
-// 			s.GenerateBooking(ctx)
-// 		}
-// 		// If incorrect values while validation should retry
-
-// 		slog.Error("Unhandled error creating booking:", slog.Any("error", err))
-// 		if ctx.Err() != nil {
-// 			return
-// 		}
-// 	}
-// }
-
 func (s *BookingService) hasBookingConflict(ctx context.Context, newBooking *entities.Booking) (bool, error) {
 	newStart, err := time.Parse(time.RFC3339, newBooking.StartTime)
 	if err != nil {
@@ -576,11 +525,6 @@ func (s *BookingService) Cancel(ctx context.Context, bookingdID int64) error {
 		return err
 	}
 
-	booking, err := s.repository.GetByID(bookingdID)
-	if err != nil {
-		return entities.ErrBookingNotExists
-	}
-
 	// TODO: In case of invalid token, show it or block the user's ip in middleware
 	role, ok := auth.GetRoleFromContext(ctx)
 	if !ok {
@@ -597,13 +541,56 @@ func (s *BookingService) Cancel(ctx context.Context, bookingdID int64) error {
 		return entities.ErrUnauthorized
 	}
 
+	booking, err := s.repository.GetByID(bookingdID)
+	if err != nil {
+		if errors.Is(err, entities.ErrBookingNotExists) {
+			return err
+		}
+		slog.Error("Error getting booking:", slog.Any("error", err))
+		return entities.ErrUnhandledError
+	}
+
+	user, err := s.userService.GetUser(booking.UserID)
+	if err != nil {
+		if errors.Is(err, entities.ErrUserNotFound) {
+			return err
+		}
+		slog.Error("Error getting user:", slog.Any("error", err))
+		return entities.ErrUnhandledError
+	}
+
 	// Check if non privelleged must cancel only own booking
-	if utils.In(role, entities.NonPrivellegedRoles) && booking.UserID != TokenUserID {
+	if utils.In(role, entities.NonPrivellegedRoles) && user.ID != TokenUserID {
 		return entities.ErrNonOwnBookingCancel
-	} else if utils.In(role, entities.PrivellegedRoles) {
-		return s.repository.Cancel(booking.ID)
-	} else {
-		slog.Error("Unhandled role:", slog.Any("role", role))
+	} else if !utils.In(role, entities.PrivellegedRoles) {
+		return entities.ErrCancelInsufficientPriviliges
+	}
+
+	booking.Status = entities.BookingCancelledStatus
+
+	if _, err := s.repository.Update(booking); err != nil {
+		return err
+	}
+
+	message := fmt.Sprintf(
+		`Hello %s,
+
+Your booking scheduled #%d computer from %s to %s has been *cancelled*.
+If you did not request this cancellation or need assistance, please contact our support team.
+
+— eReserve Team`,
+		user.Login,
+		booking.ComputerID,
+		booking.StartTime,
+		booking.EndTime,
+	)
+
+	if err := s.emailSender.SendEmail(
+		user.Email,
+		"Booking cancelled",
+		message,
+	); err != nil {
+		return err
 	}
 
 	return nil

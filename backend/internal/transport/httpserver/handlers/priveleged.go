@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"esports_club_booking/internal/entities"
+	"esports_club_booking/internal/transport/dto"
 	"esports_club_booking/internal/views"
 	"log/slog"
 	"net/http"
@@ -52,12 +53,15 @@ func (h *Handler) HandleBlock(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, entities.ErrNegativeID),
 			errors.Is(err, entities.ErrZeroID),
-			errors.Is(err, entities.ErrUserNotFound):
+			errors.Is(err, entities.ErrUserNotFound),
+			errors.Is(err, entities.ErrMissingToken),
+			errors.Is(err, entities.ErrBlockYourself),
+			errors.Is(err, entities.ErrBlockInsufficientPriviliges):
 			views.WriteError(w, http.StatusBadRequest, err)
 			return
 		default:
 			slog.Error("unhandled error while blocking user:", slog.Any("error", err))
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			views.WriteJSON(w, http.StatusInternalServerError, dto.JSONAnswer{Message: "unhandled error, please contact administrator."})
 			return
 		}
 	}
@@ -78,24 +82,20 @@ func (h *Handler) HandleBlock(w http.ResponseWriter, r *http.Request) {
 // @Router			/api/users/{id}/unblock [post]
 func (s *Handler) HandleUnblock(w http.ResponseWriter, r *http.Request) {
 	userIDStr := r.PathValue("id")
-
-	if userIDStr == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
 	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	if err != nil {
 		views.WriteError(w, http.StatusBadRequest, entities.ErrNonNumericID)
 		return
 	}
 
-	err = s.service.UserService.Unblock(userID)
+	err = s.service.UserService.Unblock(r.Context(), userID)
 	if err != nil {
 		switch {
 		case errors.Is(err, entities.ErrNegativeID),
 			errors.Is(err, entities.ErrZeroID),
-			errors.Is(err, entities.ErrUserNotFound):
+			errors.Is(err, entities.ErrUserNotFound),
+			errors.Is(err, entities.ErrUnBlockYourself),
+			errors.Is(err, entities.ErrUnBlockInsufficientPriviliges):
 			views.WriteError(w, http.StatusBadRequest, err)
 			return
 		default:

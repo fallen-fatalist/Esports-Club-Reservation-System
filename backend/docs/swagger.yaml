@@ -260,6 +260,24 @@ info:
   title: Esports Club Booking API
   version: "1.0"
 paths:
+  /api/auth/logout:
+    post:
+      description: Logs out the currently authenticated user by clearing the authentication
+        cookie.
+      responses:
+        "204":
+          description: Successfully logged out
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/views.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Logout user
+      tags:
+      - Auth
   /api/bookings:
     get:
       consumes:

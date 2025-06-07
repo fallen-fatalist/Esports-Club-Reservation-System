@@ -48,8 +48,8 @@ type UserService interface {
 	GetUser(int64) (*entities.User, error)
 	CreateUser(*dto.RegisterUser) (int64, error)
 	Delete(ctx context.Context, userID int64) error
-	Block(ctx context.Context, userID int64, adminLogin string) error
-	Unblock(userID int64) error
+	Block(ctx context.Context, userID int64) error
+	Unblock(ctx context.Context, userID int64) error
 	// AuthUser()
 	Register(userDTO dto.RegisterUser) (int64, error)
 	Login(userDTO dto.LoginUser) (string, error)
@@ -59,7 +59,7 @@ type UserService interface {
 	SendPasswordResetCode(email string) error
 	ConfirmPasswordReset(req dto.ResetPasswordConfirm) error
 	DeleteUnverifiedUsers() error
-	UserBalanceFill(ctx context.Context, userID int64, amount float64) error
+	UserBalanceCredit(ctx context.Context, userID int64, amount float64) error
 	// FillBalance()
 }
 

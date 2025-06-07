@@ -33,6 +33,9 @@ var (
 	ErrFailedToInsertUser = errors.New("failed to insert user")
 	ErrNonNumericID       = errors.New("id is not numeric")
 	ErrIncorrectRole      = errors.New("no such user role")
+	ErrNonNumericAmount   = errors.New("amount is not numeric")
+
+	ErrUserMaxBalance = errors.New("user's maximum balance exceeded")
 )
 
 // Statuses
@@ -41,3 +44,5 @@ var (
 	BlockedStatus    = "blocked"
 	UnverifiedStatus = "unverified"
 )
+
+const MAX_BALANCE = 100000

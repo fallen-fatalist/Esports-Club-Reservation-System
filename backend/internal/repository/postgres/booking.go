@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -135,6 +136,9 @@ func (r *BookingRepository) GetByID(id int64) (*entities.Booking, error) {
 		&booking.IsNotified,
 	)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, entities.ErrBookingNotExists
+		}
 		return nil, fmt.Errorf("failed to fetch booking from bookings: %w", err)
 	}
 
@@ -251,11 +255,6 @@ func (r *BookingRepository) Delete(id int64) error {
 	}
 
 	return nil
-}
-
-func (r *BookingRepository) Cancel(id int64) error {
-	_, err := r.db.Exec("UPDATE bookings SET status = 'cancelled' WHERE booking_id = $1", id)
-	return err
 }
 
 func (r *BookingRepository) RefreshBookings() {

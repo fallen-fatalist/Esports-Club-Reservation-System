@@ -102,11 +102,11 @@ func (s *Handler) HandleUserCredit(w http.ResponseWriter, r *http.Request) {
 
 	balance, err := strconv.ParseFloat(balanceStr, 64)
 	if err != nil {
-		views.WriteError(w, http.StatusBadRequest, entities.ErrNonNumericID)
+		views.WriteError(w, http.StatusBadRequest, entities.ErrNonNumericAmount)
 		return
 	}
 
-	err = s.service.UserService.UserBalanceFill(r.Context(), userID, balance)
+	err = s.service.UserService.UserBalanceCredit(r.Context(), userID, balance)
 	if err != nil {
 		switch {
 		case errors.Is(err, entities.ErrUserNotFound):
@@ -118,8 +118,20 @@ func (s *Handler) HandleUserCredit(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, entities.ErrNegativeOrZeroAmount):
 			views.WriteError(w, http.StatusBadRequest, err)
 			return
+		case errors.Is(err, entities.ErrUserMaxBalance):
+			views.WriteError(w, http.StatusBadRequest, err)
+			return
 		case errors.Is(err, entities.ErrUnhandledError):
 			views.WriteError(w, http.StatusInternalServerError, err)
+			return
+		case errors.Is(err, entities.ErrUserMaxBalance):
+			views.WriteError(w, http.StatusBadRequest, err)
+			return
+		case errors.Is(err, entities.ErrMaximumAmount):
+			views.WriteError(w, http.StatusBadRequest, err)
+			return
+		case errors.Is(err, entities.ErrCreditInsufficientPriviliges):
+			views.WriteError(w, http.StatusForbidden, err)
 			return
 		default:
 			slog.Error("error filling user balance", slog.String("userID", userIDStr), slog.String("balance", balanceStr), slog.Any("error", err))

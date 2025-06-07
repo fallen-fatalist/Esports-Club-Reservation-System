@@ -391,7 +391,7 @@ func (h *Handler) resetPassword(w http.ResponseWriter, r *http.Request) {
 // @Tags         Auth
 // @Security     BearerAuth
 // @Success      204  {string}  string  "Successfully logged out"
-// @Failure      401  {object}  utils.HTTPError  "Unauthorized"
+// @Failure      401  {object}  views.HTTPError  "Unauthorized"
 // @Router       /api/auth/logout [post]
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{

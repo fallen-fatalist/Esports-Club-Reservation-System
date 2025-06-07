@@ -106,7 +106,8 @@ func (s *Handler) PostBooking(w http.ResponseWriter, r *http.Request) {
 			errors.Is(err, entities.ErrNonHourlyDuration),
 			errors.Is(err, entities.ErrEmptyStatus),
 			errors.Is(err, entities.ErrInvalidStatus),
-			errors.Is(err, entities.ErrInvalidTimeFormat):
+			errors.Is(err, entities.ErrInvalidTimeFormat),
+			errors.Is(err, entities.ErrUserBlocked):
 			views.WriteError(w, http.StatusBadRequest, err)
 			return
 

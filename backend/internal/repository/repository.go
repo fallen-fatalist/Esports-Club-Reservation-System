@@ -82,7 +82,6 @@ type BookingRepository interface {
 	Create(context.Context, *entities.Booking) (int64, error)
 	Update(booking *entities.Booking) (int64, error)
 	Delete(int64) error
-	Cancel(int64) error
 	/* Very bad and stupid solution must be optimized to priority queue */
 	RefreshBookings()
 }

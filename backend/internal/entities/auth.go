@@ -21,6 +21,15 @@ var (
 	ErrGrantOwner                  = errors.New("can't grant owner role")
 	ErrGrantSameRole               = errors.New("can't grant the same privileged role")
 	ErrGrantInsufficientPriviliges = errors.New("insufficient priviliges to grant role")
+
+	// Block errors
+	ErrBlockYourself                 = errors.New("can't block yourself")
+	ErrBlockInsufficientPriviliges   = errors.New("insufficient priviliges to block")
+	ErrUnBlockYourself               = errors.New("can't unblock yourself")
+	ErrUnBlockInsufficientPriviliges = errors.New("insufficient priviliges to unblock")
+
+	// Credit errors
+	ErrCreditInsufficientPriviliges = errors.New("insufficient priviliges to credit user")
 )
 
 // MUST BE: In descending priviliges order
@@ -50,7 +59,7 @@ var ManagementRoles []string = []string{
 }
 
 // Roles
-var (
+const (
 	OwnerRole   = "owner"
 	ManagerRole = "manager"
 	AdminRole   = "admin"
