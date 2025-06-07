@@ -503,58 +503,6 @@ const Admin = () => {
 
           {activeTab === 0 && (
             <Box p={3}>
-              <Typography variant="h6" mb={2}>Pending Bookings</Typography>
-              {pendingBookings.length === 0 ? (
-                <Typography color={theme.palette.text.secondary}>No pending bookings for selected date.</Typography>
-              ) : (
-                <TableContainer>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>ID</TableCell>
-                        <TableCell>User</TableCell>
-                        <TableCell>Computer</TableCell>
-                        <TableCell>Package</TableCell>
-                        <TableCell>Time</TableCell>
-                        <TableCell>Status</TableCell>
-                        <TableCell>Actions</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {pendingBookings.map((booking) => (
-                        <TableRow key={booking.id}>
-                          <TableCell>{booking.id}</TableCell>
-                          <TableCell>{booking.user?.email || booking.user?.username}</TableCell>
-                          <TableCell>№{booking.computer.id}</TableCell>
-                          <TableCell>{booking.package.name}</TableCell>
-                          <TableCell>{booking.startTime}</TableCell>
-                          <TableCell>
-                            <Chip label={booking.status} color="warning" />
-                          </TableCell>
-                          <TableCell>
-                            <IconButton
-                              size="small"
-                              color="warning"
-                              onClick={() => {
-                                setSelectedBookingForCancel(booking);
-                                setCancelBookingModal(true);
-                              }}
-                              title="Cancel Booking"
-                            >
-                              <Cancel />
-                            </IconButton>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              )}
-            </Box>
-          )}
-
-          {activeTab === 1 && (
-            <Box p={3}>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h6">
                   {sessionFilter === 'all' ? 'All Sessions' : 
@@ -641,7 +589,7 @@ const Admin = () => {
             </Box>
           )}
 
-          {activeTab === 2 && (
+          {activeTab === 1 && (
             <Box p={3}>
               <Typography variant="h6" mb={2}>Users Management</Typography>
               <TableContainer>
@@ -771,7 +719,7 @@ const Admin = () => {
             </Box>
           )}
 
-          {activeTab === 3 && (
+          {activeTab === 2 && (
             <Box p={3}>
               <Typography variant="h6" mb={2}>Blocked Users</Typography>
               {blockedUsers.length === 0 ? (

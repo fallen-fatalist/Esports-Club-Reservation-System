@@ -7,8 +7,7 @@
     text-align: center;
 }
 
-.auto-select-btn,
-.logout-btn {
+.auto-select-btn {
     padding: 6px 10px;
     background-color: var(--color-bg-light);
     color: var(--color-text-bg);
@@ -20,28 +19,7 @@
     transition: color var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast);
 }
 
-.auto-select-btn:hover,
-.logout-btn:hover {
-    color: var(--color-text-bg);
-    border: 1px solid var(--color-bg);
-    background-color: var(--color-bg);
-}
-
-.login-btn,
-.register-btn {
-    padding: 6px 10px;
-    background-color: transparent;
-    color: var(--color-bg);
-    border: 1px solid var(--color-bg);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    box-sizing: border-box;
-    text-align: center;
-    transition: color var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast);
-}
-
-.login-btn:hover,
-.register-btn:hover {
+.auto-select-btn:hover {
     color: var(--color-text-bg);
     border: 1px solid var(--color-bg);
     background-color: var(--color-bg);
@@ -86,9 +64,9 @@
   box-sizing: border-box;
   text-align: center;
   transition: 
-    background-color var(--transition-fast),
-    transform var(--transition-fast),
-    box-shadow var(--transition-fast);
+  background-color var(--transition-fast),
+  transform var(--transition-fast),
+  box-shadow var(--transition-fast);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
