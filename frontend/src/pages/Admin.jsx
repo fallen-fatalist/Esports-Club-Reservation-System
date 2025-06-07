@@ -134,7 +134,12 @@ const Admin = () => {
   const fetchAllUsers = async () => {
     try {
       const usersData = await usersService.getUsers();
-      setUsers(usersData);
+      setUsers(
+        usersData.map(user => ({
+          ...user,
+          name: user.name || user.login || 'User'
+        }))
+      );
     } catch (error) {
       console.error('Error fetching users:', error);
       setError('Failed to load users data');
@@ -145,8 +150,20 @@ const Admin = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const user = JSON.parse(localStorage.getItem("user"));
-        setCurrentUser(user);
+        try {
+          const authResponse = await checkAuth();
+          setCurrentUser({
+            ...authResponse.data,
+            name: authResponse.data.name || authResponse.data.login || authResponse.data.username || 'Admin'
+          });
+        } catch (authError) {
+          console.error('Auth check failed:', authError);
+          const user = JSON.parse(localStorage.getItem("user"));
+          setCurrentUser({
+            ...user,
+            name: user?.name || user?.login || user?.username || 'Admin'
+          });
+        }
         
         const [bookingsData, computersData, packagesData] = await Promise.all([
           bookingService.getBookings(),    
@@ -179,7 +196,12 @@ const Admin = () => {
       const timeRange = `${format(startTime, 'HH:mm')}-${format(endTime, 'HH:mm')}`;
       return {
         id: booking.id,
-        user: user || { id: booking.user_id, email: `user${booking.user_id}@example.com`, username: `User ${booking.user_id}` },
+        user: user || { 
+          id: booking.user_id, 
+          email: `user${booking.user_id}@example.com`, 
+          name: `User ${booking.user_id}`,
+          username: `User ${booking.user_id}`
+        },
         computer: computer || { id: booking.computer_id, name: `Computer ${booking.computer_id}` },
         package: pkg || { name: 'Unknown Package' },
         startTime: `${dateStr} ${timeRange}`,
@@ -301,7 +323,7 @@ const Admin = () => {
       const operationText = balanceOperation === 'add' ? 'added to' : 'deducted from';
       setSnackbar({
         open: true,
-        message: `Successfully ${operationText} ${user.username || user.email}: $${amount}`,
+        message: `Successfully ${operationText} ${user.name || user.email}: $${amount}`,
         severity: 'success'
       });
       
@@ -352,23 +374,52 @@ const Admin = () => {
     }
   };
 
-  const handleGrantAdmin = async (userId, currentRole) => {
+  const handleGrantAdmin = async (userId) => {
     try {
-      if (currentRole === 'admin') {
-        await usersService.revokeAdminByID(userId);
-        setUsers(users.map(user => 
-          user.id === userId ? { ...user, role: 'client' } : user
-        ));
+      if (currentUser?.role !== 'owner') {
         setSnackbar({
           open: true,
-          message: 'Admin privileges revoked successfully',
-          severity: 'success'
+          message: 'Only owner can manage admin privileges',
+          severity: 'error'
         });
-      } else {
-        await usersService.grantAdminByID(userId);
-        setUsers(users.map(user => 
-          user.id === userId ? { ...user, role: 'admin' } : user
-        ));
+        return;
+      }
+
+      const targetUser = users.find(u => u.id === userId);
+      if (!targetUser) {
+        setSnackbar({
+          open: true,
+          message: 'User not found',
+          severity: 'error'
+        });
+        return;
+      }
+
+      if (targetUser.role === 'admin') {
+        setSnackbar({
+          open: true,
+          message: 'User is already admin',
+          severity: 'warning'
+        });
+        return;
+      }
+
+      console.log(`Attempting to grant admin to user ${userId} with current role: ${targetUser.role}`);
+
+      const result = await usersService.grantAdminByID(userId);
+
+      if (result.alreadyAdmin) {
+        await fetchAllUsers();
+        setSnackbar({
+          open: true,
+          message: 'User is already admin (updated from server)',
+          severity: 'warning'
+        });
+        return;
+      }
+
+      if (result.success) {
+        await fetchAllUsers();
         setSnackbar({
           open: true,
           message: 'Admin privileges granted successfully',
@@ -376,6 +427,7 @@ const Admin = () => {
         });
       }
     } catch (error) {
+      console.error('Error managing admin privileges:', error);
       setSnackbar({
         open: true,
         message: error.message || 'Failed to update user privileges',
@@ -647,12 +699,12 @@ const Admin = () => {
                     {users.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell>{user.id}</TableCell>
-                        <TableCell>{user.username}</TableCell>
+                        <TableCell>{user.name || 'No username'}</TableCell>
                         <TableCell>{user.email}</TableCell>
-                        <TableCell>${user.balance}</TableCell>
+                        <TableCell>${user.balance?.toFixed(2) || '0.00'}</TableCell>
                         <TableCell>
                           <Chip 
-                            label={user.role} 
+                            label={user.role || 'client'} 
                             color={
                               user.role === 'owner' ? 'secondary' : 
                               user.role === 'admin' ? 'primary' : 'default'
@@ -662,20 +714,25 @@ const Admin = () => {
                         </TableCell>
                         <TableCell>
                           <Chip 
-                            label={user.status} 
+                            label={user.status || 'active'} 
                             color={user.status === 'active' ? 'success' : 'error'}
                             size="small"
                           />
                         </TableCell>
                         <TableCell>
                           <Box display="flex" gap={1}>
+                            {/* Блокировка/разблокировка */}
                             {user.status === 'active' ? (
                               <IconButton
                                 size="small"
                                 color="error"
                                 onClick={() => handleBlockUser(user.id)}
                                 title="Block User"
-                                disabled={user.role === 'owner' || (currentUser?.role === 'admin' && user.role === 'admin')}
+                                disabled={
+                                  user.role === 'owner' || 
+                                  (currentUser?.role === 'admin' && user.role === 'admin') ||
+                                  currentUser?.id === user.id
+                                }
                               >
                                 <Block />
                               </IconButton>
@@ -690,6 +747,7 @@ const Admin = () => {
                               </IconButton>
                             )}
                             
+                            {/* Управление балансом */}
                             <IconButton
                               size="small"
                               color="primary"
@@ -702,20 +760,25 @@ const Admin = () => {
                               <AccountBalanceWallet />
                             </IconButton>
 
-                            {/* Owner-only actions */}
-                            {currentUser?.role === 'owner' && user.role !== 'owner' && (
+                            {/* ТОЛЬКО для Owner - управление админами и удаление */}
+                            {currentUser?.role === 'owner' && user.role !== 'owner' && currentUser?.id !== user.id && (
                               <>
-                                {/* Admin role management */}
+                                {/* Управление ролью админа */}
                                 <IconButton
                                   size="small"
-                                  color={user.role === 'admin' ? "warning" : "primary"}
-                                  onClick={() => handleGrantAdmin(user.id, user.role)}
-                                  title={user.role === 'admin' ? "Revoke Admin" : "Grant Admin"}
+                                  color={user.role === 'admin' ? "success" : "primary"}
+                                  onClick={() => handleGrantAdmin(user.id)}
+                                  title={user.role === 'admin' ? "User is admin" : "Grant admin privileges"}
+                                  disabled={
+                                    currentUser?.role !== 'owner' || 
+                                    user.role === 'admin' ||
+                                    currentUser?.id === user.id
+                                  }
                                 >
                                   {user.role === 'admin' ? <Security /> : <AdminPanelSettings />}
                                 </IconButton>
                                 
-                                {/* Delete user */}
+                                {/* Удаление пользователя */}
                                 <IconButton
                                   size="small"
                                   color="error"
@@ -730,25 +793,31 @@ const Admin = () => {
                               </>
                             )}
 
-                            {/* Admin actions - only block/unblock, no delete */}
-                            {currentUser?.role === 'admin' && user.role !== 'owner' && user.role !== 'admin' && (
-                              <IconButton
-                                size="small"
-                                color="error"
-                                onClick={() => {
-                                  setSelectedUserForDelete(user);
-                                  setDeleteUserModal(true);
-                                }}
-                                title="Delete User"
-                                disabled={true}
-                                style={{ opacity: 0.3 }}
-                              >
-                                <Delete />
-                              </IconButton>
+                            {/* Для админов - заблокированные кнопки с объяснением */}
+                            {currentUser?.role === 'admin' && user.role !== 'owner' && user.role !== 'admin' && currentUser?.id !== user.id && (
+                              <>
+                                <IconButton
+                                  size="small"
+                                  color="primary"
+                                  title="Grant Admin (Owner only)"
+                                  disabled={true}
+                                  style={{ opacity: 0.3 }}
+                                >
+                                  <AdminPanelSettings />
+                                </IconButton>
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  title="Delete User (Owner only)"
+                                  disabled={true}
+                                  style={{ opacity: 0.3 }}
+                                >
+                                  <Delete />
+                                </IconButton>
+                              </>
                             )}
                           </Box>
                         </TableCell>
-
                       </TableRow>
                     ))}
                   </TableBody>
@@ -780,7 +849,7 @@ const Admin = () => {
                       {blockedUsers.map((user) => (
                         <TableRow key={user.id}>
                           <TableCell>{user.id}</TableCell>
-                          <TableCell>{user.username}</TableCell>
+                          <TableCell>{user.name}</TableCell>
                           <TableCell>{user.email}</TableCell>
                           <TableCell>${user.balance}</TableCell>
                           <TableCell>
@@ -845,7 +914,7 @@ const Admin = () => {
               >
                 {users.map(user => (
                   <MenuItem key={user.id} value={user.id.toString()}>
-                    {user.username || user.email} - Current: ${user.balance}
+                    {user.name || user.email} - Current: ${user.balance?.toFixed(2) || '0.00'}
                   </MenuItem>
                 ))}
               </Select>
@@ -897,7 +966,7 @@ const Admin = () => {
           <DialogTitle>Confirm User Deletion</DialogTitle>
           <DialogContent>
             <Typography>
-              Are you sure you want to delete user <strong>{selectedUserForDelete?.username}</strong>?
+              Are you sure you want to delete user <strong>{selectedUserForDelete?.name}</strong>?
             </Typography>
             <Typography color="error" variant="body2" sx={{ mt: 1 }}>
               This action cannot be undone.

@@ -11,7 +11,7 @@ const usersService = {
     }
   },
 
-   async getUsers() {
+  async getUsers() {
     try {
       const response = await api.get('/api/users');
       return response.data;
@@ -40,34 +40,30 @@ const usersService = {
     }
   },
 
-async blockUserByID(id) {
-  try {
-    console.log(`Attempting to block user ID: ${id}`);
-    console.log(`URL: /api/users/${id}/block`);
-    console.log('Auth headers:', api.defaults.headers.common);
-    
-    const response = await api.post(`/api/users/${id}/block`);
-    console.log('Block response:', response);
-    return response.status === 200 || response.status === 204;
-  } catch (error) {
-    console.error(`Full error details for user ${id}:`, {
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      url: error.config?.url,
-      method: error.config?.method,
-      headers: error.config?.headers
-    });
-    
-    if (error.response?.status === 403) {
-      throw new Error('Insufficient privileges to block user');
+  async blockUserByID(id) {
+    try {
+      const response = await api.post(`/api/users/${id}/block`);
+      return response.status === 200 || response.status === 204;
+    } catch (error) {
+      console.error(`Full error details for user ${id}:`, {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        url: error.config?.url,
+        method: error.config?.method,
+        headers: error.config?.headers
+      });
+
+      if (error.response?.status === 403) {
+        throw new Error('Insufficient privileges to block user');
+      }
+      if (error.response?.status === 404) {
+        throw new Error('User not found or endpoint not available');
+      }
+      throw error;
     }
-    if (error.response?.status === 404) {
-      throw new Error('User not found or endpoint not available');
-    }
-    throw error;
-  }
-},
+  },
+
   async unblockUserByID(id) {
     try {
       const response = await api.post(`/api/users/${id}/unblock`);
@@ -105,20 +101,44 @@ async blockUserByID(id) {
 
   async grantAdminByID(id) {
     try {
-      const response = await api.post(`/api/users/${id}/admin`);
-      return response.status === 200;
+      const response = await api.post(`/api/users/${id}/admin`, {
+        role: 'admin'
+      }, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      return {
+        success: true,
+        data: response.data
+      };
     } catch (error) {
       console.error(`Error granting admin privileges to user ${id}:`, error);
+
+      if (error.response?.status === 400) {
+        const errorMessage = error.response?.data?.message || error.response?.data?.error || '';
+        if (errorMessage.toLowerCase().includes('already') &&
+            errorMessage.toLowerCase().includes('admin')) {
+          return {
+            success: false,
+            alreadyAdmin: true,
+            message: 'User already has admin privileges'
+          };
+        }
+        throw new Error(errorMessage || 'Bad request');
+      }
+
       if (error.response?.status === 403) {
         throw new Error('Insufficient privileges to grant admin access');
       }
+
       if (error.response?.status === 404) {
         throw new Error('User not found');
       }
-      if (error.response?.status === 400) {
-        throw new Error('User already has admin privileges');
-      }
-      throw error;
+
+      throw new Error(error.response?.data?.message || error.message || 'Failed to grant admin privileges');
     }
   },
 
