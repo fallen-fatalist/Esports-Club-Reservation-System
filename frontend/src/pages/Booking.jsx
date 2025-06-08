@@ -315,19 +315,25 @@ const Booking = () => {
     }
   };
 
-  const handleAutoSelectComputers = (count) => {
+  const handleAutoSelectComputers = (count, targetRoom = null) => {
     if (!checkAuthBeforeAction("auto-select computers")) return;
-    const roomComputers = filteredComputers.filter((c) => c.room === currentRoom);
+    
+    const roomToUse = targetRoom || currentRoom;
+    
+    const roomComputers = filteredComputers.filter((c) => c.room === roomToUse);
     const available = roomComputers.filter((c) => c.status === 'available');
+    
     if (available.length === 0) {
-      setErrorMessage(`No available computers in ${currentRoom} room for auto-selection.`);
+      setErrorMessage(`No available computers in ${roomToUse} room for auto-selection.`);
       setInfoMessage(null);
       return;
     }
+    
     const adjustedCount = Math.min(count, available.length);
     if (count > available.length) {
-      setInfoMessage(`Requested ${count}, but only ${available.length} available in ${currentRoom} room. All available computers have been selected.`);
+      setInfoMessage(`Requested ${count}, but only ${available.length} available in ${roomToUse} room. All available computers have been selected.`);
     }
+    
     const autoSelected = available.slice(0, adjustedCount).map((c) => c.id);
     setSelectedComputers(autoSelected);
     setErrorMessage(null);
@@ -339,11 +345,37 @@ const Booking = () => {
   };
 
   const getFilteredComputersForDisplay = () => {
-    return filteredComputers.filter(c => isDisplayableStatus(c.status));
+    if (currentRoom === 'All') {
+      const displayComputers = filteredComputers.filter(c => isDisplayableStatus(c.status));
+      
+      if (selectedPackage) {
+        const selectedPkg = packages.find(pkg => pkg.id === selectedPackage);
+        if (selectedPkg && selectedPkg.room) {
+          const packageRoomComputers = displayComputers.filter(c => c.room === selectedPkg.room);
+          const otherRoomComputers = displayComputers.filter(c => c.room !== selectedPkg.room);
+          return [...packageRoomComputers, ...otherRoomComputers];
+        }
+      }
+      
+      return displayComputers;
+    } else {
+      return filteredComputers.filter(c => isDisplayableStatus(c.status) && c.room === currentRoom);
+    }
   };
 
   const getAvailableComputersCount = () => {
-    return getFilteredComputersForDisplay()
+    if (currentRoom === 'All') {
+      if (selectedPackage) {
+        const selectedPkg = packages.find(pkg => pkg.id === selectedPackage);
+        if (selectedPkg && selectedPkg.room) {
+          return filteredComputers
+            .filter(c => c.status === 'available' && c.room === selectedPkg.room)
+            .length;
+        }
+      }
+      return filteredComputers.filter(c => c.status === 'available').length;
+    }
+    return filteredComputers
       .filter(c => c.status === 'available' && c.room === currentRoom)
       .length;
   };

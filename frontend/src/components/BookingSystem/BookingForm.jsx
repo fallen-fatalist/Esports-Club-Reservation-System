@@ -99,6 +99,22 @@ const BookingForm = ({
 
   const handleAutoSelectClick = () => {
     const count = parseValidCount();
+    
+    if (currentRoom === 'All' && selectedPackage) {
+      const selectedPkg = packages.find(pkg => pkg.id === selectedPackage);
+      if (selectedPkg && selectedPkg.room) {
+        if (setCurrentRoom) {
+          setCurrentRoom(selectedPkg.room);
+        } else {
+          setInternalRoom(selectedPkg.room);
+        }
+        setTimeout(() => {
+          handleAutoSelectComputers(count, selectedPkg.room);
+        }, 100);
+        return;
+      }
+    }
+    
     handleAutoSelectComputers(count);
   };
 
@@ -118,6 +134,21 @@ const BookingForm = ({
     setSelectedComputers([]);
     if (newRoom !== 'All') {
       setSelectedPackage('');
+    }
+  };
+
+  const handlePackageChange = (packageId) => {
+    setSelectedPackage(Number(packageId));
+    
+    if (currentRoom === 'All' && packageId) {
+      const selectedPkg = packages.find(pkg => pkg.id === Number(packageId));
+      if (selectedPkg && selectedPkg.room) {
+        if (setCurrentRoom) {
+          setCurrentRoom(selectedPkg.room);
+        } else {
+          setInternalRoom(selectedPkg.room);
+        }
+      }
     }
   };
 
@@ -186,7 +217,7 @@ const BookingForm = ({
                 <option>Error loading packages</option>
               </MyDropdown>
             ) : (
-              <MyDropdown value={selectedPackage} onChange={(e) => setSelectedPackage(Number(e.target.value))}>
+              <MyDropdown value={selectedPackage} onChange={(e) => handlePackageChange(e.target.value)}>
                 {getPackagePlaceholder() && <option value="">{getPackagePlaceholder()}</option>}
                 {filteredPackages.map((pkg) => (
                   <option key={pkg.id} value={pkg.id}>
