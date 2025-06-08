@@ -19,5 +19,5 @@ var (
 
 const (
 	EPS        = 0.0000001
-	MAX_AMOUNT = 1000
+	MAX_AMOUNT = 100000
 )

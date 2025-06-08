@@ -59,7 +59,6 @@ func (s *PaymentService) Deposit(ctx context.Context, userID int64, amount float
 		"Balance changes",
 		fmt.Sprintf("Your balance has increased by $%.2f", amount),
 	)
-
 	if err != nil {
 		return errors.Join(err, entities.ErrNotificationFailed)
 	}
