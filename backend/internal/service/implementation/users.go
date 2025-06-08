@@ -277,7 +277,7 @@ func (s *UserService) Delete(ctx context.Context, userID int64) error {
 	return s.repo.Delete(userID)
 }
 
-func (s *UserService) UserBalanceCredit(ctx context.Context, userID int64, amount float64) error {
+func (s *UserService) CreditUserBalance(ctx context.Context, userID int64, amount float64) error {
 	if err := entities.ValidateID(userID); err != nil {
 		return err
 	}
@@ -408,4 +408,12 @@ func (s *UserService) Grant(ctx context.Context, userID int64, grantRole string)
 
 	id, err := s.repo.Update(&userDTO)
 	return id, err
+}
+
+func (s *UserService) DebitUserBalance(ctx context.Context, userID int64, amount float64) error {
+	if amount < 0 {
+		amount = -amount
+	}
+
+	return s.repo.UpdateBalance(userID, -amount)
 }

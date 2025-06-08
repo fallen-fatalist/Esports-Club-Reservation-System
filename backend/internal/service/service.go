@@ -59,7 +59,8 @@ type UserService interface {
 	SendPasswordResetCode(email string) error
 	ConfirmPasswordReset(req dto.ResetPasswordConfirm) error
 	DeleteUnverifiedUsers() error
-	UserBalanceCredit(ctx context.Context, userID int64, amount float64) error
+	CreditUserBalance(ctx context.Context, userID int64, amount float64) error
+	DebitUserBalance(ctx context.Context, userID int64, amount float64) error
 	// FillBalance()
 }
 

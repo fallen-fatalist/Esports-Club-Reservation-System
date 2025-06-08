@@ -106,7 +106,7 @@ func (s *Handler) HandleUserCredit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.service.UserService.UserBalanceCredit(r.Context(), userID, balance)
+	err = s.service.UserService.CreditUserBalance(r.Context(), userID, balance)
 	if err != nil {
 		switch {
 		case errors.Is(err, entities.ErrUserNotFound):

@@ -158,6 +158,13 @@ func (s *BookingService) CreateBooking(ctx context.Context, bookingDTO *dto.Book
 		return 0, entities.ErrInvalidDuration
 	}
 
+	// TODO: join into transaction
+
+	// Check the user balance
+	if err := s.userService.DebitUserBalance(ctx, booking.UserID, bookingPackage.Price); err != nil {
+		return 0, err
+	}
+
 	id, err := s.repository.Create(ctx, booking)
 
 	if err != nil {
