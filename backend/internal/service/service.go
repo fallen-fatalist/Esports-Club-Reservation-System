@@ -96,7 +96,7 @@ type PackageService interface {
 type PaymentService interface {
 	PayBooking(context.Context, *entities.Booking) error
 	CancelBooking(context.Context, int64) error
-	RequestDeposit(context.Context, int64, float64) (orderID string, redirectURL string, err error)
+	RequestDeposit(context.Context, int64, float64) (redirectURL string, err error)
 	Deposit(ctx context.Context, userID int64, amount float64) error
 	VerifyWebhook(ctx context.Context, r *http.Request) error
 	// Further do

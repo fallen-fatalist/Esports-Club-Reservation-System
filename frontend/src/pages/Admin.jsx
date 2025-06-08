@@ -36,6 +36,8 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { Tooltip } from '@mui/material';
 import { format, parseISO } from "date-fns";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
+import { Refresh } from '@mui/icons-material';
+import { CircularProgress } from '@mui/material';
 import {
   AccountBalanceWallet,
   People,
@@ -87,6 +89,14 @@ const Admin = () => {
   const [selectedUserForRole, setSelectedUserForRole] = useState(null);
   const [newRole, setNewRole] = useState('');
   const { isAuth, userRole: currentUserRole, handleAuthError } = useContext(AuthContext);
+  const [apiLoading, setApiLoading] = useState(false);
+  const [bookingsCache, setBookingsCache] = useState({
+    all: null,
+    active: null,
+    pending: null,
+    cancelled: null,
+    finished: null
+  });
 
   const showModal = (title, message) => {
     setModalContent({ title, message });
@@ -152,10 +162,62 @@ const Admin = () => {
     }
   };
 
+  const fetchBookingsByFilter = async (filter) => {
+    if (bookingsCache[filter] && filter !== 'all') {
+      return bookingsCache[filter];
+    }
+
+    try {
+      setApiLoading(true);
+      let bookingsData;
+      
+      switch (filter) {
+        case 'active':
+          bookingsData = await bookingService.getActiveBookings();
+          break;
+        case 'pending':
+          bookingsData = await bookingService.getPendingBookings();
+          break;
+        case 'cancelled':
+          bookingsData = await bookingService.getCancelledBookings();
+          break;
+        case 'completed':
+          bookingsData = await bookingService.getFinishedBookings();
+          break;
+        case 'all':
+        default:
+          bookingsData = await bookingService.getBookings();
+          break;
+      }
+
+      setBookingsCache(prev => ({
+        ...prev,
+        [filter]: bookingsData
+      }));
+
+      return bookingsData;
+    } catch (error) {
+      console.error(`Error fetching ${filter} bookings:`, error);
+      if (filter !== 'all') {
+        const allBookings = await bookingService.getBookings();
+        return allBookings.filter(booking => {
+          if (filter === 'completed') {
+            return booking.status === 'completed' || booking.status === 'finished';
+          }
+          return booking.status === filter;
+        });
+      }
+      throw error;
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+
         try {
           const authResponse = await checkAuth();
           setCurrentUser({
@@ -171,15 +233,18 @@ const Admin = () => {
           });
         }
         
-        const [bookingsData, computersData, packagesData] = await Promise.all([
-          bookingService.getBookings(),    
+        const [computersData, packagesData] = await Promise.all([
           computerService.getComputers(),   
           packageService.getPackages()
         ]);
-        setBookings(bookingsData);
+        
         setComputers(computersData);
         setPackages(packagesData);
         await fetchAllUsers();
+        
+        const initialBookings = await fetchBookingsByFilter('all');
+        setBookings(initialBookings);
+        
       } catch (err) {
         console.error('Error fetching data:', err);
         setError('Failed to load data');
@@ -189,6 +254,38 @@ const Admin = () => {
     };
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const updateBookingsForFilter = async () => {
+      if (sessionFilter === 'all') {
+        if (!bookingsCache.all) {
+          try {
+            const allBookings = await fetchBookingsByFilter('all');
+            setBookings(allBookings);
+          } catch (error) {
+            console.error('Error loading all bookings:', error);
+          }
+        }
+        return;
+      }
+
+      try {
+        const filteredBookings = await fetchBookingsByFilter(sessionFilter);
+        setBookings(filteredBookings);
+      } catch (error) {
+        console.error(`Error loading ${sessionFilter} bookings:`, error);
+        setSnackbar({
+          open: true,
+          message: `Failed to load ${sessionFilter} bookings`,
+          severity: 'error'
+        });
+      }
+    };
+
+    if (sessionFilter && !loading) {
+      updateBookingsForFilter();
+    }
+  }, [sessionFilter, bookingsCache.all]);
 
   const transformedBookings = useMemo(() => {
     if (!bookings.length || !computers.length || !packages.length) return [];
@@ -220,11 +317,11 @@ const Admin = () => {
 
   const filteredBookings = useMemo(() => {
     const selected = format(selectedDate, "yyyy-MM-dd");
-    const dateFiltered = transformedBookings.filter((b) => b.date === selected);
     
-    if (sessionFilter === 'all') return dateFiltered;
-    return dateFiltered.filter(b => b.status === sessionFilter);
-  }, [transformedBookings, selectedDate, sessionFilter]);
+    return transformedBookings.filter((booking) => {
+      return booking.date === selected;
+    });
+  }, [transformedBookings, selectedDate]);
 
   const pendingBookings = useMemo(() => 
     filteredBookings.filter(b => b.status === 'pending'), [filteredBookings]);
@@ -338,7 +435,7 @@ const Admin = () => {
       const operationText = balanceOperation === 'add' ? 'added to' : 'deducted from';
       setSnackbar({
         open: true,
-        message: `Successfully ${operationText} ${user.name || user.email}: $${amount}`,
+        message: `Successfully ${operationText} ${user.name || user.email}: ₸${amount}`,
         severity: 'success'
       });
       
@@ -359,15 +456,7 @@ const Admin = () => {
     if (!selectedBookingForCancel) return;
     try {
       await bookingService.cancelBookingByID(selectedBookingForCancel.id);
-      
-      if (selectedBookingForCancel.status === 'pending') {
-        try {
-          await bookingService.cancelPendingPayment();
-        } catch (paymentError) {
-          console.warn('Payment cancellation failed:', paymentError);
-        }
-      }
-      
+
       setBookings(bookings.map(booking => 
         booking.id === selectedBookingForCancel.id 
           ? { ...booking, status: 'cancelled' }
@@ -390,16 +479,10 @@ const Admin = () => {
   };
 
   const handleGrantAdmin = async (userId, newRole) => {
-    console.log('=== HANDLE GRANT ADMIN START ===');
-    console.log('User ID:', userId);
-    console.log('Requested new role:', newRole);
-
     if (!isAuth) {
       handleAuthError("Authorization required to change roles");
       return;
     }
-
-    console.log('Current user role:', currentUserRole);
 
     const validRoles = ['admin', 'client'];
     if (!validRoles.includes(newRole)) {
@@ -414,18 +497,15 @@ const Admin = () => {
     const permissionMatrix = {
       owner: {
         canAssign: ['admin', 'client'],
-        cannotModify: ['owner'], 
-        description: 'Full system access'
+        cannotModify: ['owner']
       },
       admin: {
         canAssign: ['client'],
-        cannotModify: ['owner', 'admin'], 
-        description: 'Limited management access'
+        cannotModify: ['owner', 'admin']
       },
       client: {
         canAssign: [],
-        cannotModify: ['owner', 'admin', 'client'], 
-        description: 'No management access'
+        cannotModify: ['owner', 'admin', 'client']
       }
     };
 
@@ -448,12 +528,6 @@ const Admin = () => {
       });
       return;
     }
-
-    console.log('Target user:', {
-      id: targetUser.id,
-      name: targetUser.name || targetUser.email,
-      currentRole: targetUser.role
-    });
 
     if (currentUserPermissions.cannotModify.includes(targetUser.role)) {
       setSnackbar({
@@ -482,24 +556,7 @@ const Admin = () => {
       return;
     }
 
-    const isPromotingToAdmin = newRole === 'admin' && targetUser.role === 'client';
-    const isDemotingFromAdmin = newRole === 'client' && targetUser.role === 'admin';
-    
-    if (isPromotingToAdmin || isDemotingFromAdmin) {
-      const actionType = isPromotingToAdmin ? 'promote' : 'demote';
-      const confirmed = window.confirm(
-        `Are you sure you want to ${actionType} ${targetUser.name || targetUser.email} ${isPromotingToAdmin ? 'to Admin' : 'to Client'}?\n\nThis will ${isPromotingToAdmin ? 'grant administrative privileges' : 'remove administrative privileges'}.`
-      );
-      
-      if (!confirmed) {
-        console.log('Role change cancelled by user confirmation');
-        return;
-      }
-    }
-
     try {
-      console.log('Attempting to change role via API...');
-      
       setSnackbar({
         open: true,
         message: 'Updating user role...',
@@ -507,8 +564,6 @@ const Admin = () => {
       });
 
       const response = await usersService.grantRoleByID(userId, newRole);
-      
-      console.log('API Response:', response);
 
       setUsers(prevUsers => 
         prevUsers.map(user => 
@@ -527,8 +582,6 @@ const Admin = () => {
         severity: 'success'
       });
 
-      console.log('Role change completed successfully');
-
       if (currentUser?.id === userId) {
         setTimeout(() => {
           setSnackbar({
@@ -540,10 +593,8 @@ const Admin = () => {
       }
 
     } catch (error) {
-      console.error('Role change error:', error);
-      
       let errorMessage = 'Failed to change user role';
-      
+
       if (error.response?.status === 403) {
         errorMessage = 'Insufficient privileges to change roles';
       } else if (error.response?.status === 404) {
@@ -563,18 +614,19 @@ const Admin = () => {
         message: errorMessage,
         severity: 'error'
       });
-
-      console.error('Detailed error info:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message
-      });
-
-    } finally {
-      console.log('=== HANDLE GRANT ADMIN COMPLETE ===');
     }
   };
+
+  const FilterLoadingIndicator = () => (
+    apiLoading && (
+      <Box display="flex" alignItems="center" gap={1} ml={2}>
+        <CircularProgress size={16} />
+        <Typography variant="caption" color="text.secondary">
+          Loading...
+        </Typography>
+      </Box>
+    )
+  );
 
   const StatCard = ({ title, value, icon, color }) => (
     <Card sx={{
@@ -703,27 +755,53 @@ const Admin = () => {
           {activeTab === 0 && (
             <Box p={3}>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                <Typography variant="h6">
-                  {sessionFilter === 'all' ? 'All Sessions' : 
-                  sessionFilter === 'pending' ? 'Pending Sessions' : 
-                  sessionFilter === 'active' ? 'Active Sessions' : 
-                  sessionFilter === 'completed' ? 'Completed Sessions' : 
-                  'Cancelled Sessions'}
-                </Typography>
-                <FormControl size="small" sx={{ minWidth: 180 }}>
-                  <InputLabel>Filter Status</InputLabel>
-                  <Select
-                    value={sessionFilter}
-                    onChange={(e) => setSessionFilter(e.target.value)}
-                    label="Filter Status"
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Typography variant="h6">
+                    {sessionFilter === 'all' ? `All Sessions (${filteredBookings.length})` : 
+                    sessionFilter === 'pending' ? `Pending Sessions (${filteredBookings.length})` : 
+                    sessionFilter === 'active' ? `Active Sessions (${filteredBookings.length})` : 
+                    sessionFilter === 'completed' ? `Completed Sessions (${filteredBookings.length})` : 
+                    `Cancelled Sessions (${filteredBookings.length})`}
+                  </Typography>
+                  <FilterLoadingIndicator />
+                </Box>
+                
+                <Box display="flex" alignItems="center" gap={2}>
+                  <FormControl size="small" sx={{ minWidth: 180 }}>
+                    <InputLabel>Filter Status</InputLabel>
+                    <Select
+                      value={sessionFilter}
+                      onChange={(e) => setSessionFilter(e.target.value)}
+                      label="Filter Status"
+                      disabled={apiLoading}
+                    >
+                      <MenuItem value="all">All Sessions</MenuItem>
+                      <MenuItem value="pending">Pending</MenuItem>
+                      <MenuItem value="active">Active</MenuItem>
+                      <MenuItem value="completed">Completed</MenuItem>
+                      <MenuItem value="cancelled">Cancelled</MenuItem>
+                    </Select>
+                  </FormControl>
+                  
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => {
+                      setBookingsCache({
+                        all: null,
+                        active: null,
+                        pending: null,
+                        cancelled: null,
+                        finished: null
+                      });
+                      fetchBookingsByFilter(sessionFilter).then(data => setBookings(data));
+                    }}
+                    disabled={apiLoading}
+                    startIcon={<Refresh />}
                   >
-                    <MenuItem value="all">All Sessions</MenuItem>
-                    <MenuItem value="pending">Pending</MenuItem>
-                    <MenuItem value="active">Active</MenuItem>
-                    <MenuItem value="completed">Completed</MenuItem>
-                    <MenuItem value="cancelled">Cancelled</MenuItem>
-                  </Select>
-                </FormControl>
+                    Refresh
+                  </Button>
+                </Box>
               </Box>
               {filteredBookings.length === 0 ? (
                 <Typography color={theme.palette.text.secondary}>
@@ -761,7 +839,8 @@ const Admin = () => {
                               color={
                                 session.status === 'active' ? 'success' : 
                                 session.status === 'pending' ? 'warning' : 
-                                session.status === 'completed' ? 'primary' : 'error'
+                                session.status === 'completed' || session.status === 'finished' ? 'primary' : 
+                                'error'
                               } 
                             />
                           </TableCell>
@@ -810,7 +889,7 @@ const Admin = () => {
                         <TableCell>{user.id}</TableCell>
                         <TableCell>{user.name}</TableCell>
                         <TableCell>{user.email}</TableCell>
-                        <TableCell>${user.balance}</TableCell>
+                        <TableCell>₸{user.balance}</TableCell>
                         <TableCell>
                           <Box display="flex" alignItems="center" gap={1}>
                             <Chip 
@@ -937,7 +1016,7 @@ const Admin = () => {
                           <TableCell>{user.id}</TableCell>
                           <TableCell>{user.name}</TableCell>
                           <TableCell>{user.email}</TableCell>
-                          <TableCell>${user.balance}</TableCell>
+                          <TableCell>₸{user.balance}</TableCell>
                           <TableCell>
                             <Chip 
                               label={user.role} 
@@ -1000,7 +1079,7 @@ const Admin = () => {
               >
                 {users.map(user => (
                   <MenuItem key={user.id} value={user.id.toString()}>
-                    {user.name || user.email} - Current: ${user.balance}
+                    {user.name || user.email} - Current: ₸{user.balance}
                   </MenuItem>
                 ))}
               </Select>

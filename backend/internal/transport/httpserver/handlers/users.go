@@ -191,5 +191,4 @@ func (s *Handler) HandleGrant(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-
 }

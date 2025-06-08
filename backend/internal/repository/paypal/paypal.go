@@ -3,9 +3,11 @@ package paypal
 import (
 	"context"
 	"esports_club_booking/internal/config"
+	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/repository"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 
 	paypal "github.com/plutov/paypal/v4"
@@ -33,7 +35,7 @@ func NewPayPalClient(cfg *config.Config) (*PayPalClient, error) {
 	}
 
 	// Turn on only for debugging purposes
-	// client.SetLog(os.Stdout)
+	client.SetLog(os.Stdout)
 	return &PayPalClient{
 		Client:    client,
 		WebHookID: cfg.PayPal.WebhookID,
@@ -76,12 +78,13 @@ func (p *PayPalClient) Deposit(amount float64, userID int64, description string)
 	for _, link := range order.Links {
 		if link.Rel == "approve" {
 			redirectURL = link.Href
+
 			break
 		}
 	}
 
 	if redirectURL == "" {
-		return "", "", fmt.Errorf("no approval link found in order response")
+		return "", "", entities.ErrNoRedirectURL
 	}
 
 	return order.ID, redirectURL, nil
