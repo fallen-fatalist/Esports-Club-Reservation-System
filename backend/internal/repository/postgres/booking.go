@@ -10,6 +10,8 @@ import (
 
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/repository"
+
+	"github.com/lib/pq"
 )
 
 var _ repository.BookingRepository = (*BookingRepository)(nil)
@@ -150,42 +152,106 @@ func (r *BookingRepository) GetByID(id int64) (*entities.Booking, error) {
 	return &booking, nil
 }
 
-func (r *BookingRepository) Create(ctx context.Context, booking *entities.Booking) (int64, error) {
-	startTime, err := time.Parse(time.RFC3339, booking.StartTime)
-	if err != nil {
-		return 0, fmt.Errorf("invalid start_time: %w", err)
+// TODO: divide business logic from repository, apply UpdateFN pattern
+func (r *BookingRepository) Create(ctx context.Context, booking *entities.Booking, amount float64) (int64, error) {
+	var lastErr error
+
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		var err error
+		var bookingID int64
+
+		// Parse timestamps
+		parsedStartTime, err := time.Parse(time.RFC3339, booking.StartTime)
+		if err != nil {
+			return 0, entities.ErrInvalidStartTimeFormat
+		}
+		parsedEndTime, err := time.Parse(time.RFC3339, booking.EndTime)
+		if err != nil {
+			return 0, entities.ErrInvalidEndTimeFormat
+		}
+
+		tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
+		if err != nil {
+			return -1, fmt.Errorf("failed to begin transaction: %w", err)
+		}
+
+		// Ensure rollback on exit
+		defer func() {
+			if err != nil {
+				tx.Rollback()
+			}
+		}()
+
+		// Step 1: Insert booking
+		bookingQuery := `
+			INSERT INTO bookings (user_id, computer_id, package_id, start_time, end_time, status)
+			VALUES ($1, $2, $3, $4, $5, $6)
+			RETURNING booking_id
+		`
+		err = tx.QueryRowContext(ctx, bookingQuery,
+			booking.UserID,
+			booking.ComputerID,
+			booking.PackageID,
+			parsedStartTime,
+			parsedEndTime,
+			entities.BookingPendingStatus,
+		).Scan(&bookingID)
+		if err != nil {
+			tx.Rollback()
+			return -1, fmt.Errorf("failed to create booking: %w", err)
+		}
+
+		// Step 2: Deduct balance
+		paymentQuery := `
+			UPDATE users
+			SET balance = balance - $1
+			WHERE user_id = $2
+		`
+		res, err := tx.ExecContext(ctx, paymentQuery, amount, booking.UserID)
+		if err != nil {
+			tx.Rollback()
+
+			// CHECK CONSTRAINT violation: balance < 0
+			if pgErr, ok := err.(*pq.Error); ok && pgErr.Code == "23514" {
+				return -1, entities.ErrInsufficientBalance
+			}
+
+			// SERIALIZATION FAILURE (retryable)
+			if pgErr, ok := err.(*pq.Error); ok && pgErr.Code == "40001" {
+				lastErr = err
+				time.Sleep(50 * time.Millisecond) // backoff before retry
+				continue
+			}
+
+			return -1, fmt.Errorf("failed to process payment: %w", err)
+		}
+
+		rowsAffected, err := res.RowsAffected()
+		if err != nil {
+			tx.Rollback()
+			return -1, fmt.Errorf("failed to check rows affected: %w", err)
+		}
+		if rowsAffected == 0 {
+			tx.Rollback()
+			return -1, entities.ErrUserNotFound
+		}
+
+		// Step 3: Commit
+		if err = tx.Commit(); err != nil {
+			// SERIALIZATION FAILURE on commit
+			if pgErr, ok := err.(*pq.Error); ok && pgErr.Code == "40001" {
+				lastErr = err
+				time.Sleep(50 * time.Millisecond)
+				continue
+			}
+			return -1, fmt.Errorf("failed to commit transaction: %w", err)
+		}
+
+		booking.ID = bookingID
+		return bookingID, nil // ✅ Success
 	}
 
-	endTime, err := time.Parse(time.RFC3339, booking.EndTime)
-	if err != nil {
-		return 0, fmt.Errorf("invalid end_time: %w", err)
-	}
-
-	var query string
-	var id int64
-
-	query = `
-		INSERT INTO bookings 
-		(user_id, computer_id, package_id, start_time, end_time, status, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, NOW())
-		RETURNING booking_id
-	`
-
-	err = r.db.QueryRowContext(
-		ctx,
-		query,
-		booking.UserID,
-		booking.ComputerID,
-		booking.PackageID,
-		startTime,
-		endTime,
-		booking.Status,
-	).Scan(&id)
-	if err != nil {
-		return 0, err
-	}
-
-	return id, nil
+	return -1, fmt.Errorf("booking creation failed after retries: %w", lastErr)
 }
 
 func (r *BookingRepository) Update(booking *entities.Booking) (int64, error) {

@@ -79,7 +79,7 @@ type BookingRepository interface {
 	GetAll() ([]*entities.Booking, error)
 	GetAllByUserID(int64) ([]*entities.Booking, error)
 	GetByID(int64) (*entities.Booking, error)
-	Create(context.Context, *entities.Booking) (int64, error)
+	Create(ctx context.Context, booking *entities.Booking, amount float64) (int64, error)
 	Update(booking *entities.Booking) (int64, error)
 	Delete(int64) error
 	/* Very bad and stupid solution must be optimized to priority queue */

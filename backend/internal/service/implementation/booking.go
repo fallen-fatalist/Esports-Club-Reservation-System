@@ -146,11 +146,11 @@ func (s *BookingService) CreateBooking(ctx context.Context, bookingDTO *dto.Book
 	// Parse StartTime and EndTime
 	start, err := time.Parse(time.RFC3339, bookingDTO.StartTime)
 	if err != nil {
-		return -1, entities.ErrInvalidTimeFormat
+		return -1, entities.ErrInvalidStartTimeFormat
 	}
 	end, err := time.Parse(time.RFC3339, booking.EndTime)
 	if err != nil {
-		return -1, entities.ErrInvalidTimeFormat
+		return -1, entities.ErrInvalidEndTimeFormat
 	}
 
 	// Check that packet duration corresponds to the duration from the start_time till end_time
@@ -158,16 +158,17 @@ func (s *BookingService) CreateBooking(ctx context.Context, bookingDTO *dto.Book
 		return 0, entities.ErrInvalidDuration
 	}
 
-	// TODO: join into transaction
-
-	// Check the user balance
-	if err := s.userService.DebitUserBalance(ctx, booking.UserID, bookingPackage.Price); err != nil {
-		return 0, err
-	}
-
-	id, err := s.repository.Create(ctx, booking)
+	id, err := s.repository.Create(ctx, booking, bookingPackage.Price)
 
 	if err != nil {
+		switch err {
+		case entities.ErrInvalidStartTimeFormat, entities.ErrInvalidEndTimeFormat:
+			return -1, err
+		case entities.ErrInsufficientBalance:
+			return -1, entities.ErrInsufficientBalance
+		case entities.ErrUserNotFound:
+			return -1, entities.ErrUserNotFound
+		}
 		slog.Error("Unhandled error creating booking:", slog.Any("error", err))
 		return 0, service.ErrUnhandledError
 	}

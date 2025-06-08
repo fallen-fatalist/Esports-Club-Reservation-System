@@ -110,7 +110,12 @@ func (s *Handler) PostBooking(w http.ResponseWriter, r *http.Request) {
 			errors.Is(err, entities.ErrUserBlocked):
 			views.WriteError(w, http.StatusBadRequest, err)
 			return
-
+		case errors.Is(err, entities.ErrInsufficientBalance):
+			views.WriteError(w, http.StatusPaymentRequired, err)
+			return
+		case errors.Is(err, entities.ErrUserNotFound):
+			views.WriteError(w, http.StatusNotFound, err)
+			return
 		case errors.Is(err, entities.ErrPackageNotFound):
 			views.WriteError(w, http.StatusBadRequest, err)
 			return

@@ -3,7 +3,7 @@ package entities
 import "errors"
 
 var (
-	ErrInsufficientBalance  = errors.New("insufficient balance")
+	ErrInsufficientBalance  = errors.New("insufficient balance for booking")
 	ErrBookingNotFound      = errors.New("booking not found")
 	ErrPaymentFailed        = errors.New("payment failed")
 	ErrPaymentTimeout       = errors.New("payment timeout")
