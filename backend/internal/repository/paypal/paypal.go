@@ -7,6 +7,7 @@ import (
 	"esports_club_booking/internal/repository"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 
 	paypal "github.com/plutov/paypal/v4"
@@ -34,7 +35,7 @@ func NewPayPalClient(cfg *config.Config) (*PayPalClient, error) {
 	}
 
 	// Turn on only for debugging purposes
-	// client.SetLog(os.Stdout)
+	client.SetLog(os.Stdout)
 	return &PayPalClient{
 		Client:    client,
 		WebHookID: cfg.PayPal.WebhookID,

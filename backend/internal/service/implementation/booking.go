@@ -165,7 +165,6 @@ func (s *BookingService) CreateBooking(ctx context.Context, bookingDTO *dto.Book
 		return 0, service.ErrUnhandledError
 	}
 	return id, nil
-
 }
 
 func (s *BookingService) BookingNotified(booking *entities.Booking) error {

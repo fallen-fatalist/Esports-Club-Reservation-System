@@ -79,7 +79,7 @@ func (h *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, entities.ErrNoRedirectURL) {
 			h.logger.Error("order was missing redirect URL", "error", err, "user id", userID)
 
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, entities.ErrUnhandledError.Error(), http.StatusInternalServerError)
 
 			return
 		}
@@ -87,14 +87,14 @@ func (h *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, entities.ErrUserNotFound) {
 			h.logger.Error("invalid user id was found after validation", "error", err, "user id", userID)
 
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, entities.ErrUnhandledError.Error(), http.StatusInternalServerError)
 
 			return
 		}
 
 		h.logger.Error("uknown error", "error", err)
 
-		jsonResponse(w, 400, dto.JSONAnswer{Message: entities.ErrPaymentFailed.Error()})
+		jsonResponse(w, http.StatusInternalServerError, dto.JSONAnswer{Message: entities.ErrUnhandledError.Error()})
 
 		return
 	}
@@ -142,19 +142,18 @@ func (h *Handler) handleBookingPayment(w http.ResponseWriter, r *http.Request) {
 	booking.UserID = userID
 
 	if err := h.service.PaymentService.PayBooking(r.Context(), &booking); err != nil {
-		slog.Error("Error processing booking payment:", "error", err)
-
-		var status int
 		switch {
 		case errors.Is(err, entities.ErrInsufficientBalance):
-			status = http.StatusPaymentRequired
+			jsonResponse(w, http.StatusPaymentRequired, dto.JSONAnswer{
+				Message: "Payment failed, insufficient funds",
+			})
 		default:
-			status = http.StatusInternalServerError
-		}
+			jsonResponse(w, http.StatusInternalServerError, dto.JSONAnswer{
+				Message: "Payment failed",
+			})
 
-		jsonResponse(w, status, dto.JSONAnswer{
-			Message: "Payment failed",
-		})
+			h.logger.Error("Error processing booking payment:", "error", err, "booking", booking)
+		}
 		return
 	}
 
@@ -225,11 +224,15 @@ func (h *Handler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	// 4. Process CHECKOUT.ORDER.APPROVED events
 	if event["event_type"] == "CHECKOUT.ORDER.APPROVED" {
 		if err := h.processApprovedOrder(event); err != nil {
-			h.logger.Error("order processing failed", "error", err)
+			if !errors.Is(err, entities.ErrNotificationFailed) {
+				h.logger.Error("order processing failed", "error", err)
 
-			http.Error(w, "Order processing failed", http.StatusBadRequest)
+				http.Error(w, "Order processing failed", http.StatusBadRequest)
 
-			return
+				return
+			}
+
+			h.logger.Error("notification failed", "error", err)
 		}
 	}
 
