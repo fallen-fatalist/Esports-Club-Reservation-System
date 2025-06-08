@@ -3,6 +3,7 @@ package paypal
 import (
 	"context"
 	"esports_club_booking/internal/config"
+	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/repository"
 	"fmt"
 	"net/http"
@@ -76,12 +77,13 @@ func (p *PayPalClient) Deposit(amount float64, userID int64, description string)
 	for _, link := range order.Links {
 		if link.Rel == "approve" {
 			redirectURL = link.Href
+
 			break
 		}
 	}
 
 	if redirectURL == "" {
-		return "", "", fmt.Errorf("no approval link found in order response")
+		return "", "", entities.ErrNoRedirectURL
 	}
 
 	return order.ID, redirectURL, nil
