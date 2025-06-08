@@ -327,7 +327,7 @@ func (s *UserService) UserBalanceCredit(ctx context.Context, userID int64, amoun
 	if user.Balance+amount > entities.MAX_BALANCE {
 		amount = entities.MAX_BALANCE - user.Balance
 	} else if user.Balance+amount <= entities.EPS {
-		amount = user.Balance
+		amount = -user.Balance
 	}
 
 	message := fmt.Sprintf(
