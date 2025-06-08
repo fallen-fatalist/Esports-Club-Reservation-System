@@ -316,7 +316,7 @@ func (s *UserService) UserBalanceCredit(ctx context.Context, userID int64, amoun
 		return err
 	}
 
-	if !entities.RequesterMorePriviliged(requesterRole, user.Role) {
+	if user.ID != requesterUser.ID && !entities.RequesterMorePriviliged(requesterRole, user.Role) {
 		return entities.ErrCreditInsufficientPriviliges
 	}
 
