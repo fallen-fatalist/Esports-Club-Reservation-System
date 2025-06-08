@@ -173,22 +173,6 @@ const Profile = ({ onLogout }) => {
     fetchInitialData();
   }, []);
 
-  const EXCHANGE_RATE_KZT_TO_USD = 0.0021;
-  const EXCHANGE_RATE_USD_TO_KZT = 476;
-
-  const convertToUSD = (amountInKZT) => {
-    return (amountInKZT * EXCHANGE_RATE_KZT_TO_USD).toFixed(2);
-  };
-
-  const convertToKZT = (amountInUSD) => {
-    return Math.round(amountInUSD * EXCHANGE_RATE_USD_TO_KZT);
-  };
-
-  const formatBalance = (balance) => {
-    const usdAmount = convertToUSD(balance);
-    return `${balance}₸ ($${usdAmount})`;
-  };
-
   const refreshUserBalance = async () => {
     try {
       const authResponse = await checkAuth();
@@ -202,12 +186,12 @@ const Profile = ({ onLogout }) => {
   };
 
   const handleDeposit = async () => {
-    const amountUSD = Number(depositAmount);
+    const amount = Number(depositAmount);
 
-    if (!amountUSD || amountUSD < 1) {
+    if (!amount || amount < 500) {  // Minimum 500 KZT
       setSnackbar({
         open: true,
-        message: 'Minimum deposit is $1',
+        message: 'Minimum deposit is 500₸',
         severity: 'error'
       });
       return;
@@ -215,8 +199,7 @@ const Profile = ({ onLogout }) => {
 
     try {
       setDepositLoading(true);
-      const amountKZT = convertToKZT(amountUSD);
-      const data = await paymentService.createDeposit(amountKZT);
+      const data = await paymentService.createDeposit(amount);
 
       if (!data?.Location) {
         throw new Error('Payment link not received');
@@ -228,7 +211,7 @@ const Profile = ({ onLogout }) => {
 
       setSnackbar({
         open: true,
-        message: 'Complete the payment in PayPal. Click "Refresh Balance" button when done.',
+        message: 'Complete the payment. Click "Refresh Balance" when done.',
         severity: 'info',
         autoHideDuration: 15000,
       });
@@ -241,7 +224,7 @@ const Profile = ({ onLogout }) => {
             if (newBalance !== null && newBalance > userBalance) {
               setSnackbar({
                 open: true,
-                message: `Payment successful! Balance updated: ${formatBalance(newBalance)}`,
+                message: `Payment successful! Balance updated: ${newBalance}₸`,
                 severity: 'success'
               });
             }
@@ -271,7 +254,7 @@ const Profile = ({ onLogout }) => {
     if (newBalance !== null) {
       setSnackbar({
         open: true,
-        message: `Balance refreshed: ${formatBalance(newBalance)}`,
+        message: `Balance refreshed:  ${newBalance}₸`,
         severity: 'success'
       });
     } else {
@@ -639,7 +622,7 @@ const Profile = ({ onLogout }) => {
                     <Box>
                       <Typography variant="body2" color="text.secondary">Balance</Typography>
                       <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                        {formatBalance(userBalance)}
+                        {userBalance}₸
                       </Typography>
                     </Box>
                   </Box>
@@ -711,7 +694,7 @@ const Profile = ({ onLogout }) => {
                   <Box sx={{ textAlign: 'left', flexGrow: 1 }}>
                     <Typography variant="button" sx={{ display: 'block' }}>Add Funds</Typography>
                     <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                      Current: {formatBalance(userBalance)}
+                      Current: {userBalance}₸
                     </Typography>
                   </Box>
                 </Button>
@@ -1064,6 +1047,7 @@ const Profile = ({ onLogout }) => {
             </Button>
           </DialogActions>
         </Dialog>
+        
         <Dialog
           open={depositModalOpen}
           onClose={() => {
@@ -1074,7 +1058,7 @@ const Profile = ({ onLogout }) => {
           maxWidth="xs"
           fullWidth
         >
-          <DialogTitle>Add Funds to Account</DialogTitle>
+          <DialogTitle>Add Funds</DialogTitle>
           <DialogContent>
             {depositError && (
               <Alert severity="error" sx={{ mb: 2 }}>
@@ -1084,29 +1068,23 @@ const Profile = ({ onLogout }) => {
             
             <TextField
               fullWidth
-              label="Amount (USD)"
+              label="Amount (₸)"
               type="number"
               value={depositAmount}
               onChange={(e) => setDepositAmount(e.target.value)}
               InputProps={{
-                startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                endAdornment: <InputAdornment position="end">₸</InputAdornment>,
                 inputProps: { 
-                  min: 1,
-                  step: 1
+                  min: 500,
+                  step: 100
                 }
               }}
               sx={{ mt: 1 }}
               disabled={depositLoading}
             />
             
-            {depositAmount && Number(depositAmount) > 0 && (
-              <Typography variant="body2" color="primary" sx={{ mt: 1 }}>
-                ≈ {convertToKZT(Number(depositAmount))}₸ KZT
-              </Typography>
-            )}
-            
             <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-              Minimum deposit amount: $1 (≈476₸)
+              Minimum amount: 500₸
             </Typography>
           </DialogContent>
           <DialogActions>
@@ -1130,6 +1108,7 @@ const Profile = ({ onLogout }) => {
             </Button>
           </DialogActions>
         </Dialog>
+
         <Snackbar
           open={snackbar.open}
           autoHideDuration={6000}
