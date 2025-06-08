@@ -3,6 +3,7 @@ package implementation
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"math/rand"
 	"regexp"
 	"strconv"
@@ -147,7 +148,7 @@ func (s *UserService) SendVerificationCode(req dto.EmailVerificationRequest) err
 		" %s\n is valid until: %s", code, expiresAt.Format(time.RFC1123))
 	subject := "Verification code"
 	if err := s.emailSender.SendEmail(req.Email, subject, body); err != nil {
-		return fmt.Errorf("%s: %w", op, err)
+		slog.Error("while sending sending verification code", slog.Any("error", fmt.Sprintf("%s: %w", op, err)))
 	}
 
 	return nil
@@ -244,7 +245,7 @@ func (s *UserService) SendPasswordResetCode(email string) error {
 	subject := "Password Reset Code"
 
 	if err := s.emailSender.SendEmail(email, subject, body); err != nil {
-		return fmt.Errorf("%s: %w", op, err)
+		slog.Error("while sending sending verification code", slog.Any("error", fmt.Sprintf("%s: %w", op, err)))
 	}
 
 	return nil
