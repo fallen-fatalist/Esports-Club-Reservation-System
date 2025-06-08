@@ -591,7 +591,7 @@ If you did not request this cancellation or need assistance, please contact our 
 		"Booking cancelled",
 		message,
 	); err != nil {
-		return err
+		slog.Error("while sending the notification about cancelled booking: ", slog.Any("error", err), slog.Any("booking", booking), slog.Any("user", user), slog.Any("requester_id", requesterUserID))
 	}
 
 	return nil

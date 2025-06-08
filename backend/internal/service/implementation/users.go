@@ -149,7 +149,7 @@ If you believe this action was taken in error or wish to appeal the decision, pl
 		"Account block",
 		message,
 	); err != nil {
-		return err
+		slog.Error("Error while blocking user: sending email", slog.Any("error", err), slog.Any("user", user), slog.Any("requester", requester))
 	}
 
 	return nil
@@ -212,7 +212,7 @@ If you have any questions or believe this action was taken in error, feel free t
 		"Account unblock",
 		message,
 	); err != nil {
-		return err
+		slog.Error("while ublocking user: sending email", slog.Any("error", err), slog.Any("user", user), slog.Any("requester", requester))
 	}
 
 	return nil
@@ -316,7 +316,7 @@ func (s *UserService) UserBalanceCredit(ctx context.Context, userID int64, amoun
 		return err
 	}
 
-	if !entities.RequesterMorePriviliged(requesterRole, user.Role) {
+	if user.ID != requesterUser.ID && !entities.RequesterMorePriviliged(requesterRole, user.Role) {
 		return entities.ErrCreditInsufficientPriviliges
 	}
 
@@ -327,7 +327,7 @@ func (s *UserService) UserBalanceCredit(ctx context.Context, userID int64, amoun
 	if user.Balance+amount > entities.MAX_BALANCE {
 		amount = entities.MAX_BALANCE - user.Balance
 	} else if user.Balance+amount <= entities.EPS {
-		amount = user.Balance
+		amount = -user.Balance
 	}
 
 	message := fmt.Sprintf(
@@ -353,7 +353,12 @@ If you believe this action was made in error or have any concerns, please contac
 		"Admin credit",
 		message,
 	); err != nil {
-		return err
+		slog.Error(
+			"Error while sending email notification about  User balance credit",
+			slog.Any("error", err), slog.Any("user", user),
+			slog.Any("requester", requesterUser),
+			slog.Float64("amount", amount),
+		)
 	}
 
 	return s.repo.UpdateBalance(userID, amount)
