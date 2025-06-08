@@ -435,7 +435,7 @@ const Admin = () => {
       const operationText = balanceOperation === 'add' ? 'added to' : 'deducted from';
       setSnackbar({
         open: true,
-        message: `Successfully ${operationText} ${user.name || user.email}: $${amount}`,
+        message: `Successfully ${operationText} ${user.name || user.email}: ₸${amount}`,
         severity: 'success'
       });
       
@@ -889,7 +889,7 @@ const Admin = () => {
                         <TableCell>{user.id}</TableCell>
                         <TableCell>{user.name}</TableCell>
                         <TableCell>{user.email}</TableCell>
-                        <TableCell>${user.balance}</TableCell>
+                        <TableCell>₸{user.balance}</TableCell>
                         <TableCell>
                           <Box display="flex" alignItems="center" gap={1}>
                             <Chip 
@@ -1016,7 +1016,7 @@ const Admin = () => {
                           <TableCell>{user.id}</TableCell>
                           <TableCell>{user.name}</TableCell>
                           <TableCell>{user.email}</TableCell>
-                          <TableCell>${user.balance}</TableCell>
+                          <TableCell>₸{user.balance}</TableCell>
                           <TableCell>
                             <Chip 
                               label={user.role} 
@@ -1079,7 +1079,7 @@ const Admin = () => {
               >
                 {users.map(user => (
                   <MenuItem key={user.id} value={user.id.toString()}>
-                    {user.name || user.email} - Current: ${user.balance}
+                    {user.name || user.email} - Current: ₸{user.balance}
                   </MenuItem>
                 ))}
               </Select>
