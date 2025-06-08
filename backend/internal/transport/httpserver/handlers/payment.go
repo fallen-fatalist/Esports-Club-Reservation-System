@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -35,29 +34,68 @@ func (h *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 		_, err = h.jwtMng.ValidateToken(token.Value)
 		if err != nil {
 			h.Logout(w, r)
+
 			views.WriteError(w, http.StatusUnauthorized, entities.ErrInvalidToken)
+
 			return
 		}
 	}
+
 	userIDStr, _ := auth.GetUserIDFromContext(r.Context())
 	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	// Lie to the client who is trying to brute force the token
 	if err != nil {
 		views.WriteError(w, http.StatusUnauthorized, entities.ErrMissingToken)
+
 		h.Logout(w, r)
+
 		return
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Println(err)
+		h.logger.Error("error while decoding json", "error", err)
+
 		http.Error(w, err.Error(), http.StatusBadRequest)
+
 		return
 	}
 
-	_, redirectURL, err := h.service.PaymentService.RequestDeposit(context.Background(), userID, req.Amount)
+	if req.Amount <= 0 || req.Amount > entities.MAX_AMOUNT {
+		h.logger.Info("user requested invalid amount", "amount", req.Amount)
+
+		if req.Amount > entities.MAX_AMOUNT {
+			http.Error(w, entities.ErrMaximumAmount.Error(), http.StatusBadRequest)
+
+			return
+		}
+
+		http.Error(w, entities.ErrNegativeOrZeroAmount.Error(), http.StatusBadRequest)
+
+		return
+	}
+
+	redirectURL, err := h.service.PaymentService.RequestDeposit(context.Background(), userID, req.Amount)
 	if err != nil {
-		log.Println(err)
-		jsonResponse(w, 400, dto.JSONAnswer{Message: err.Error()})
+		if errors.Is(err, entities.ErrNoRedirectURL) {
+			h.logger.Error("order was missing redirect URL", "error", err, "user id", userID)
+
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+
+			return
+		}
+
+		if errors.Is(err, entities.ErrUserNotFound) {
+			h.logger.Error("invalid user id was found after validation", "error", err, "user id", userID)
+
+			http.Error(w, err.Error(), http.StatusBadRequest)
+
+			return
+		}
+
+		h.logger.Error("uknown error", "error", err)
+
+		jsonResponse(w, 400, dto.JSONAnswer{Message: entities.ErrPaymentFailed.Error()})
+
 		return
 	}
 
@@ -79,8 +117,10 @@ func (h *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleBookingPayment(w http.ResponseWriter, r *http.Request) {
 	var booking entities.Booking
 	if err := json.NewDecoder(r.Body).Decode(&booking); err != nil {
-		slog.Error("Error decoding booking payment request:", err)
+		slog.Error("Error decoding booking payment request:", "error", err)
+
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
+
 		return
 	}
 	defer r.Body.Close()
@@ -90,7 +130,9 @@ func (h *Handler) handleBookingPayment(w http.ResponseWriter, r *http.Request) {
 		_, err = h.jwtMng.ValidateToken(token.Value)
 		if err != nil {
 			h.Logout(w, r)
+
 			views.WriteError(w, http.StatusUnauthorized, entities.ErrInvalidToken)
+
 			return
 		}
 	}
@@ -135,15 +177,19 @@ func (h *Handler) handleBookingPayment(w http.ResponseWriter, r *http.Request) {
 func (s *Handler) handleBookingRefund(w http.ResponseWriter, r *http.Request) {
 	var req dto.BookingPaymentRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		slog.Error("Error decoding booking payment request:", "error", err, "id", req.BookingID)
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		slog.Error("error decoding booking payment request:", "error", err, "id", req.BookingID)
+
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+
 		return
 	}
 	defer r.Body.Close()
 
 	if err := s.service.PaymentService.CancelBooking(r.Context(), req.BookingID); err != nil {
 		s.logger.Error("Error processing booking refund:", "error", err, "id", req.BookingID)
+
 		http.Error(w, "Refund failed", http.StatusInternalServerError)
+
 		return
 	}
 
@@ -156,8 +202,10 @@ func (s *Handler) handleBookingRefund(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	// 1. Verify this is a genuine PayPal webhook
 	if err := h.service.PaymentService.VerifyWebhook(r.Context(), r); err != nil {
-		h.logger.Error("webhook verification failed", "error", err)
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		h.logger.Warn("webhook verification failed", "error", err)
+
+		http.Error(w, entities.ErrUnverifiedWebhook.Error(), http.StatusUnauthorized)
+
 		return
 	}
 
@@ -165,7 +213,9 @@ func (h *Handler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	var event map[string]interface{}
 	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
 		h.logger.Error("invalid payload", "error", err)
+
 		http.Error(w, "Invalid payload", http.StatusBadRequest)
+
 		return
 	}
 
@@ -176,7 +226,9 @@ func (h *Handler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	if event["event_type"] == "CHECKOUT.ORDER.APPROVED" {
 		if err := h.processApprovedOrder(event); err != nil {
 			h.logger.Error("order processing failed", "error", err)
+
 			http.Error(w, "Order processing failed", http.StatusBadRequest)
+
 			return
 		}
 	}
@@ -269,7 +321,8 @@ func (h *Handler) getAmountFromOrder(resource map[string]interface{}) (float64, 
 func jsonResponse(w http.ResponseWriter, statusCode int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
+
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
-		slog.Error("Error encoding JSON response:", err)
+		slog.Error("Error encoding JSON response:", "error", err)
 	}
 }

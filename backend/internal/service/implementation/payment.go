@@ -2,11 +2,9 @@ package implementation
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"log"
-	"log/slog"
 	"net/http"
-	"time"
 
 	"esports_club_booking/internal/email"
 	"esports_club_booking/internal/entities"
@@ -16,11 +14,6 @@ import (
 )
 
 var _ service.PaymentService = (*PaymentService)(nil)
-
-const (
-	maxStatusAttempts = 30
-	statusCheckDelay  = 1 * time.Second
-)
 
 type PaymentService struct {
 	paypalClient *paypal.PayPalClient
@@ -36,18 +29,18 @@ func NewPaymentService(client *paypal.PayPalClient, emailSender email.EmailSende
 	}
 }
 
-func (s *PaymentService) RequestDeposit(ctx context.Context, userID int64, amount float64) (string, string, error) {
+func (s *PaymentService) RequestDeposit(ctx context.Context, userID int64, amount float64) (string, error) {
 	user, err := s.repo.UserRepository.GetByID(userID)
 	if err != nil {
-		return "", "", fmt.Errorf("couldn't fetch user by id %w", err)
+		return "", errors.Join(err, entities.ErrUserNotFound)
 	}
 
-	orderID, redirectURL, err := s.paypalClient.Deposit(amount, user.ID, "Deposit to your account")
+	_, redirectURL, err := s.paypalClient.Deposit(amount, user.ID, "Deposit to your account")
 	if err != nil {
-		return "", "", fmt.Errorf("paypal deposit failed: %w", err)
+		return "", err
 	}
 
-	return orderID, redirectURL, nil
+	return redirectURL, nil
 }
 
 func (s *PaymentService) Deposit(ctx context.Context, userID int64, amount float64) error {
@@ -56,17 +49,22 @@ func (s *PaymentService) Deposit(ctx context.Context, userID int64, amount float
 		return err
 	}
 
+	_, err = s.repo.PaymentRepository.Deposit(ctx, user, amount)
+	if err != nil {
+		return err
+	}
+
 	err = s.emailSender.SendEmail(
 		user.Email,
 		"Balance changes",
-		fmt.Sprintf("Your balance has increased by %.2f", amount),
+		fmt.Sprintf("Your balance has increased by $%.2f", amount),
 	)
 
 	if err != nil {
-		log.Printf("failed to send balance update email to %s: %v", user.Email, err)
+		return errors.Join(err, entities.ErrNotificationFailed)
 	}
-	_, err = s.repo.PaymentRepository.Deposit(ctx, user, amount)
-	return err
+
+	return nil
 }
 
 func (s *PaymentService) PayBooking(ctx context.Context, booking *entities.Booking) error {
@@ -81,12 +79,12 @@ func (s *PaymentService) PayBooking(ctx context.Context, booking *entities.Booki
 	}
 
 	if user.Balance < packageItem.Price {
-		return fmt.Errorf("insufficient balance for booking: user balance %.2f, package price %.2f", user.Balance, packageItem.Price)
+		return entities.ErrInsufficientBalance
 	}
 
 	err = s.repo.PaymentRepository.PayBooking(ctx, booking, packageItem.Price)
 	if err != nil {
-		return fmt.Errorf("failed to pay booking: %w", err)
+		return err
 	}
 
 	// Send confirmation email
@@ -96,7 +94,7 @@ func (s *PaymentService) PayBooking(ctx context.Context, booking *entities.Booki
 		fmt.Sprintf("Your booking for %s has been confirmed.", packageItem.Name),
 	)
 	if err != nil {
-		slog.Error("failed to send booking confirmation email", "error", err)
+		return errors.Join(err, entities.ErrNotificationFailed)
 	}
 
 	return nil
@@ -109,7 +107,7 @@ func (s *PaymentService) CancelBooking(ctx context.Context, bookingID int64) err
 	}
 
 	if booking.Status != "pending" {
-		return fmt.Errorf("booking is pending and no longer cancellable")
+		return fmt.Errorf("booking is no longer cancellable")
 	}
 
 	packageItem, err := s.repo.PackageRepository.GetByID(booking.PackageID)
@@ -128,7 +126,7 @@ func (s *PaymentService) CancelBooking(ctx context.Context, bookingID int64) err
 		fmt.Sprintf("Your booking for %s has been confirmed.", packageItem.Name),
 	)
 	if err != nil {
-		slog.Error("failed to send booking confirmation email", "error", err)
+		return errors.Join(err, entities.ErrNotificationFailed)
 	}
 
 	return s.repo.PaymentRepository.CancelBooking(ctx, booking, packageItem.Price)
