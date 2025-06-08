@@ -16,17 +16,23 @@ const excludedStatuses = ['pending', 'under repair', 'not working', 'unknown'];
 
 const getCurrentTimeString = () => {
   const now = new Date();
-  now.setMinutes(now.getMinutes() + 1); 
-  const roundedMinutes = Math.ceil(now.getMinutes() / 5) * 5; 
-  now.setMinutes(roundedMinutes);
+  const minutes = now.getMinutes();
+  const remainder = minutes % 5;
+  
+  if (remainder !== 0) {
+    now.setMinutes(minutes + (5 - remainder));
+  } else {
+    now.setMinutes(minutes + 5);
+  }
+
   now.setSeconds(0);
   now.setMilliseconds(0);
-  
+
   if (now.getMinutes() >= 60) {
     now.setHours(now.getHours() + 1);
     now.setMinutes(0);
   }
-  
+
   const hours = String(now.getHours()).padStart(2, '0');
   const mins = String(now.getMinutes()).padStart(2, '0');
   return `${hours}:${mins}`;
@@ -309,19 +315,25 @@ const Booking = () => {
     }
   };
 
-  const handleAutoSelectComputers = (count) => {
+  const handleAutoSelectComputers = (count, targetRoom = null) => {
     if (!checkAuthBeforeAction("auto-select computers")) return;
-    const roomComputers = filteredComputers.filter((c) => c.room === currentRoom);
+    
+    const roomToUse = targetRoom || currentRoom;
+    
+    const roomComputers = filteredComputers.filter((c) => c.room === roomToUse);
     const available = roomComputers.filter((c) => c.status === 'available');
+    
     if (available.length === 0) {
-      setErrorMessage(`No available computers in ${currentRoom} room for auto-selection.`);
+      setErrorMessage(`No available computers in ${roomToUse} room for auto-selection.`);
       setInfoMessage(null);
       return;
     }
+    
     const adjustedCount = Math.min(count, available.length);
     if (count > available.length) {
-      setInfoMessage(`Requested ${count}, but only ${available.length} available in ${currentRoom} room. All available computers have been selected.`);
+      setInfoMessage(`Requested ${count}, but only ${available.length} available in ${roomToUse} room. All available computers have been selected.`);
     }
+    
     const autoSelected = available.slice(0, adjustedCount).map((c) => c.id);
     setSelectedComputers(autoSelected);
     setErrorMessage(null);
@@ -333,11 +345,37 @@ const Booking = () => {
   };
 
   const getFilteredComputersForDisplay = () => {
-    return filteredComputers.filter(c => isDisplayableStatus(c.status));
+    if (currentRoom === 'All') {
+      const displayComputers = filteredComputers.filter(c => isDisplayableStatus(c.status));
+      
+      if (selectedPackage) {
+        const selectedPkg = packages.find(pkg => pkg.id === selectedPackage);
+        if (selectedPkg && selectedPkg.room) {
+          const packageRoomComputers = displayComputers.filter(c => c.room === selectedPkg.room);
+          const otherRoomComputers = displayComputers.filter(c => c.room !== selectedPkg.room);
+          return [...packageRoomComputers, ...otherRoomComputers];
+        }
+      }
+      
+      return displayComputers;
+    } else {
+      return filteredComputers.filter(c => isDisplayableStatus(c.status) && c.room === currentRoom);
+    }
   };
 
   const getAvailableComputersCount = () => {
-    return getFilteredComputersForDisplay()
+    if (currentRoom === 'All') {
+      if (selectedPackage) {
+        const selectedPkg = packages.find(pkg => pkg.id === selectedPackage);
+        if (selectedPkg && selectedPkg.room) {
+          return filteredComputers
+            .filter(c => c.status === 'available' && c.room === selectedPkg.room)
+            .length;
+        }
+      }
+      return filteredComputers.filter(c => c.status === 'available').length;
+    }
+    return filteredComputers
       .filter(c => c.status === 'available' && c.room === currentRoom)
       .length;
   };

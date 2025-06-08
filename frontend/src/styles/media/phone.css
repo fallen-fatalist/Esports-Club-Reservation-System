@@ -15,6 +15,7 @@
 
     .navbar {
         padding: var(--space-xs) var(--space-sm);
+        justify-content: space-between;
     }
 
     .navbar__logo {
