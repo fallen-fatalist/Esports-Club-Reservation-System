@@ -107,21 +107,14 @@ async blockUserByID(id) {
   
   async grantRoleByID(id, role) {
     try {
-      const response = await api.post(`/api/users/${id}/grant`, { role });
+      const response = await api.post(`/api/users/${id}/grant?role=${role}`);
+
       return {
         success: true,
         data: response.data,
         status: response.status
       };
     } catch (error) {
-      console.error(`Error granting role ${role} to user ${id}:`, {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        url: error.config?.url,
-        method: error.config?.method
-      });
-      
       if (error.response?.status === 403) {
         throw new Error('Insufficient privileges to grant role. Only owners and managers can perform this action.');
       }
@@ -139,7 +132,7 @@ async blockUserByID(id) {
         const errorMessage = error.response?.data?.error || 'Internal server error';
         throw new Error(errorMessage);
       }
-      
+
       throw error;
     }
   },

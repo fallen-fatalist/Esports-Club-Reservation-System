@@ -16,17 +16,23 @@ const excludedStatuses = ['pending', 'under repair', 'not working', 'unknown'];
 
 const getCurrentTimeString = () => {
   const now = new Date();
-  now.setMinutes(now.getMinutes() + 1); 
-  const roundedMinutes = Math.ceil(now.getMinutes() / 5) * 5; 
-  now.setMinutes(roundedMinutes);
+  const minutes = now.getMinutes();
+  const remainder = minutes % 5;
+  
+  if (remainder !== 0) {
+    now.setMinutes(minutes + (5 - remainder));
+  } else {
+    now.setMinutes(minutes + 5);
+  }
+
   now.setSeconds(0);
   now.setMilliseconds(0);
-  
+
   if (now.getMinutes() >= 60) {
     now.setHours(now.getHours() + 1);
     now.setMinutes(0);
   }
-  
+
   const hours = String(now.getHours()).padStart(2, '0');
   const mins = String(now.getMinutes()).padStart(2, '0');
   return `${hours}:${mins}`;
