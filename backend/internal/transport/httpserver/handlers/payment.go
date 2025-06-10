@@ -59,14 +59,15 @@ func (h *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
-	DollarInTenge, err := h.exchangeAPI.GetUSDToKZT()
-	if err != nil {
-		http.Error(w, "failed to get exchange rate", http.StatusInternalServerError)
-		h.logger.Error("failed to get exchange rate", slog.Any("error", err))
+	// _, err = h.exchangeAPI.GetUSDToKZT()
+	// if err != nil {
+	// 	http.Error(w, "failed to get exchange rate", http.StatusInternalServerError)
+	// 	h.logger.Error("failed to get exchange rate", slog.Any("error", err))
 
-		return
-	}
-	DollarAmount := req.Amount / DollarInTenge
+	// 	return
+	// }
+	// DollarAmount := req.Amount // / DollarInTenge
+	DollarAmount := req.Amount
 
 	if DollarAmount <= 0 || DollarAmount > entities.MAX_AMOUNT {
 		h.logger.Info("user requested invalid amount", "amount", DollarAmount)
@@ -280,26 +281,28 @@ func (h *Handler) processApprovedOrder(event map[string]interface{}) error {
 	}
 
 	// 6. Extract amount
-	amount, err := h.getAmountFromOrder(resource)
+	amountUSD, err := h.getAmountFromOrder(resource)
 	if err != nil {
 		return fmt.Errorf("failed to get amount: %v", err)
 	}
 
-	// 7. Process payment
-	DollarInTenge, err := h.exchangeAPI.GetUSDToKZT()
+	// 7. Convert USD → KZT
+	rate, err := h.exchangeAPI.GetUSDToKZT()
 	if err != nil {
 		h.logger.Error("failed to get exchange rate", slog.Any("error", err))
-		return fmt.Errorf("failed to get exchange rate")
+		return fmt.Errorf("failed to get exchange rate: %w", err)
 	}
-	DollarAmount := amount / DollarInTenge
-	if err := h.service.PaymentService.Deposit(context.Background(), userID, DollarAmount); err != nil {
+	amountKZT := amountUSD * rate
+
+	// 8. Deposit to user in KZT
+	if err := h.service.PaymentService.Deposit(context.Background(), userID, amountKZT); err != nil {
 		return fmt.Errorf("deposit failed: %v", err)
 	}
 
-	// 8. Log success
+	// 9. Log success
 	h.logger.Info("Payment processed successfully",
 		"userID", userID,
-		"amount", amount,
+		"amount", amountKZT,
 		"paypalID", resource["id"],
 	)
 

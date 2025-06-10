@@ -5,6 +5,7 @@ import (
 	"esports_club_booking/internal/config"
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/repository"
+	exchangerateapi "esports_club_booking/internal/repository/exchangerateAPI"
 	"fmt"
 	"net/http"
 	"os"
@@ -16,11 +17,11 @@ import (
 var _ repository.PayPalClient = (*PayPalClient)(nil)
 
 type PayPalClient struct {
-	Client *paypal.Client
-
-	WebHookID string
-	ReturnURL string
-	CancelURL string
+	Client       *paypal.Client
+	exchangeRate exchangerateapi.ExchangeRateAPI
+	WebHookID    string
+	ReturnURL    string
+	CancelURL    string
 }
 
 func NewPayPalClient(cfg *config.Config) (*PayPalClient, error) {
@@ -37,19 +38,25 @@ func NewPayPalClient(cfg *config.Config) (*PayPalClient, error) {
 	// Turn on only for debugging purposes
 	client.SetLog(os.Stdout)
 	return &PayPalClient{
-		Client:    client,
-		WebHookID: cfg.PayPal.WebhookID,
-		ReturnURL: cfg.PayPal.ReturnURL,
-		CancelURL: cfg.PayPal.CancelURL,
+		Client:       client,
+		WebHookID:    cfg.PayPal.WebhookID,
+		exchangeRate: exchangerateapi.NewExchangeRateAPI(cfg.ExchangeAPI.APIKey),
+		ReturnURL:    cfg.PayPal.ReturnURL,
+		CancelURL:    cfg.PayPal.CancelURL,
 	}, nil
 }
 
-func (p *PayPalClient) Deposit(amount float64, userID int64, description string) (string, string, error) {
+func (p *PayPalClient) Deposit(amountKZT float64, userID int64, description string) (string, string, error) {
+	rate, err := p.exchangeRate.GetUSDToKZT()
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get exchange rate: %w", err)
+	}
+	amountUSD := amountKZT / rate
 	unit := []paypal.PurchaseUnitRequest{
 		{
 			Amount: &paypal.PurchaseUnitAmount{
 				Currency: "USD",
-				Value:    fmt.Sprintf("%.2f", amount),
+				Value:    fmt.Sprintf("%.2f", amountUSD),
 			},
 			CustomID: strconv.FormatInt(userID, 10),
 		},
