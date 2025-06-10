@@ -164,7 +164,14 @@ const Admin = () => {
 
   const fetchBookingsByFilter = async (filter) => {
     if (bookingsCache[filter] && filter !== 'all') {
-      return bookingsCache[filter];
+      if (Array.isArray(bookingsCache[filter])) {
+        return bookingsCache[filter];
+      } else {
+        setBookingsCache(prev => ({
+          ...prev,
+          [filter]: null
+        }));
+      }
     }
 
     try {
@@ -190,6 +197,11 @@ const Admin = () => {
           break;
       }
 
+      if (!Array.isArray(bookingsData)) {
+        console.warn(`Expected array from ${filter} bookings, got:`, typeof bookingsData, bookingsData);
+        bookingsData = [];
+      }
+
       setBookingsCache(prev => ({
         ...prev,
         [filter]: bookingsData
@@ -199,15 +211,25 @@ const Admin = () => {
     } catch (error) {
       console.error(`Error fetching ${filter} bookings:`, error);
       if (filter !== 'all') {
-        const allBookings = await bookingService.getBookings();
-        return allBookings.filter(booking => {
-          if (filter === 'completed') {
-            return booking.status === 'completed' || booking.status === 'finished';
+        try {
+          const allBookings = await bookingService.getBookings();
+          if (!Array.isArray(allBookings)) {
+            console.warn('Expected array from getBookings, got:', typeof allBookings, allBookings);
+            return [];
           }
-          return booking.status === filter;
-        });
+          
+          return allBookings.filter(booking => {
+            if (filter === 'completed') {
+              return booking.status === 'completed' || booking.status === 'finished';
+            }
+            return booking.status === filter;
+          });
+        } catch (fallbackError) {
+          console.error('Fallback booking fetch also failed:', fallbackError);
+          return [];
+        }
       }
-      throw error;
+      return [];
     } finally {
       setApiLoading(false);
     }
