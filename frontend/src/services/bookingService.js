@@ -124,7 +124,7 @@ const bookingService = {
 
     async getCancelledBookings() {
         try {
-            const response = await api.get('/api/bookings/cancelled');
+            const response = await api.get('/api/bookings?filter=cancelled');
             return response.data;
         } catch (error) {
             console.error('Error getting cancelled bookings:', error);
