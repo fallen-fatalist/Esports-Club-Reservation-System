@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"esports_club_booking/internal/entities"
+	exchangerateapi "esports_club_booking/internal/repository/exchangerateAPI"
 	"log/slog"
 	"net/http"
 
@@ -10,13 +11,14 @@ import (
 )
 
 type Handler struct {
-	service *service.Service
-	logger  *slog.Logger
-	jwtMng  auth.JWTManager
+	service     *service.Service
+	logger      *slog.Logger
+	jwtMng      auth.JWTManager
+	exchangeAPI exchangerateapi.ExchangeRateAPI
 }
 
-func NewHandler(svc *service.Service, logger *slog.Logger, jwtMng auth.JWTManager) *Handler {
-	return &Handler{service: svc, logger: logger, jwtMng: jwtMng}
+func NewHandler(svc *service.Service, logger *slog.Logger, jwtMng auth.JWTManager, exchangeAPI exchangerateapi.ExchangeRateAPI) *Handler {
+	return &Handler{service: svc, logger: logger, jwtMng: jwtMng, exchangeAPI: exchangeAPI}
 }
 
 func (h *Handler) RegisterEndpoints(mux *http.ServeMux) {

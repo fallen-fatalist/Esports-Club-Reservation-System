@@ -11,8 +11,9 @@ import (
 
 	"esports_club_booking/internal/auth"
 	"esports_club_booking/internal/config"
-	"esports_club_booking/internal/email"
 	"esports_club_booking/internal/repository"
+	"esports_club_booking/internal/repository/email"
+	exchangerateapi "esports_club_booking/internal/repository/exchangerateAPI"
 	"esports_club_booking/internal/repository/paypal"
 	"esports_club_booking/internal/repository/postgres"
 	"esports_club_booking/internal/service"
@@ -56,6 +57,7 @@ func Run() {
 	jwtManager := auth.NewJWTManager(cfg.JWT.Secret, cfg.JWT.Expiration)
 	emailSender := email.NewEmailSender(cfg.EmailSender.FromAddress, cfg.EmailSender.Password,
 		cfg.EmailSender.SMTPHost, int(cfg.EmailSender.SMTPPort))
+	exchangeAPI := exchangerateapi.NewExchangeRateAPI(cfg.ExchangeAPI.APIKey)
 
 	// User service
 	userService, _ := implementation.NewUserService(&cfg.OwnerCredentials, userRepository, jwtManager, emailSender)
@@ -77,6 +79,7 @@ func Run() {
 		logger.Error("Failed to create PayPal client", slog.Any("error", err))
 		return
 	}
+
 	paymentService := implementation.NewPaymentService(
 		paypalClient,
 		emailSender,
@@ -101,7 +104,7 @@ func Run() {
 	startWorkers(*svc, ctx, emailSender, logger)
 
 	mux := http.NewServeMux()
-	handlers := handlers.NewHandler(svc, logger, jwtManager)
+	handlers := handlers.NewHandler(svc, logger, jwtManager, exchangeAPI)
 	handlers.RegisterEndpoints(mux)
 
 	cfg.Server.Address = fmt.Sprintf("%s:%s", cfg.Server.Address, cfg.Server.Port)

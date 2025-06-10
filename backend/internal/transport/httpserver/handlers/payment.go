@@ -59,11 +59,19 @@ func (h *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
+	DollarInTenge, err := h.exchangeAPI.GetUSDToKZT()
+	if err != nil {
+		http.Error(w, "failed to get exchange rate", http.StatusInternalServerError)
+		h.logger.Error("failed to get exchange rate", slog.Any("error", err))
 
-	if req.Amount <= 0 || req.Amount > entities.MAX_AMOUNT {
-		h.logger.Info("user requested invalid amount", "amount", req.Amount)
+		return
+	}
+	DollarAmount := req.Amount / DollarInTenge
 
-		if req.Amount > entities.MAX_AMOUNT {
+	if DollarAmount <= 0 || DollarAmount > entities.MAX_AMOUNT {
+		h.logger.Info("user requested invalid amount", "amount", DollarAmount)
+
+		if DollarAmount > entities.MAX_AMOUNT {
 			http.Error(w, entities.ErrMaximumAmount.Error(), http.StatusBadRequest)
 
 			return
@@ -74,7 +82,7 @@ func (h *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	redirectURL, err := h.service.PaymentService.RequestDeposit(context.Background(), userID, req.Amount)
+	redirectURL, err := h.service.PaymentService.RequestDeposit(context.Background(), userID, DollarAmount)
 	if err != nil {
 		if errors.Is(err, entities.ErrNoRedirectURL) {
 			h.logger.Error("order was missing redirect URL", "error", err, "user id", userID)
@@ -100,6 +108,7 @@ func (h *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data, _ := json.Marshal(map[string]string{"Location": redirectURL})
+	w.WriteHeader(http.StatusOK)
 	w.Write(data)
 }
 

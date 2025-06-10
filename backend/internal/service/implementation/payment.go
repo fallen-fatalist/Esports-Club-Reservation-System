@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"esports_club_booking/internal/email"
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/repository"
+	"esports_club_booking/internal/repository/email"
 	"esports_club_booking/internal/repository/paypal"
 	"esports_club_booking/internal/service"
 )

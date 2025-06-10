@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"esports_club_booking/internal/auth"
-	"esports_club_booking/internal/email"
 	"esports_club_booking/internal/entities"
 	"esports_club_booking/internal/repository"
+	"esports_club_booking/internal/repository/email"
 	"esports_club_booking/internal/service"
 	"esports_club_booking/internal/transport/dto"
 	"esports_club_booking/internal/utils"

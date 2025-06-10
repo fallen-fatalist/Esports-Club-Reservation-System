@@ -20,6 +20,7 @@ type (
 		EmailSender      EmailSender
 		PayPal           PayPal
 		OwnerCredentials OwnerCredentials
+		ExchangeAPI      ExchangeAPI
 	}
 
 	Server struct {
@@ -60,6 +61,10 @@ type (
 		Email    string
 		Username string
 		Password string
+	}
+
+	ExchangeAPI struct {
+		APIKey string
 	}
 )
 
@@ -115,6 +120,9 @@ func NewConfig() *Config {
 			Email:    getEnvStr("EMAIL", "owner@mail.com"),
 			Username: getEnvStr("USERNAME", "owner"),
 			Password: getEnvStr("PASSWORD", "change_me"),
+		},
+		ExchangeAPI: ExchangeAPI{
+			APIKey: getEnvStr("EXCHANGE_API_KEY", ""),
 		},
 	}
 }

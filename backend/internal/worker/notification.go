@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"time"
 
-	"esports_club_booking/internal/email"
+	"esports_club_booking/internal/repository/email"
 	"esports_club_booking/internal/service"
 )
 
