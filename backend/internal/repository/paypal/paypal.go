@@ -7,6 +7,7 @@ import (
 	"esports_club_booking/internal/repository"
 	exchangerateapi "esports_club_booking/internal/repository/exchangerateAPI"
 	"fmt"
+	"math"
 	"net/http"
 	"os"
 	"strconv"
@@ -46,6 +47,10 @@ func NewPayPalClient(cfg *config.Config) (*PayPalClient, error) {
 	}, nil
 }
 
+func ceilToTwoDecimalPlaces(amount float64) float64 {
+	return math.Ceil(amount*100) / 100
+}
+
 func (p *PayPalClient) Deposit(amountKZT float64, userID int64, description string) (string, string, error) {
 	rate, err := p.exchangeRate.GetUSDToKZT()
 	if err != nil {
@@ -56,7 +61,7 @@ func (p *PayPalClient) Deposit(amountKZT float64, userID int64, description stri
 		{
 			Amount: &paypal.PurchaseUnitAmount{
 				Currency: "USD",
-				Value:    fmt.Sprintf("%.2f", amountUSD),
+				Value:    fmt.Sprintf("%.2f", ceilToTwoDecimalPlaces(amountUSD)),
 			},
 			CustomID: strconv.FormatInt(userID, 10),
 		},

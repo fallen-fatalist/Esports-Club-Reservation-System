@@ -67,12 +67,11 @@ func (h *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 	// DollarAmount := req.Amount // / DollarInTenge
-	DollarAmount := req.Amount
 
-	if DollarAmount <= 0 || DollarAmount > entities.MAX_AMOUNT {
-		h.logger.Info("user requested invalid amount", "amount", DollarAmount)
+	if req.Amount <= 0 || req.Amount > entities.MAX_AMOUNT {
+		h.logger.Info("user requested invalid amount", "amount", req.Amount)
 
-		if DollarAmount > entities.MAX_AMOUNT {
+		if req.Amount > entities.MAX_AMOUNT {
 			http.Error(w, entities.ErrMaximumAmount.Error(), http.StatusBadRequest)
 
 			return
@@ -83,7 +82,7 @@ func (h *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	redirectURL, err := h.service.PaymentService.RequestDeposit(context.Background(), userID, DollarAmount)
+	redirectURL, err := h.service.PaymentService.RequestDeposit(context.Background(), userID, req.Amount)
 	if err != nil {
 		if errors.Is(err, entities.ErrNoRedirectURL) {
 			h.logger.Error("order was missing redirect URL", "error", err, "user id", userID)
