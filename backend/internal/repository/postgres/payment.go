@@ -22,10 +22,13 @@ func NewPaymentRepository(db *sql.DB) (*PaymentRepository, error) {
 	return &PaymentRepository{db: db}, nil
 }
 
-func (r *PaymentRepository) Deposit(ctx context.Context, user *entities.User, amout float64) (int64, error) {
+func (r *PaymentRepository) Deposit(ctx context.Context, user *entities.User, amount float64) (int64, error) {
 	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{
 		Isolation: sql.LevelSerializable,
 	})
+
+	amount *= entities.DollarInTenge
+
 	if err != nil {
 		return 0, fmt.Errorf("failed to begin transaction: %w", err)
 	}
@@ -42,7 +45,7 @@ func (r *PaymentRepository) Deposit(ctx context.Context, user *entities.User, am
 		RETURNING user_id
 	`
 
-	_, err = tx.QueryContext(ctx, depositQuery, user.Balance+amout, user.ID)
+	_, err = tx.QueryContext(ctx, depositQuery, user.Balance+amount, user.ID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to update users: %w", err)
 	}

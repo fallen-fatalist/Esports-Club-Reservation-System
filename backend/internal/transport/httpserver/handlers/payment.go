@@ -74,7 +74,8 @@ func (h *Handler) handleDeposit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	redirectURL, err := h.service.PaymentService.RequestDeposit(context.Background(), userID, req.Amount)
+	DollarAmount := req.Amount / entities.DollarInTenge
+	redirectURL, err := h.service.PaymentService.RequestDeposit(context.Background(), userID, DollarAmount)
 	if err != nil {
 		if errors.Is(err, entities.ErrNoRedirectURL) {
 			h.logger.Error("order was missing redirect URL", "error", err, "user id", userID)

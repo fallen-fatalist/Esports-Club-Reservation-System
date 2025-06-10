@@ -18,6 +18,7 @@ var (
 )
 
 const (
-	EPS        = 0.0000001
-	MAX_AMOUNT = 100000
+	EPS           = 0.0000001
+	MAX_AMOUNT    = 100000
+	DollarInTenge = 500
 )
