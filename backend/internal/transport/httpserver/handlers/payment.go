@@ -286,7 +286,13 @@ func (h *Handler) processApprovedOrder(event map[string]interface{}) error {
 	}
 
 	// 7. Process payment
-	if err := h.service.PaymentService.Deposit(context.Background(), userID, amount); err != nil {
+	DollarInTenge, err := h.exchangeAPI.GetUSDToKZT()
+	if err != nil {
+		h.logger.Error("failed to get exchange rate", slog.Any("error", err))
+		return fmt.Errorf("failed to get exchange rate")
+	}
+	DollarAmount := amount / DollarInTenge
+	if err := h.service.PaymentService.Deposit(context.Background(), userID, DollarAmount); err != nil {
 		return fmt.Errorf("deposit failed: %v", err)
 	}
 
